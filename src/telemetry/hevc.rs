@@ -21,7 +21,7 @@ pub const EVENTS: [&str; 15] = [
     "render_stale",
     "rtp_incomplete",
 ];
-pub const TIMINGS: [&str; 7] = [
+pub const TIMINGS: [&str; 10] = [
     "decode_call",
     "gpu_readback",
     "render_submit",
@@ -29,6 +29,9 @@ pub const TIMINGS: [&str; 7] = [
     "slint_render_cycle",
     "complete_au_gap",
     "rtp_timestamp_arrival_gap",
+    "pixel_buffer_allocate",
+    "slint_image_construct",
+    "slint_image_set",
 ];
 #[derive(Clone, Copy)]
 #[repr(usize)]
@@ -59,6 +62,9 @@ pub enum Timing {
     SlintRenderCycle,
     CompleteAuGap,
     RtpTimestampArrivalGap,
+    PixelBufferAllocate,
+    SlintImageConstruct,
+    SlintImageSet,
 }
 
 const BUCKET_US: u128 = 250;

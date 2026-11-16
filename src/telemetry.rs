@@ -297,7 +297,7 @@ fn hevc_summary(s: hevc::Snapshot) -> serde_json::Value {
         .collect::<serde_json::Map<_,_>>();
     let c = s.configuration;
     serde_json::json!({
-        "schema":1,"window_seconds":s.seconds,
+        "schema":2,"window_seconds":s.seconds,
         "requested_fps":c.requested_fps,"local_max_fps":c.local_max_fps,"pacer_fps":c.pacer_fps,
         "wire_flags":c.wire_flags,"proposal_bank":c.proposal_bank,
         "negotiated_fps":null,"negotiated_fps_status":"not_exposed_by_current_response_parser",
@@ -334,6 +334,14 @@ mod hevc_schema_tests {
             d.snapshot(start + Duration::from_secs(2), 5_000_000)
                 .unwrap(),
         );
+        assert_eq!(json["schema"], 2);
+        for name in [
+            "pixel_buffer_allocate",
+            "slint_image_construct",
+            "slint_image_set",
+        ] {
+            assert_eq!(json["timings"][name]["samples"], 0);
+        }
         assert!(json["negotiated_fps"].is_null());
         assert!(json["last_decode_backend"].is_null());
         assert_eq!(json["requested_fps"], 60);

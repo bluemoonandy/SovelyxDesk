@@ -463,7 +463,13 @@ mod tests {
             frames.extend(decoder.drain().unwrap());
             assert_eq!(frames.len(), 1);
             assert_eq!((frames[0].size.width, frames[0].size.height), (1920, 1080));
-            let rgba = frames[0].read_rgba().unwrap();
+            let reference = frames[0].read_rgba().unwrap();
+            let mut rgba = vec![0xa5; 1920 * 1080 * 4];
+            frames[0].read_rgba_into(&mut rgba).unwrap();
+            assert_eq!(
+                rgba, reference,
+                "caller-owned readback must preserve every RGBA byte"
+            );
             assert_eq!(rgba.len(), 1920 * 1080 * 4);
             for (row, value) in [(0, 32_u8), (1, 128), (1078, 128), (1079, 235)] {
                 for pixel in rgba[row * 1920 * 4..(row + 1) * 1920 * 4].chunks_exact(4) {

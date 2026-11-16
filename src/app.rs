@@ -1409,14 +1409,18 @@ pub fn run(
                         let current = diagnostics.as_ref().map(|_| Arc::as_ptr(&frame));
                         let unchanged = fallback_image.as_ref().is_some_and(|(previous, _)| Arc::ptr_eq(previous, &frame));
                         if !unchanged {
+                            let allocate_started = diagnostics.as_ref().map(|_| Instant::now());
+                            let mut pixels = SharedPixelBuffer::<Rgba8Pixel>::new(frame.size.width, frame.size.height);
+                            if let (Some(d),Some(started)) = (&diagnostics,allocate_started) { d.timing(telemetry::hevc::Timing::PixelBufferAllocate,started.elapsed()); }
                             let readback_started = diagnostics.as_ref().map(|_| Instant::now());
-                            let readback = frame.read_rgba();
+                            let readback = frame.read_rgba_into(pixels.make_mut_bytes());
                             if let (Some(d),Some(started)) = (&diagnostics,readback_started) { d.timing(telemetry::hevc::Timing::GpuReadback,started.elapsed()); }
                             match readback {
-                                Ok(rgba) => {
-                                    let mut pixels = SharedPixelBuffer::<Rgba8Pixel>::new(frame.size.width, frame.size.height);
-                                    pixels.make_mut_bytes().copy_from_slice(&rgba);
-                                    fallback_image = Some((frame, slint::Image::from_rgba8(pixels)));
+                                Ok(()) => {
+                                    let construct_started = diagnostics.as_ref().map(|_| Instant::now());
+                                    let image = slint::Image::from_rgba8(pixels);
+                                    if let (Some(d),Some(started)) = (&diagnostics,construct_started) { d.timing(telemetry::hevc::Timing::SlintImageConstruct,started.elapsed()); }
+                                    fallback_image = Some((frame, image));
                                 }
                                 Err(error) => notify(&app, error),
                             }
@@ -1427,7 +1431,9 @@ pub fn run(
                                     json!({"media.presentation":"gpu_readback","media.cpu.readback":true}));
                                 sharing_reported = true;
                             }
+                            let set_started = diagnostics.as_ref().map(|_| Instant::now());
                             app.set_frame_image(image.clone());
+                            if let (Some(d),Some(started)) = (&diagnostics,set_started) { d.timing(telemetry::hevc::Timing::SlintImageSet,started.elapsed()); }
                             image_submitted = current.is_some_and(|current| fallback_image.as_ref().is_some_and(|(previous,_)| Arc::as_ptr(previous)==current));
                         }
                     }

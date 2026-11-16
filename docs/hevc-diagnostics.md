@@ -1,6 +1,7 @@
 # HEVC 30/60 FPS 诊断
 
-本轮只测量，不调整帧率、pacer、解码或显示架构。P0 基线为提交
+不调整帧率、pacer、解码器选择或显示架构。诊断基线为提交 `1cace27`；
+后续最小 readback 改进见本文末尾。P0 基线为提交
 `0a137e6`；保留原有 P0 EXE，诊断版使用独立文件名，不能覆盖稳定版。
 
 ## 运行和取数
@@ -56,7 +57,9 @@ Get-Content "$HOME\.maccanvas\log.json" | ForEach-Object {
   有界的最近 256 个时间戳去重；倒序新时间戳计数但不参与时钟频率计算；统计在解密、读取 UDP 后发生，并非内核时间戳。
   `rtp_clock_fps` 用收到的相邻时间戳间隔计算，以 HEVC RTP 的 90 kHz 时钟为基准
   （[RFC 7798 §4.1](https://www.rfc-editor.org/rfc/rfc7798.html#section-4.1)）。
-  缺失整个帧会拉大间隔；这些值不能单独证明 Mac 编码器实际输出了多少帧。
+  实机日志中的 `rtp_clock_fps` 与墙钟 AU 计数不一致，Apple 流的时基假设仍需
+  核对；当前不使用此推算值归因。缺失整个帧也会拉大间隔。实际阶段帧率以
+  `count / window_seconds` 为准。
 - `stages.complete_au`：RTP 重组器产出的完整、含图像的 access unit，尚未经过
   等待关键帧的过滤；不是 UDP 包数或 NAL 数。
 - `backends.*.decoded_frames/decoded_fps`：解码调用成功输出的实际帧数。
@@ -98,4 +101,29 @@ Get-Content "$HOME\.maccanvas\log.json" | ForEach-Object {
 
 先比较至少 20 个稳定窗口的计数与耗时，不以单秒峰值下结论。P95 不能通过平均
 各秒 P95 得到整次测试 P95；跨窗口均值要按样本数加权。得到真实对比数据后，
-才选择最小修复方案。此补丁不实施上述任何候选优化。
+才选择最小修复方案。诊断基线 `1cace27` 不包含上述候选优化。
+
+
+## 最小 readback 改进（诊断 schema 2）
+
+实机 Release 日志显示输入/解码/pacer 可达约 54 FPS，而图像提交约 29.6 FPS，
+提交阶段约 18.8ms。因此仅将默认 OpenGL readback 路径改为：先创建 Slint
+`SharedPixelBuffer`，让现有原生 readback 直接填充其字节切片。减少一份临时
+RGBA Vec 的分配/初始化和一次整帧复制；不改变 D3D11 staging、纹理共享策略、
+解码器、线程、队列容量或限帧。原有返回 Vec 的 API 保留供其他路径使用。
+
+新 API 在调用原生代码前要求目标切片长度精确等于 width × height × 4，
+错误长度不写入目标。Windows 自动化测试覆盖此边界；现有 NVDEC/D3D11
+人工 GPU 测试增加两种 API 逐字节一致性及已知边界行像素验证。
+
+新增三项耗时仅在默认 GPU readback 显示路径采集：
+
+- `pixel_buffer_allocate`：创建 Slint 像素缓冲区。
+- `slint_image_construct`：从已填充缓冲区构造 Slint Image。
+- `slint_image_set`：设置 Slint 图像；样本包含缓存图像的重复设置，不等于不同帧数。
+
+`render_submit` 仍覆盖整个提交阶段，可与 schema 1 比较；`gpu_readback` 在
+schema 2 中不再包含旧 Vec 的分配/初始化，不能单独据其下降认定原生 GPU 读取
+变快。比较相同 RTX 3060 Ti/Arc、4K、HEVC60、窗口和滚动负载，重点检查完整输入、
+pacer 输出、不同帧提交率、队列覆盖、总提交耗时及新增分段耗时。改进是否有效、
+能否达到 60 FPS，以新版 Release 的实机对比为准。

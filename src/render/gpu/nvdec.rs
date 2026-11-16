@@ -145,6 +145,17 @@ impl Frame {
 
     pub fn read_rgba(&self) -> Result<Vec<u8>> {
         let mut rgba = vec![0; self.size.bytes()];
+        self.read_rgba_into(&mut rgba)?;
+        Ok(rgba)
+    }
+
+    /// Fill an exactly sized caller-owned RGBA buffer without allocating a staging Vec.
+    pub fn read_rgba_into(&self, rgba: &mut [u8]) -> Result<()> {
+        if rgba.len() != self.size.bytes() {
+            return Err(Error::Display(
+                "GPU readback buffer has an invalid size".into(),
+            ));
+        }
         let mut error = [0; 512];
         if unsafe {
             nhg_frame_read(
@@ -158,7 +169,7 @@ impl Frame {
         {
             return Err(failure(&error));
         }
-        Ok(rgba)
+        Ok(())
     }
 }
 
@@ -170,6 +181,20 @@ impl Drop for Frame {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn readback_rejects_wrong_lengths_before_calling_native_code() {
+        // This non-owning sentinel must never reach the FFI or the native destructor.
+        let frame = std::mem::ManuallyDrop::new(super::Frame {
+            native: std::ptr::NonNull::dangling(),
+            size: crate::geometry::Extent::new(64, 48).unwrap(),
+        });
+        for length in [0, 64 * 48 * 4 - 1, 64 * 48 * 4 + 1] {
+            let mut bytes = vec![0xa5; length];
+            assert!(frame.read_rgba_into(&mut bytes).is_err());
+            assert!(bytes.iter().all(|&byte| byte == 0xa5));
+        }
+    }
+
     #[test]
     #[ignore = "requires a physical GPU with HEVC 4:4:4 support"]
     fn padded_1080p_preserves_visible_rows_after_reset() {
@@ -189,7 +214,13 @@ mod tests {
             frames.extend(decoder.drain().unwrap());
             assert_eq!(frames.len(), 1);
             assert_eq!((frames[0].size.width, frames[0].size.height), (1920, 1080));
-            let rgba = frames[0].read_rgba().unwrap();
+            let reference = frames[0].read_rgba().unwrap();
+            let mut rgba = vec![0xa5; 1920 * 1080 * 4];
+            frames[0].read_rgba_into(&mut rgba).unwrap();
+            assert_eq!(
+                rgba, reference,
+                "caller-owned readback must preserve every RGBA byte"
+            );
             assert_eq!(rgba.len(), 1920 * 1080 * 4);
             for (row, value) in [(0, 32_u8), (1, 128), (1078, 128), (1079, 235)] {
                 for pixel in rgba[row * 1920 * 4..(row + 1) * 1920 * 4].chunks_exact(4) {
