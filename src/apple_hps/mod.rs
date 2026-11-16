@@ -522,9 +522,12 @@ impl Client {
             "packets_without_complete_frame"
         } else if since.is_some_and(|at| decoded.is_none_or(|last| last < at)) {
             "complete_frame_without_decode"
-        } else if decoded.is_some_and(|at| {
-            at.saturating_duration_since(submitted.unwrap_or(self.started)) > Duration::from_secs(2)
-        }) {
+        } else if crate::telemetry::recovery::presentation_stalled(
+            self.started,
+            decoded,
+            submitted,
+            now,
+        ) {
             "decoded_without_recent_submission"
         } else {
             "healthy_or_idle"

@@ -184,6 +184,18 @@ impl VideoProgress {
     }
 }
 
+pub fn presentation_stalled(
+    started: Instant,
+    decoded: Option<Instant>,
+    submitted: Option<Instant>,
+    now: Instant,
+) -> bool {
+    decoded.is_some_and(|decoded| {
+        submitted.is_none_or(|at| at < decoded)
+            && now.saturating_duration_since(submitted.unwrap_or(started)) > Duration::from_secs(2)
+    })
+}
+
 /// Cap automatic transport retries without changing the credential/Hello gate.
 pub fn automatic_retry_allowed(attempt: u32) -> bool {
     (1..=3).contains(&attempt)
@@ -332,6 +344,43 @@ mod tests {
         assert_eq!(p.last_submitted(), Some(now));
         p.submitted(8, now + Duration::from_secs(61));
         assert_eq!(p.last_submitted(), Some(now + Duration::from_secs(61)));
+    }
+    #[test]
+    fn first_and_static_decoded_frames_without_submission_are_visible_in_diagnostics() {
+        let start = Instant::now();
+        let decoded = start + Duration::from_millis(50);
+        assert!(!presentation_stalled(
+            start,
+            Some(decoded),
+            None,
+            start + Duration::from_secs(1)
+        ));
+        assert!(presentation_stalled(
+            start,
+            Some(decoded),
+            None,
+            start + Duration::from_secs(3)
+        ));
+        let submitted = start + Duration::from_secs(1);
+        let next = submitted + Duration::from_millis(50);
+        assert!(presentation_stalled(
+            start,
+            Some(next),
+            Some(submitted),
+            start + Duration::from_secs(4)
+        ));
+        assert!(!presentation_stalled(
+            start,
+            Some(next),
+            Some(next + Duration::from_millis(1)),
+            start + Duration::from_secs(4)
+        ));
+        assert!(!presentation_stalled(
+            start,
+            None,
+            None,
+            start + Duration::from_secs(4)
+        ));
     }
     #[test]
     fn reconnect_attempts_are_finite() {
