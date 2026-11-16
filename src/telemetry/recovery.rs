@@ -69,6 +69,7 @@ pub struct VideoWatchdog {
     resume: Option<Resume>,
     reset: bool,
     next_episode: u64,
+    presentation_pending: Option<Instant>,
 }
 impl VideoWatchdog {
     pub fn packet(&mut self, now: Instant) {
@@ -116,6 +117,12 @@ impl VideoWatchdog {
         now: Instant,
         submitted: Option<Instant>,
     ) -> Option<ObservationUpdate> {
+        if self
+            .presentation_pending
+            .is_some_and(|decoded| submitted.is_some_and(|at| at >= decoded))
+        {
+            self.presentation_pending = None;
+        }
         let r = self.resume.as_mut()?;
         let until = r.episode.observing_until?;
         let fresh_submission = r.episode.observation_submitted.is_none()
@@ -130,6 +137,9 @@ impl VideoWatchdog {
         }
         let episode = r.episode;
         if now >= until {
+            if episode.observation_submitted.is_none() {
+                self.presentation_pending = episode.observation_decoded;
+            }
             self.resume = None;
             return Some(ObservationUpdate {
                 reason: if episode.observation_submitted.is_some() {
@@ -150,7 +160,17 @@ impl VideoWatchdog {
         self.resume.as_ref().map(|r| r.episode)
     }
 
+    pub fn needs_observation(&self) -> bool {
+        self.resume.is_some() || self.presentation_pending.is_some()
+    }
+    pub fn presentation_pending(&self) -> bool {
+        self.presentation_pending.is_some()
+    }
+
     pub fn resume(&mut self, now: Instant) -> bool {
+        if self.presentation_pending.is_some() {
+            return false;
+        }
         if let Some(r) = &mut self.resume {
             if r.episode.observing_until.is_some() {
                 // A decoded frame stuck before the UI is a presentation problem.
@@ -366,6 +386,26 @@ mod tests {
         assert!(done.episode.first_submitted.is_none());
         assert!(w.episode().is_none());
         assert_eq!(w.action(start + Duration::from_secs(32)), VideoAction::Wait);
+        assert!(w.presentation_pending());
+        assert!(!w.resume(start + Duration::from_secs(32)));
+        w.advance(start + Duration::from_secs(33), Some(start));
+        assert!(w.presentation_pending());
+        w.advance(
+            start + Duration::from_secs(34),
+            Some(start + Duration::from_secs(34)),
+        );
+        assert!(!w.presentation_pending());
+        assert!(w.resume(start + Duration::from_secs(35)));
+    }
+    #[test]
+    fn unsubmitted_background_frames_do_not_block_the_first_resume_request() {
+        let start = Instant::now();
+        let mut w = VideoWatchdog::default();
+        w.decoded(start);
+        w.advance(start + Duration::from_secs(900), None);
+        assert!(!w.presentation_pending());
+        assert!(w.resume(start + Duration::from_secs(900)));
+        assert_eq!(w.requested_at(), Some(start + Duration::from_secs(900)));
     }
     #[test]
     fn continuous_frames_do_not_slide_the_observation_deadline() {
