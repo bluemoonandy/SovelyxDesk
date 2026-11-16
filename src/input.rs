@@ -208,7 +208,8 @@ impl Command {
                 writer.write_all(&y.to_be_bytes())?;
             }
             Self::Key { keysym, down } => {
-                writer.write_all(&keyboard::Key { keysym, down }.packet())?;
+                writer.write_all(&[4, u8::from(down), 0, 0])?;
+                writer.write_all(&keysym.to_be_bytes())?;
             }
             Self::Refresh { size, incremental } => {
                 writer.write_all(&[3, u8::from(incremental), 0, 0, 0, 0])?;
