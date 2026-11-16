@@ -57,6 +57,7 @@ struct State {
     connection_credentials: Option<CredentialSource>,
     reconnect: Option<Reconnect>,
     reconnect_attempt: u32,
+    resume_foreground: bool,
     files: files_ui::Files,
     retired: Vec<Session>,
     audit: Scope,
@@ -119,6 +120,17 @@ impl State {
             .as_ref()
             .ok_or_else(|| Error::Protocol("No active connection".into()))?
             .send(command)
+    }
+
+    fn video_submitted(&self, number: u64) {
+        if let Some(session) = &self.session
+            && session.uses_hevc()
+        {
+            session
+                .counters
+                .video_progress
+                .submitted(number, Instant::now());
+        }
     }
 
     fn flush_pointer(&mut self) -> Result<()> {
@@ -355,6 +367,7 @@ fn refresh_layout(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
                     SharedPixelBuffer::<Rgba8Pixel>::new(frame.size.width, frame.size.height);
                 pixels.make_mut_bytes().copy_from_slice(&frame.rgba);
                 app.set_frame_image(slint::Image::from_rgba8(pixels));
+                state.video_submitted(state.frame_number);
                 if let (Some(d), Some(started)) = (diagnostics, started) {
                     d.submitted(state.frame_number, started.elapsed());
                 }
@@ -503,6 +516,7 @@ fn tick_video(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
             );
             pixels.make_mut_bytes().copy_from_slice(&rendered.rgba);
             app.set_frame_image(slint::Image::from_rgba8(pixels));
+            state.borrow().video_submitted(rendered.frame_number);
             if let (Some(d), Some(started)) = (&rendered.diagnostics, started) {
                 d.submitted(rendered.frame_number, started.elapsed());
             }
@@ -735,12 +749,18 @@ fn apply_streaming(
 fn connection_ended(app: &App, state: &Rc<RefCell<State>>, retryable: bool) -> Result<()> {
     let pending = {
         let state = state.borrow();
+        let attempt = state.reconnect_attempt.saturating_add(1);
+        if retryable && !telemetry::recovery::automatic_retry_allowed(attempt) {
+            state.audit.event("session.reconnect.stopped",Level::Warn,json!({
+                "session.reconnect.reason":"automatic_retry_limit", "session.reconnect.attempt":attempt,
+            }))?;
+        }
         if retryable
+            && telemetry::recovery::automatic_retry_allowed(attempt)
             && (app.get_connected() || state.reconnect_attempt != 0)
             && state.session.as_ref().is_some_and(Session::uses_hevc)
             && state.audit.audit().failure().is_none()
         {
-            let attempt = state.reconnect_attempt.saturating_add(1);
             let delay = reconnect_delay(attempt);
             let profile = state.connection_profile.clone().ok_or_else(|| {
                 Error::Protocol("The interrupted connection profile is unavailable".into())
@@ -785,6 +805,27 @@ fn connection_ended(app: &App, state: &Rc<RefCell<State>>, retryable: bool) -> R
             .into(),
         );
     }
+    Ok(())
+}
+
+fn tick_video_resume(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
+    let mut state = state.borrow_mut();
+    let connected = app.get_connected() && state.session.as_ref().is_some_and(Session::uses_hevc);
+    let foreground = connected
+        && app.get_canvas_focused()
+        && !app.get_modal_open()
+        && native::foreground(window_handle(app)?);
+    if foreground
+        && !state.resume_foreground
+        && let (Some(session), Some(size)) = (&state.session, state.source_size)
+    {
+        // An incremental UI refresh is a resume hint, not periodic mouse activity.
+        session.send(Command::Refresh {
+            size,
+            incremental: true,
+        })?;
+    }
+    state.resume_foreground = foreground;
     Ok(())
 }
 
@@ -1256,6 +1297,7 @@ pub fn run(
         connection_credentials: None,
         reconnect: None,
         reconnect_attempt: 0,
+        resume_foreground: false,
         files: files_ui::Files::default(),
         retired: Vec::new(),
         audit,
@@ -1361,7 +1403,7 @@ pub fn run(
                         image_submitted = true;
                     } else {
                         if sharing_failed { shared_gpu = None; }
-                        let current = diagnostics.as_ref().map(|_| Arc::as_ptr(&frame));
+                        let current = Arc::as_ptr(&frame);
                         let unchanged = fallback_image.as_ref().is_some_and(|(previous, _)| Arc::ptr_eq(previous, &frame));
                         if !unchanged {
                             let allocate_started = diagnostics.as_ref().map(|_| Instant::now());
@@ -1392,10 +1434,11 @@ pub fn run(
                             let set_started = diagnostics.as_ref().map(|_| Instant::now());
                             app.set_frame_image(image.clone());
                             if let (Some(d),Some(started)) = (&diagnostics,set_started) { d.timing(telemetry::hevc::Timing::SlintImageSet,started.elapsed()); }
-                            image_submitted = current.is_some_and(|current| fallback_image.as_ref().is_some_and(|(previous,_)| Arc::as_ptr(previous)==current));
+                            image_submitted = fallback_image.as_ref().is_some_and(|(previous,_)| Arc::as_ptr(previous)==current);
                         }
                     }
                 }
+                if image_submitted { render_state.borrow().video_submitted(number); }
                 if let (Some(d),Some(started)) = (diagnostics,submit_started) {
                     if image_submitted { d.submitted(number,started.elapsed()); }
                     // CPU frames were submitted earlier; only count them after submission.
@@ -2131,6 +2174,11 @@ pub fn run(
                             if credentials_saved {
                                 state.connection_credentials = Some(CredentialSource::Saved);
                             }
+                            if state.reconnect_attempt != 0 {
+                                let _ = state.audit.event("session.reconnect.completed",Level::Info,json!({
+                                    "session.reconnect.attempt":state.reconnect_attempt,"event.outcome":"success",
+                                }));
+                            }
                             state.reconnect_attempt = 0;
                             state.connection_profile = Some(profile.clone());
                             if let Some(index) = state
@@ -2247,6 +2295,7 @@ pub fn run(
                     }
                 }
                 tick_reconnect(&app, &timer_state, &events)?;
+                tick_video_resume(&app, &timer_state)?;
                 tick_clipboard(&app, &mut timer_state.borrow_mut())?;
                 files_ui::tick(&app,&mut timer_state.borrow_mut())?;
                 tick_video(&app, &timer_state)?;
@@ -2345,7 +2394,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn continuous_reconnect_backoff_is_capped_but_never_exhausted() {
+    fn reconnect_backoff_delay_remains_capped() {
         for (attempt, seconds) in [(1, 1), (2, 2), (3, 4), (4, 8), (5, 16), (6, 30)] {
             assert_eq!(reconnect_delay(attempt), Duration::from_secs(seconds));
         }

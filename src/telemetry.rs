@@ -1,4 +1,5 @@
 pub mod hevc;
+pub mod recovery;
 
 use std::{
     collections::VecDeque,
@@ -19,6 +20,7 @@ pub struct Counters {
     pub encoding: AtomicI32,
     pub decoder: AtomicI32,
     pub hevc: Option<Arc<hevc::Diagnostics>>,
+    pub video_progress: recovery::VideoProgress,
 }
 
 impl Counters {

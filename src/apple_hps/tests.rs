@@ -610,3 +610,42 @@ fn a_quiet_encoder_suspends_recovery_and_resuming_video_restarts_its_grace_perio
     watchdog.packet(resumed);
     assert_eq!(watchdog.action(resumed), super::VideoAction::Wait);
 }
+
+#[test]
+fn resume_requires_activity_not_mouse_motion_or_modifier_release() {
+    use crate::input::{CONTROL, ScrollSteps};
+    assert!(!super::resume_activity(Command::Pointer {
+        x: 40,
+        y: 30,
+        buttons: 0
+    }));
+    assert!(super::resume_activity(Command::Pointer {
+        x: 40,
+        y: 30,
+        buttons: 1
+    }));
+    assert!(!super::resume_activity(Command::Key {
+        keysym: CONTROL,
+        down: true
+    }));
+    assert!(!super::resume_activity(Command::Key {
+        keysym: 99,
+        down: false
+    }));
+    assert!(super::resume_activity(Command::Key {
+        keysym: 99,
+        down: true
+    }));
+    assert!(super::resume_activity(Command::Scroll {
+        x: 40,
+        y: 30,
+        buttons: 0,
+        steps: ScrollSteps::new(0, 1).unwrap()
+    }));
+    assert!(!super::resume_activity(Command::Scroll {
+        x: 40,
+        y: 30,
+        buttons: 0,
+        steps: ScrollSteps::new(0, 0).unwrap()
+    }));
+}

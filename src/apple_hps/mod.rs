@@ -35,6 +35,7 @@ use crate::{
 };
 
 use crate::telemetry::hevc::{Configuration as DiagnosticConfiguration, Event as DiagnosticEvent};
+use crate::telemetry::recovery::{Phase, VideoAction, VideoWatchdog};
 use control::{Channel, Notice};
 use crypto::{Packet, Srtcp, Srtp, SrtpSender};
 use offers::Offers;
@@ -86,55 +87,12 @@ fn send_udp(
     Ok(())
 }
 
-#[derive(Debug, PartialEq, Eq)]
-enum VideoAction {
-    Wait,
-    Recover,
-    Reconnect,
-}
-
-#[derive(Default)]
-struct VideoWatchdog {
-    waiting_since: Option<Instant>,
-    last_packet: Option<Instant>,
-}
-
-impl VideoWatchdog {
-    fn packet(&mut self, now: Instant) {
-        if self
-            .last_packet
-            .is_none_or(|last| now.saturating_duration_since(last) >= Duration::from_secs(1))
-            && self.waiting_since.is_some()
-        {
-            // A quiet desktop must get a fresh recovery window when video resumes.
-            self.waiting_since = Some(now);
-        }
-        self.last_packet = Some(now);
-    }
-
-    fn expect_picture(&mut self, now: Instant) {
-        self.waiting_since.get_or_insert(now);
-    }
-
-    fn decoded(&mut self) {
-        self.waiting_since = None;
-    }
-
-    fn action(&self, now: Instant) -> VideoAction {
-        if self
-            .last_packet
-            .is_none_or(|last| now.saturating_duration_since(last) >= Duration::from_secs(1))
-        {
-            return VideoAction::Wait;
-        }
-        match self
-            .waiting_since
-            .map(|since| now.saturating_duration_since(since))
-        {
-            Some(wait) if wait > Duration::from_secs(30) => VideoAction::Reconnect,
-            Some(wait) if wait > Duration::from_secs(10) => VideoAction::Recover,
-            _ => VideoAction::Wait,
-        }
+fn resume_activity(command: Command) -> bool {
+    match command {
+        Command::Scroll { steps, .. } => !steps.is_empty(),
+        Command::Pointer { buttons, .. } => buttons & 7 != 0,
+        Command::Key { keysym, down } => down && !matches!(keysym, 0xffe1..=0xffee),
+        _ => false,
     }
 }
 
@@ -176,6 +134,12 @@ pub struct Client {
     last_frame: Instant,
     pacer: crate::render::Pacer<Frame>,
     watchdog: VideoWatchdog,
+    last_video_udp: Option<Instant>,
+    last_resume_operation: Option<Instant>,
+    refresh_requests: u64,
+    keyframe_requests: u64,
+    decoder_resets: u64,
+    recovery_status: Option<(Phase, &'static str)>,
     started: Instant,
     fps_ceiling: u16,
     diagnostic_max_fps: u16,
@@ -369,6 +333,12 @@ impl Client {
             last_frame: now,
             pacer: crate::render::Pacer::new(settings.max_fps.min(settings.encoding.fps_ceiling())),
             watchdog: VideoWatchdog::default(),
+            last_video_udp: None,
+            last_resume_operation: None,
+            refresh_requests: 0,
+            keyframe_requests: 0,
+            decoder_resets: 0,
+            recovery_status: None,
             started: now,
             fps_ceiling: if sixty_fps { 60 } else { 30 },
             diagnostic_max_fps: settings.max_fps,
@@ -479,7 +449,14 @@ impl Client {
                 }
                 Ok(())
             }
-            Command::Refresh { .. } => self.request_keyframe(),
+            Command::Refresh { incremental, .. } => self.resume_video(
+                if incremental {
+                    "canvas_returned"
+                } else {
+                    "refresh_requested"
+                },
+                !incremental,
+            ),
             Command::Configure(settings) => {
                 settings.validate()?;
                 if !settings.encoding.is_hevc()
@@ -495,8 +472,81 @@ impl Client {
                 self.configure_diagnostics(settings.max_fps);
                 Ok(())
             }
-            other => self.channel.input(other, self.scaled, self.backing),
+            other => {
+                self.channel.input(other, self.scaled, self.backing)?;
+                if resume_activity(other) {
+                    self.resume_video("input_activity", false)?;
+                }
+                Ok(())
+            }
         }
+    }
+
+    fn resume_video(&mut self, reason: &'static str, explicit: bool) -> Result<()> {
+        let now = Instant::now();
+        self.last_resume_operation = Some(now);
+        if self.decoded == 0 || (!explicit && self.last_frame.elapsed() < Duration::from_secs(2)) {
+            return Ok(());
+        }
+        if self.watchdog.resume(now) {
+            self.refresh_video()?;
+            self.log_recovery(now, reason, true, true)?;
+        }
+        Ok(())
+    }
+
+    fn refresh_video(&mut self) -> Result<()> {
+        // Reuse the existing HPS refresh region; do not renegotiate video or geometry.
+        self.channel.send(&control::refresh(self.backing))?;
+        self.refresh_requests = self.refresh_requests.saturating_add(1);
+        self.request_keyframe()
+    }
+
+    fn log_recovery(
+        &mut self,
+        now: Instant,
+        reason: &'static str,
+        control_ok: bool,
+        force: bool,
+    ) -> Result<()> {
+        let submitted = self.counters.video_progress.last_submitted();
+        let decoded = (self.decoded != 0).then_some(self.last_frame);
+        let phase = self.watchdog.phase(now);
+        let since = self.watchdog.requested_at();
+        let stage = if since
+            .is_some_and(|at| self.watchdog.last_packet().is_none_or(|last| last < at))
+        {
+            "no_video_packets_after_request"
+        } else if since.is_some_and(|at| self.watchdog.last_complete().is_none_or(|last| last < at))
+        {
+            "packets_without_complete_frame"
+        } else if since.is_some_and(|at| decoded.is_none_or(|last| last < at)) {
+            "complete_frame_without_decode"
+        } else if decoded.is_some_and(|at| {
+            at.saturating_duration_since(submitted.unwrap_or(self.started)) > Duration::from_secs(2)
+        }) {
+            "decoded_without_recent_submission"
+        } else {
+            "healthy_or_idle"
+        };
+        if !force && self.recovery_status == Some((phase, stage)) {
+            return Ok(());
+        }
+        let age =
+            |at: Option<Instant>| at.map(|at| now.saturating_duration_since(at).as_millis() as u64);
+        self.scope.event("media.hevc.resume.state",Level::Info,json!({
+            "media.resume.state":phase.name(), "media.resume.reason":reason, "media.resume.stage":stage,
+            "media.last_udp_age_ms":age(self.last_video_udp),
+            "media.last_authenticated_video_age_ms":age(self.watchdog.last_packet()),
+            "media.last_complete_frame_age_ms":age(self.watchdog.last_complete()),
+            "media.last_decoded_age_ms":age(decoded),"media.last_submitted_age_ms":age(submitted),
+            "media.last_resume_operation_age_ms":age(self.last_resume_operation),
+            "media.resume_request_age_ms":age(since), "control.poll_ok":control_ok,
+            "media.refresh_requests":self.refresh_requests,"media.keyframe_requests":self.keyframe_requests,
+            "media.decoder_resets":self.decoder_resets,
+        }))?;
+        self.recovery_status = Some((phase, stage));
+        Ok(())
     }
 
     pub fn request_keyframe(&mut self) -> Result<()> {
@@ -516,10 +566,14 @@ impl Client {
             &self.counters,
         )?;
         self.last_fir = Instant::now();
+        self.keyframe_requests = self.keyframe_requests.saturating_add(1);
         Ok(())
     }
 
     fn recovery(&mut self, reason: &str) -> Result<()> {
+        if self.watchdog.reset_pending() {
+            return Ok(());
+        }
         self.watchdog.expect_picture(Instant::now());
         self.need_keyframe = true;
         if let Some(d) = &self.counters.hevc {
@@ -550,7 +604,10 @@ impl Client {
             self.hardware = None;
         }
         self.need_keyframe = true;
-        self.request_keyframe()
+        self.decoder_resets = self.decoder_resets.saturating_add(1);
+        self.watchdog.recovery_sent();
+        self.request_keyframe()?;
+        self.log_recovery(Instant::now(), "decoder_recovery", true, true)
     }
 
     fn media(&mut self, data: &[u8], now: Instant) -> Result<()> {
@@ -699,7 +756,14 @@ impl Client {
             }))?;
             self.last_stats = now;
         }
-        for notice in self.channel.poll()? {
+        let notices = match self.channel.poll() {
+            Ok(notices) => notices,
+            Err(error) => {
+                self.log_recovery(now, "control_channel_failed", false, true)?;
+                return Err(error);
+            }
+        };
+        for notice in notices {
             match notice {
                 Notice::Canvas(size) => {
                     self.encoded = size;
@@ -751,6 +815,7 @@ impl Client {
             }
             match self.video_socket.recv_from(&mut buffer) {
                 Ok((length, peer)) if peer == self.video_peer => {
+                    self.last_video_udp = Some(Instant::now());
                     if let Some(d) = &self.counters.hevc {
                         d.video_bytes(length);
                     }
@@ -887,7 +952,7 @@ impl Client {
             }
         }
         for unit in units {
-            self.watchdog.expect_picture(now);
+            self.watchdog.complete_frame(Instant::now());
             if self.need_keyframe && !unit.random_access {
                 if let Some(d) = &self.counters.hevc {
                     d.event(DiagnosticEvent::WaitingKeyframe, 1);
@@ -909,7 +974,7 @@ impl Client {
                         }
                         self.backing = size;
                         self.decoded += 1;
-                        self.last_frame = now;
+                        self.last_frame = Instant::now();
                         self.watchdog.decoded();
                         self.counters
                             .encoding
@@ -947,7 +1012,7 @@ impl Client {
                 }
             }
         }
-        if self.need_keyframe {
+        if self.need_keyframe && !self.watchdog.pending() {
             self.request_keyframe()?;
         }
         if self.decoded == 0 && self.video_started.elapsed() > Duration::from_secs(20) {
@@ -958,16 +1023,24 @@ impl Client {
         if self.decoded != 0 {
             match self.watchdog.action(now) {
                 VideoAction::Wait => (),
+                VideoAction::Refresh => {
+                    self.refresh_video()?;
+                    self.watchdog.refreshed();
+                    self.log_recovery(now, "resume_refresh_retry", true, true)?;
+                }
                 VideoAction::Recover => {
                     self.recovery("HEVC video is arriving without a complete picture")?;
                 }
                 VideoAction::Reconnect => {
+                    self.watchdog.reconnecting();
+                    self.log_recovery(now, "video_recovery_timeout", true, true)?;
                     return Err(Error::ConnectionLost(
                         "HEVC video could not recover a complete picture".into(),
                     ));
                 }
             }
         }
+        self.log_recovery(Instant::now(), "video_progress", true, false)?;
         let frame = self.pacer.take(Instant::now());
         if frame.is_some()
             && let Some(d) = &self.counters.hevc
