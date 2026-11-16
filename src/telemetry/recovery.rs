@@ -152,7 +152,13 @@ impl VideoWatchdog {
 
     pub fn resume(&mut self, now: Instant) -> bool {
         if let Some(r) = &mut self.resume {
-            if r.episode.observing_until.take().is_some() {
+            if r.episode.observing_until.is_some() {
+                // A decoded frame stuck before the UI is a presentation problem.
+                // Do not use further input to turn that into network reconnection.
+                if r.episode.observation_submitted.is_none() {
+                    return false;
+                }
+                r.episode.observing_until = None;
                 r.episode.observation_decoded = None;
                 r.episode.observation_submitted = None;
                 r.episode.attempts = r.episode.attempts.saturating_add(1);
@@ -306,6 +312,10 @@ mod tests {
         w.resume(start);
         w.packet(start + Duration::from_secs(1));
         w.decoded(start + Duration::from_secs(1));
+        w.advance(
+            start + Duration::from_millis(1020),
+            Some(start + Duration::from_millis(1020)),
+        );
         assert!(w.resume(start + Duration::from_secs(3)));
         assert_eq!(w.requested_at(), Some(start));
         assert_eq!(
@@ -348,6 +358,8 @@ mod tests {
             w.advance(start + Duration::from_secs(2), Some(start))
                 .is_none()
         );
+        assert!(!w.resume(start + Duration::from_secs(3)));
+        assert_eq!(w.phase(start + Duration::from_secs(3)), Phase::Stabilizing);
         assert_eq!(w.action(start + Duration::from_secs(31)), VideoAction::Wait);
         let done = w.advance(start + Duration::from_secs(31), None).unwrap();
         assert_eq!(done.reason, "observation_expired_without_submission");

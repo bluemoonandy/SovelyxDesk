@@ -511,6 +511,15 @@ impl Client {
         if self.decoded == 0 || (!explicit && self.last_frame.elapsed() < Duration::from_secs(2)) {
             return Ok(());
         }
+        if crate::telemetry::recovery::presentation_stalled(
+            self.started,
+            Some(self.last_frame),
+            self.counters.video_progress.last_submitted(),
+            now,
+        ) {
+            self.log_recovery(now, "presentation_pending_no_network_restart", true, false)?;
+            return Ok(());
+        }
         if self.watchdog.resume(now) {
             self.refresh_video()?;
             self.log_recovery(now, reason, true, true)?;
