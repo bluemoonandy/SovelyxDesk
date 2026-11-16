@@ -171,6 +171,38 @@ impl Drop for Frame {
 #[cfg(test)]
 mod tests {
     #[test]
+    #[ignore = "requires a physical GPU with HEVC 4:4:4 support"]
+    fn padded_1080p_preserves_visible_rows_after_reset() {
+        let adapter = super::super::adapters()
+            .unwrap()
+            .into_iter()
+            .find(|adapter| adapter.vendor_id == 0x10de)
+            .expect("compatible adapter");
+        let mut decoder = super::Decoder::new(adapter.index).unwrap();
+        let sample = include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/crates/native-hevc/tests/data/padding1080_444.hevc"
+        ));
+        for timestamp in [1080, 1081] {
+            decoder.reset().unwrap();
+            let mut frames = decoder.push(sample, timestamp).unwrap();
+            frames.extend(decoder.drain().unwrap());
+            assert_eq!(frames.len(), 1);
+            assert_eq!((frames[0].size.width, frames[0].size.height), (1920, 1080));
+            let rgba = frames[0].read_rgba().unwrap();
+            assert_eq!(rgba.len(), 1920 * 1080 * 4);
+            for (row, value) in [(0, 32_u8), (1, 128), (1078, 128), (1079, 235)] {
+                for pixel in rgba[row * 1920 * 4..(row + 1) * 1920 * 4].chunks_exact(4) {
+                    for channel in &pixel[..3] {
+                        assert!(channel.abs_diff(value) <= 1, "visible row {row}");
+                    }
+                    assert_eq!(pixel[3], 255);
+                }
+            }
+        }
+    }
+
+    #[test]
     #[ignore = "manual NVIDIA unsupported-format fallback check"]
     fn unsupported_chroma_is_rejected_for_software_fallback() {
         let adapter = super::super::adapters()

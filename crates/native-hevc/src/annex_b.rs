@@ -3,10 +3,108 @@ use crate::{Error, MAX_INPUT_BYTES, Result, validate_dimensions};
 pub const MAX_NALS: usize = 4096;
 const MAX_PARAMETER_SET_BYTES: usize = 64 * 1024;
 
+/// A rectangle in luma pixels, independent of decoder allocation alignment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DisplayRegion {
+    pub left: u32,
+    pub top: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
+impl DisplayRegion {
+    pub fn validate(self, width: u32, height: u32) -> Result<Self> {
+        validate_dimensions(width, height)?;
+        validate_dimensions(self.width, self.height)?;
+        if self
+            .left
+            .checked_add(self.width)
+            .is_none_or(|right| right > width)
+            || self
+                .top
+                .checked_add(self.height)
+                .is_none_or(|bottom| bottom > height)
+        {
+            return Err(Error::InvalidInput(
+                "display aperture exceeds the output frame",
+            ));
+        }
+        Ok(self)
+    }
+
+    /// Decode the Windows MFVideoArea blob without depending on Windows APIs.
+    /// Fractional origins require resampling and are deliberately not rounded.
+    pub fn from_mf_aperture(bytes: &[u8]) -> Result<Self> {
+        if bytes.len() != 16 {
+            return Err(Error::InvalidInput("invalid MFVideoArea length"));
+        }
+        if bytes[0..2] != [0, 0] || bytes[4..6] != [0, 0] {
+            return Err(Error::InvalidInput(
+                "fractional display aperture is unsupported",
+            ));
+        }
+        let left = i16::from_le_bytes(bytes[2..4].try_into().unwrap());
+        let top = i16::from_le_bytes(bytes[6..8].try_into().unwrap());
+        let width = i32::from_le_bytes(bytes[8..12].try_into().unwrap());
+        let height = i32::from_le_bytes(bytes[12..16].try_into().unwrap());
+        if left < 0 || top < 0 || width <= 0 || height <= 0 {
+            return Err(Error::InvalidInput("invalid display aperture coordinates"));
+        }
+        Ok(Self {
+            left: left as u32,
+            top: top as u32,
+            width: width as u32,
+            height: height as u32,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SequenceInfo {
+    pub coded_width: u32,
+    pub coded_height: u32,
+    pub visible: DisplayRegion,
+}
+
+impl SequenceInfo {
+    /// Resolve the decoder's output coordinates, without applying cropping twice.
+    pub fn output_region(
+        self,
+        width: u32,
+        height: u32,
+        aperture: Option<DisplayRegion>,
+    ) -> Result<DisplayRegion> {
+        validate_dimensions(width, height)?;
+        if let Some(area) = aperture {
+            area.validate(width, height)?;
+            if (area.width, area.height) != (self.visible.width, self.visible.height) {
+                return Err(Error::InvalidInput(
+                    "decoder aperture conflicts with SPS conformance window",
+                ));
+            }
+            return Ok(area);
+        }
+        if (width, height) == (self.visible.width, self.visible.height) {
+            return Ok(DisplayRegion {
+                left: 0,
+                top: 0,
+                ..self.visible
+            });
+        }
+        if width < self.coded_width || height < self.coded_height {
+            return Err(Error::InvalidInput(
+                "decoder frame is smaller than the SPS picture",
+            ));
+        }
+        self.visible.validate(width, height)
+    }
+}
+
 pub struct Batch<'a> {
     pub nals: Vec<&'a [u8]>,
     pub pictures: u64,
     pub has_sps: bool,
+    pub sequence: Option<SequenceInfo>,
 }
 
 pub fn validate(input: &[u8], has_sps: bool) -> Result<Batch<'_>> {
@@ -25,6 +123,7 @@ pub fn validate(input: &[u8], has_sps: bool) -> Result<Batch<'_>> {
         nals: Vec::new(),
         pictures: 0,
         has_sps,
+        sequence: None,
     };
     let mut cursor = first + 3;
     loop {
@@ -62,7 +161,7 @@ pub fn validate(input: &[u8], has_sps: bool) -> Result<Batch<'_>> {
                     return Err(Error::ResourceLimit("parameter set exceeds 64 KiB"));
                 }
                 if kind == 33 {
-                    validate_sps(&nal[2..])?;
+                    batch.sequence = Some(validate_sps(&nal[2..])?);
                     batch.has_sps = true;
                 }
             }
@@ -90,7 +189,7 @@ fn start_code(bytes: &[u8]) -> Option<usize> {
 
 // Inspect the SPS before it reaches native code, including before native CTB/DPB
 // allocations. The native image allocator independently enforces the same bounds.
-fn validate_sps(ebsp: &[u8]) -> Result<()> {
+fn validate_sps(ebsp: &[u8]) -> Result<SequenceInfo> {
     let mut bits = Bits::new(ebsp);
     bits.skip(4)?;
     let sublayers = bits.read(3)? as usize;
@@ -131,6 +230,12 @@ fn validate_sps(ebsp: &[u8]) -> Result<()> {
     let width = bits.ue()?;
     let height = bits.ue()?;
     validate_dimensions(width, height)?;
+    let mut visible = DisplayRegion {
+        left: 0,
+        top: 0,
+        width,
+        height,
+    };
     if bits.read(1)? != 0 {
         let left = bits.ue()?;
         let right = bits.ue()?;
@@ -140,14 +245,25 @@ fn validate_sps(ebsp: &[u8]) -> Result<()> {
         let horizontal = left.checked_add(right).and_then(|v| v.checked_mul(unit));
         let vertical = top.checked_add(bottom).and_then(|v| v.checked_mul(unit));
         match (horizontal, vertical) {
-            (Some(x), Some(y)) if x < width && y < height => {}
+            (Some(x), Some(y)) if x < width && y < height => {
+                visible = DisplayRegion {
+                    left: left * unit,
+                    top: top * unit,
+                    width: width - x,
+                    height: height - y,
+                };
+            }
             _ => return Err(Error::InvalidInput("invalid SPS conformance window")),
         }
     }
     let luma = bits.ue()?.checked_add(8);
     let chroma = bits.ue()?.checked_add(8);
     match (luma, chroma) {
-        (Some(8), Some(8)) => Ok(()),
+        (Some(8), Some(8)) => Ok(SequenceInfo {
+            coded_width: width,
+            coded_height: height,
+            visible,
+        }),
         (Some(luma), Some(chroma)) => Err(Error::UnsupportedBitDepth { luma, chroma }),
         _ => Err(Error::InvalidInput("invalid SPS bit depth")),
     }
@@ -310,6 +426,151 @@ mod tests {
         writer.ue(depth_minus_8);
         writer.ue(depth_minus_8);
         writer.finish()
+    }
+
+    #[test]
+    fn reads_real_padded_1080p_parameter_sets() {
+        for data in [
+            include_bytes!("../tests/data/padding1080_420.hevc").as_slice(),
+            include_bytes!("../tests/data/padding1080_444.hevc").as_slice(),
+        ] {
+            let sequence = validate(data, false).unwrap().sequence.unwrap();
+            assert_eq!((sequence.coded_width, sequence.coded_height), (1920, 1088));
+            assert_eq!(
+                (sequence.visible.width, sequence.visible.height),
+                (1920, 1080)
+            );
+        }
+    }
+
+    #[test]
+    fn validates_mf_aperture_blob_before_using_coordinates() {
+        let mut bytes = [0; 16];
+        bytes[2..4].copy_from_slice(&8_i16.to_le_bytes());
+        bytes[6..8].copy_from_slice(&12_i16.to_le_bytes());
+        bytes[8..12].copy_from_slice(&1920_i32.to_le_bytes());
+        bytes[12..16].copy_from_slice(&1080_i32.to_le_bytes());
+        assert_eq!(
+            DisplayRegion::from_mf_aperture(&bytes).unwrap(),
+            DisplayRegion {
+                left: 8,
+                top: 12,
+                width: 1920,
+                height: 1080
+            }
+        );
+        assert!(DisplayRegion::from_mf_aperture(&bytes[..15]).is_err());
+        bytes[0] = 1;
+        assert!(DisplayRegion::from_mf_aperture(&bytes).is_err());
+        bytes[0] = 0;
+        bytes[2..4].copy_from_slice(&(-1_i16).to_le_bytes());
+        assert!(DisplayRegion::from_mf_aperture(&bytes).is_err());
+        bytes[2..4].copy_from_slice(&0_i16.to_le_bytes());
+        bytes[12..16].copy_from_slice(&0_i32.to_le_bytes());
+        assert!(DisplayRegion::from_mf_aperture(&bytes).is_err());
+    }
+
+    #[test]
+    fn exposes_1088_coded_and_1080_visible_dimensions_for_both_chroma_formats() {
+        for (chroma, bottom) in [(1, 4), (3, 8)] {
+            let data = sps(1920, 1088, chroma, 0, Some([0, 0, 0, bottom]), 0);
+            let sequence = validate(&data, false).unwrap().sequence.unwrap();
+            assert_eq!((sequence.coded_width, sequence.coded_height), (1920, 1088));
+            assert_eq!(
+                sequence.visible,
+                DisplayRegion {
+                    left: 0,
+                    top: 0,
+                    width: 1920,
+                    height: 1080
+                }
+            );
+            assert_eq!(
+                sequence.output_region(1920, 1088, None).unwrap(),
+                sequence.visible
+            );
+            // A decoder may already have applied the conformance window.
+            assert_eq!(
+                sequence.output_region(1920, 1080, None).unwrap(),
+                sequence.visible
+            );
+        }
+    }
+
+    #[test]
+    fn preserves_nonzero_crop_origins_without_double_cropping() {
+        let data = sps(1936, 1104, 3, 0, Some([8, 8, 12, 12]), 0);
+        let sequence = validate(&data, false).unwrap().sequence.unwrap();
+        assert_eq!(
+            sequence.output_region(1936, 1104, None).unwrap(),
+            DisplayRegion {
+                left: 8,
+                top: 12,
+                width: 1920,
+                height: 1080
+            }
+        );
+        let cropped = DisplayRegion {
+            left: 0,
+            top: 0,
+            width: 1920,
+            height: 1080,
+        };
+        assert_eq!(sequence.output_region(1920, 1080, None).unwrap(), cropped);
+        assert_eq!(
+            sequence
+                .output_region(1936, 1104, Some(sequence.visible))
+                .unwrap(),
+            sequence.visible
+        );
+    }
+
+    #[test]
+    fn rejects_conflicting_apertures_and_undersized_surfaces() {
+        let data = sps(1920, 1088, 3, 0, Some([0, 0, 0, 8]), 0);
+        let sequence = validate(&data, false).unwrap().sequence.unwrap();
+        for area in [
+            DisplayRegion {
+                left: 0,
+                top: 0,
+                width: 1920,
+                height: 1088,
+            },
+            DisplayRegion {
+                left: 1,
+                top: 0,
+                width: 1920,
+                height: 1080,
+            },
+            DisplayRegion {
+                left: 0,
+                top: 9,
+                width: 1920,
+                height: 1080,
+            },
+            DisplayRegion {
+                left: u32::MAX,
+                top: 0,
+                width: 1920,
+                height: 1080,
+            },
+        ] {
+            assert!(sequence.output_region(1920, 1088, Some(area)).is_err());
+        }
+        assert!(sequence.output_region(1920, 1079, None).is_err());
+        assert!(sequence.output_region(8193, 1088, None).is_err());
+    }
+
+    #[test]
+    fn no_crop_sps_does_not_invent_an_eight_line_crop() {
+        let data = sps(1920, 1088, 3, 0, None, 0);
+        let sequence = validate(&data, false).unwrap().sequence.unwrap();
+        assert_eq!(sequence.visible.height, 1088);
+        assert!(sequence.output_region(1920, 1080, None).is_err());
+        assert_eq!(
+            sequence.output_region(1920, 1088, None).unwrap().height,
+            1088
+        );
     }
 
     #[test]

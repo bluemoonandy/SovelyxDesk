@@ -8,6 +8,8 @@ New-Item -ItemType Directory -Force $scratch, $data | Out-Null
 
 # These are original synthetic YCbCr samples, not extracted images or media.
 $fixtures = @(
+    @{ Name = 'padding1080_444'; Width = 1920; Height = 1080; Frames = 1; Shift = 0; BFrames = 0; Range = 'full'; BoundaryRows = $true },
+    @{ Name = 'padding1080_420'; Width = 1920; Height = 1080; Frames = 1; Shift = 1; BFrames = 0; Range = 'full'; BoundaryRows = $true },
     @{ Name = 'pattern444'; Width = 64; Height = 48; Frames = 1; Shift = 0; BFrames = 0; Range = 'full' },
     @{ Name = 'pattern420'; Width = 64; Height = 48; Frames = 7; Shift = 1; BFrames = 2; Range = 'full' },
     @{ Name = 'cropped420'; Width = 62; Height = 46; Frames = 1; Shift = 1; BFrames = 0; Range = 'limited' },
@@ -20,6 +22,17 @@ foreach ($fixture in $fixtures) {
     try {
         for ($frame = 0; $frame -lt $fixture.Frames; $frame++) {
             for ($channel = 0; $channel -lt 3; $channel++) {
+                if ($fixture.BoundaryRows) {
+                    $shift = if ($channel -eq 0) { 0 } else { $fixture.Shift }
+                    $width = $fixture.Width -shr $shift
+                    $height = $fixture.Height -shr $shift
+                    for ($row = 0; $row -lt $height; $row++) {
+                        $value = if ($channel -ne 0) { 128 } elseif ($row -eq 0) { 32 } elseif ($row -eq $height - 1) { 235 } else { 128 }
+                        $pixels = [byte[]](@($value) * $width)
+                        $stream.Write($pixels, 0, $pixels.Length)
+                    }
+                    continue
+                }
                 if ($fixture.Quadrants) {
                     # Full-range BT.709 red, green, blue, white, rounded to YCbCr8.
                     $topLeft = @(54, 99, 255)
@@ -61,6 +74,7 @@ foreach ($fixture in $fixtures) {
     $format = if ($fixture.Shift -eq 0) { 'yuv444p' } else { 'yuv420p' }
     $profile = if ($fixture.Shift -eq 0) { 'main444-8' } else { 'main' }
     $parameters = 'lossless=1:colorprim=bt709:transfer=bt709:colormatrix=bt709:repeat-headers=1:aud=1:info=0:pools=none:wpp=0:frame-threads=1:log-level=error:b-adapt=0:open-gop=0'
+    if ($fixture.BoundaryRows) { $parameters += ':min-cu-size=16' }
     $keyint = if ($fixture.Quadrants) { 1 } else { 30 }
     $parameters += ":keyint=${keyint}:range=$($fixture.Range):bframes=$($fixture.BFrames)"
     try {

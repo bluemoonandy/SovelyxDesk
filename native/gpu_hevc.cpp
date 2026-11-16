@@ -212,7 +212,7 @@ struct Converter {
   }
 
   std::unique_ptr<Frame> convert(ID3D11Texture2D* source, uint32_t subresource,
-                                uint32_t visible_width, uint32_t visible_height,
+                                uint32_t left, uint32_t top, uint32_t visible_width, uint32_t visible_height,
                                 bool full_range, IUnknown* sample) {
     if (!source || visible_width == 0 || visible_height == 0 || visible_width > 8192 || visible_height > 8192 ||
         static_cast<uint64_t>(visible_width) * visible_height > 16777216) {
@@ -221,7 +221,8 @@ struct Converter {
     D3D11_TEXTURE2D_DESC source_description{};
     source->GetDesc(&source_description);
     if (source_description.Format != DXGI_FORMAT_AYUV || !(source_description.BindFlags & D3D11_BIND_DECODER) ||
-        source_description.Width < visible_width || source_description.Height < visible_height ||
+        static_cast<uint64_t>(left) + visible_width > source_description.Width ||
+        static_cast<uint64_t>(top) + visible_height > source_description.Height ||
         subresource >= source_description.MipLevels * source_description.ArraySize) {
       throw std::runtime_error("D3D11 output is not a hardware decoder-bound 4:4:4 AYUV surface");
     }
@@ -263,7 +264,7 @@ struct Converter {
       checked(device->CreateTexture2D(&description, nullptr, &output->texture), "CreateTexture2D(D3D11 RGBA)");
       pool.push_back(output);
     }
-    D3D11_BOX region{0, 0, 0, width, height, 1};
+    D3D11_BOX region{left, top, 0, left + width, top + height, 1};
     context->CopySubresourceRegion(input.Get(), 0, 0, 0, 0, source, subresource, &region);
     ComPtr<ID3D11RenderTargetView> target;
     checked(device->CreateRenderTargetView(output->texture.Get(), nullptr, &target), "CreateRenderTargetView(D3D11)");
@@ -621,11 +622,11 @@ void* nhg_converter_new(void* device, char* error, size_t capacity) noexcept {
 void nhg_converter_free(void* converter) noexcept { delete static_cast<Converter*>(converter); }
 
 void* nhg_converter_frame(void* converter, void* texture, uint32_t subresource,
-                          uint32_t width, uint32_t height, int full_range, void* sample,
+                          uint32_t left, uint32_t top, uint32_t width, uint32_t height, int full_range, void* sample,
                           char* error, size_t capacity) noexcept {
   try {
     return static_cast<Converter*>(converter)->convert(static_cast<ID3D11Texture2D*>(texture),
-        subresource, width, height, full_range != 0, static_cast<IUnknown*>(sample)).release();
+        subresource, left, top, width, height, full_range != 0, static_cast<IUnknown*>(sample)).release();
   } catch (const std::exception& failure) { message(error, capacity, failure.what()); }
   catch (...) { message(error, capacity, "Cannot convert D3D11 hardware output"); }
   return nullptr;

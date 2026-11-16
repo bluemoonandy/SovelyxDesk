@@ -593,7 +593,16 @@ impl Client {
 
     fn decode_video(&mut self, unit: &rtp::Unit) -> Result<Vec<Frame>> {
         if let Some(hardware) = self.hardware.as_mut() {
-            match hardware.push(&unit.annex_b, unit.timestamp) {
+            let decoded = hardware.push(&unit.annex_b, unit.timestamp).and_then(|frames| {
+                if let Some(frame) = frames.iter().find(|frame| frame.size != self.encoded) {
+                    return Err(failed(format!(
+                        "hardware decoded picture {}x{} does not match the negotiated {}x{} canvas",
+                        frame.size.width, frame.size.height, self.encoded.width, self.encoded.height
+                    )));
+                }
+                Ok(frames)
+            });
+            match decoded {
                 Ok(frames) => return Ok(frames.into_iter().map(Frame::Gpu).collect()),
                 Err(error) => {
                     self.scope.event(

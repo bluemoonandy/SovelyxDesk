@@ -17,6 +17,7 @@ mod annex_b;
 mod color;
 mod error;
 mod ffi;
+mod limits;
 
 #[cfg(test)]
 mod perf_tests;
@@ -26,11 +27,16 @@ use std::{
     ptr::NonNull,
 };
 
+pub use annex_b::{DisplayRegion, SequenceInfo};
 pub use error::{Error, Result};
 
-pub const MAX_DIMENSION: u32 = 8192;
-pub const MAX_PIXELS: u64 = 16_777_216;
-pub const MAX_INPUT_BYTES: usize = 64 * 1024 * 1024;
+/// Validate an access unit and return its latest SPS geometry, if present.
+pub fn inspect_sequence(input: &[u8], has_sps: bool) -> Result<Option<SequenceInfo>> {
+    Ok(annex_b::validate(input, has_sps)?.sequence)
+}
+
+use limits::validate_dimensions;
+pub use limits::{MAX_DIMENSION, MAX_INPUT_BYTES, MAX_PIXELS};
 const MAX_OUTPUT_BYTES: usize = 256 * 1024 * 1024;
 const MAX_OUTPUT_FRAMES: usize = 256;
 
@@ -235,17 +241,4 @@ fn native_error(code: i32) -> Error {
         }
     };
     Error::Native { code, message }
-}
-
-fn validate_dimensions(width: u32, height: u32) -> Result<()> {
-    if width == 0
-        || height == 0
-        || width > MAX_DIMENSION
-        || height > MAX_DIMENSION
-        || u64::from(width) * u64::from(height) > MAX_PIXELS
-    {
-        Err(Error::InvalidDimensions { width, height })
-    } else {
-        Ok(())
-    }
 }

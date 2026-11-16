@@ -38,6 +38,8 @@ unsafe extern "C" {
         converter: *mut c_void,
         texture: *mut c_void,
         subresource: u32,
+        left: u32,
+        top: u32,
         width: u32,
         height: u32,
         full_range: i32,
@@ -103,6 +105,8 @@ pub struct Decoder {
     _manager: IMFDXGIDeviceManager,
     _device: ID3D11Device,
     size: Extent,
+    sequence: Option<native_hevc::SequenceInfo>,
+    aperture: Option<native_hevc::DisplayRegion>,
     full_range: bool,
     verified: bool,
     _runtime: Runtime,
@@ -233,6 +237,8 @@ impl Decoder {
             _manager: manager,
             _device: device,
             size,
+            sequence: None,
+            aperture: None,
             full_range: true,
             verified: false,
             _runtime: runtime,
@@ -244,6 +250,11 @@ impl Decoder {
             return Err(Error::Display(
                 "D3D11 HEVC input exceeds its size limit".into(),
             ));
+        }
+        if let Some(sequence) = native_hevc::inspect_sequence(data, self.sequence.is_some())
+            .map_err(|error| Error::Display(format!("D3D11 HEVC SPS: {error}")))?
+        {
+            self.sequence = Some(sequence);
         }
         unsafe {
             let buffer = MFCreateMemoryBuffer(data.len() as u32).map_err(native)?;
@@ -271,6 +282,8 @@ impl Decoder {
     }
 
     pub fn reset(&mut self) -> Result<()> {
+        self.sequence = None;
+        self.aperture = None;
         unsafe {
             self.transform
                 .ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0)
@@ -297,6 +310,34 @@ impl Decoder {
                     .map_err(native)?;
                 let dimensions = output.GetUINT64(&MF_MT_FRAME_SIZE).map_err(native)?;
                 self.size = Extent::new((dimensions >> 32) as u32, dimensions as u32)?;
+                self.aperture = None;
+                // Minimum display aperture takes precedence over geometric aperture.
+                for key in [MF_MT_MINIMUM_DISPLAY_APERTURE, MF_MT_GEOMETRIC_APERTURE] {
+                    match output.GetBlobSize(&key) {
+                        Err(error) if error.code() == MF_E_ATTRIBUTENOTFOUND => continue,
+                        Err(error) => return Err(native(error)),
+                        Ok(16) => (),
+                        Ok(_) => {
+                            return Err(Error::Display(
+                                "D3D11 HEVC: invalid MFVideoArea length".into(),
+                            ));
+                        }
+                    }
+                    let mut bytes = [0; 16];
+                    let mut length = 0;
+                    output
+                        .GetBlob(&key, &mut bytes, Some(&mut length))
+                        .map_err(native)?;
+                    if length != 16 {
+                        return Err(Error::Display("D3D11 HEVC: truncated MFVideoArea".into()));
+                    }
+                    self.aperture = Some(
+                        native_hevc::DisplayRegion::from_mf_aperture(&bytes).map_err(|error| {
+                            Error::Display(format!("D3D11 HEVC aperture: {error}"))
+                        })?,
+                    );
+                    break;
+                }
                 self.full_range = output
                     .GetUINT32(&MF_MT_VIDEO_NOMINAL_RANGE)
                     .unwrap_or(MFNominalRange_0_255.0 as u32)
@@ -340,6 +381,17 @@ impl Decoder {
             let sample = sample.ok_or_else(|| {
                 Error::Display("The hardware decoder returned no video surface".into())
             })?;
+            let sequence = self
+                .sequence
+                .ok_or_else(|| Error::Display("D3D11 HEVC output precedes an SPS".into()))?;
+            let region = sequence
+                .output_region(self.size.width, self.size.height, self.aperture)
+                .map_err(|error| {
+                    Error::Display(format!(
+                        "D3D11 HEVC output {}x{}, SPS {sequence:?}, aperture {:?}: {error}",
+                        self.size.width, self.size.height, self.aperture
+                    ))
+                })?;
             unsafe {
                 let dxgi: IMFDXGIBuffer = sample
                     .GetBufferByIndex(0)
@@ -355,8 +407,10 @@ impl Decoder {
                     self.converter.0.as_ptr(),
                     texture.as_raw(),
                     dxgi.GetSubresourceIndex().map_err(native)?,
-                    self.size.width,
-                    self.size.height,
+                    region.left,
+                    region.top,
+                    region.width,
+                    region.height,
                     i32::from(self.full_range),
                     sample.as_raw(),
                     error.as_mut_ptr(),
@@ -386,6 +440,42 @@ impl Drop for Decoder {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    #[ignore = "requires a physical GPU with HEVC 4:4:4 support"]
+    fn padded_1080p_preserves_visible_rows_after_reset() {
+        let adapter = super::super::adapters()
+            .unwrap()
+            .into_iter()
+            .find(|adapter| matches!(adapter.vendor_id, 0x8086 | 0x1002))
+            .expect("compatible adapter");
+        let mut decoder = super::Decoder::new(
+            adapter.index,
+            crate::geometry::Extent::new(1920, 1080).unwrap(),
+        )
+        .unwrap();
+        let sample = include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/crates/native-hevc/tests/data/padding1080_444.hevc"
+        ));
+        for timestamp in [1080, 1081] {
+            decoder.reset().unwrap();
+            let mut frames = decoder.push(sample, timestamp).unwrap();
+            frames.extend(decoder.drain().unwrap());
+            assert_eq!(frames.len(), 1);
+            assert_eq!((frames[0].size.width, frames[0].size.height), (1920, 1080));
+            let rgba = frames[0].read_rgba().unwrap();
+            assert_eq!(rgba.len(), 1920 * 1080 * 4);
+            for (row, value) in [(0, 32_u8), (1, 128), (1078, 128), (1079, 235)] {
+                for pixel in rgba[row * 1920 * 4..(row + 1) * 1920 * 4].chunks_exact(4) {
+                    for channel in &pixel[..3] {
+                        assert!(channel.abs_diff(value) <= 1, "visible row {row}");
+                    }
+                    assert_eq!(pixel[3], 255);
+                }
+            }
+        }
+    }
+
     #[test]
     #[ignore = "manual integrated GPU decode and pixel-conformance check"]
     fn integrated_gpu_preserves_real_444_pixels_and_recovery() {

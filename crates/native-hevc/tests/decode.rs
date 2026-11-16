@@ -308,3 +308,24 @@ fn decoder_can_move_between_threads() {
     assert_eq!(frames.len(), 1);
     assert_eq!(frames[0].pts, 123);
 }
+
+#[test]
+fn padded_1080p_pictures_preserve_visible_boundary_rows() {
+    for sample in [
+        include_bytes!("data/padding1080_420.hevc").as_slice(),
+        include_bytes!("data/padding1080_444.hevc").as_slice(),
+    ] {
+        let mut decoder = Decoder::new().unwrap();
+        let mut frames = decoder.push(sample, 1080).unwrap();
+        frames.extend(decoder.flush().unwrap());
+        assert_eq!(frames.len(), 1);
+        let frame = &frames[0];
+        assert_eq!((frame.width, frame.height, frame.pts), (1920, 1080, 1080));
+        assert_eq!(frame.rgba.len(), 1920 * 1080 * 4);
+        for (row, value) in [(0, 32), (1, 128), (1078, 128), (1079, 235)] {
+            for pixel in frame.rgba[row * 1920 * 4..(row + 1) * 1920 * 4].chunks_exact(4) {
+                assert_eq!(pixel, &[value, value, value, 255], "visible row {row}");
+            }
+        }
+    }
+}
