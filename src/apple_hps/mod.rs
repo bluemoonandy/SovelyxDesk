@@ -484,6 +484,7 @@ impl Client {
 
     fn resume_video(&mut self, reason: &'static str, explicit: bool) -> Result<()> {
         let now = Instant::now();
+        self.observe_resume(now)?;
         self.last_resume_operation = Some(now);
         if self.decoded == 0 || (!explicit && self.last_frame.elapsed() < Duration::from_secs(2)) {
             return Ok(());
@@ -491,6 +492,30 @@ impl Client {
         if self.watchdog.resume(now) {
             self.refresh_video()?;
             self.log_recovery(now, reason, true, true)?;
+        }
+        Ok(())
+    }
+
+    fn observe_resume(&mut self, now: Instant) -> Result<()> {
+        if self.watchdog.episode().is_none() {
+            return Ok(());
+        }
+        if let Some(update) = self
+            .watchdog
+            .advance(now, self.counters.video_progress.last_submitted())
+        {
+            let e = update.episode;
+            let age = |at: Option<Instant>| {
+                at.map(|at| now.saturating_duration_since(at).as_millis() as u64)
+            };
+            self.scope.event("media.hevc.resume.observation",Level::Info,json!({
+                "media.resume.episode":e.id,"media.resume.reason":update.reason,
+                "media.resume.attempts":e.attempts,"media.resume_request_age_ms":age(Some(e.started)),
+                "media.resume.first_decoded_age_ms":age(e.first_decoded),
+                "media.resume.last_decoded_age_ms":age(e.last_decoded),
+                "media.resume.first_submitted_age_ms":age(e.first_submitted),
+            }))?;
+            self.log_recovery(now, update.reason, true, true)?;
         }
         Ok(())
     }
@@ -537,7 +562,14 @@ impl Client {
         }
         let age =
             |at: Option<Instant>| at.map(|at| now.saturating_duration_since(at).as_millis() as u64);
+        let episode = self.watchdog.episode();
         self.scope.event("media.hevc.resume.state",Level::Info,json!({
+            "media.resume.episode":episode.map(|e|e.id),
+            "media.resume.attempts":episode.map(|e|e.attempts),
+            "media.resume.first_decoded_age_ms":age(episode.and_then(|e|e.first_decoded)),
+            "media.resume.first_submitted_age_ms":age(episode.and_then(|e|e.first_submitted)),
+            "media.resume.observation_remaining_ms":episode.and_then(|e|e.observing_until)
+                .map(|at|at.saturating_duration_since(now).as_millis() as u64),
             "media.resume.state":phase.name(), "media.resume.reason":reason, "media.resume.stage":stage,
             "media.last_udp_age_ms":age(self.last_video_udp),
             "media.last_authenticated_video_age_ms":age(self.watchdog.last_packet()),
@@ -978,7 +1010,7 @@ impl Client {
                         self.backing = size;
                         self.decoded += 1;
                         self.last_frame = Instant::now();
-                        self.watchdog.decoded();
+                        self.watchdog.decoded(self.last_frame);
                         self.counters
                             .encoding
                             .store(COUNTER_ENCODING, Ordering::Relaxed);
@@ -1023,8 +1055,9 @@ impl Client {
                 "no decodable HEVC video arrived. Check UDP ports 5900/5901, the Mac's High Performance support, and its active desktop.".into(),
             ));
         }
+        self.observe_resume(Instant::now())?;
         if self.decoded != 0 {
-            match self.watchdog.action(now) {
+            match self.watchdog.action(Instant::now()) {
                 VideoAction::Wait => (),
                 VideoAction::Refresh => {
                     self.refresh_video()?;

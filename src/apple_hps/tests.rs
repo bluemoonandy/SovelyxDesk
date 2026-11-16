@@ -569,7 +569,7 @@ fn video_resuming_after_a_long_idle_gets_a_full_recovery_window() {
     let mut watchdog = super::VideoWatchdog::default();
     watchdog.packet(now);
     watchdog.expect_picture(now);
-    watchdog.decoded();
+    watchdog.decoded(now);
     let resumed = now + Duration::from_secs(3600);
     for tick in 0..=62 {
         let at = resumed + Duration::from_millis(tick * 500);
@@ -582,7 +582,7 @@ fn video_resuming_after_a_long_idle_gets_a_full_recovery_window() {
         };
         assert_eq!(watchdog.action(at), expected, "tick {tick}");
     }
-    watchdog.decoded();
+    watchdog.decoded(resumed + Duration::from_secs(31));
     assert_eq!(
         watchdog.action(resumed + Duration::from_secs(31)),
         super::VideoAction::Wait
