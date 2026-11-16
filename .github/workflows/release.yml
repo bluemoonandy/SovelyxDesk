@@ -44,6 +44,14 @@ jobs:
         run: |
           rustup show
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Cache Cargo downloads and dependency builds
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          prefix-key: maccanvas-rust-v1
+          env-vars: ImageOS ImageVersion
+          cache-bin: false
+          cache-workspace-crates: false
+          save-if: ${{ github.event_name != 'pull_request' }}
       - name: Preserve the unchanged verified audio component
         shell: pwsh
         env:
