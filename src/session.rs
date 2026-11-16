@@ -483,6 +483,7 @@ fn run(
             request.streaming,
             &writer_control,
             &mut noticed,
+            Some(&writer_audit),
         ) {
             if let Err(audit_error) = writer_audit.critical(
                 "session.writer.failed",
@@ -582,7 +583,9 @@ fn write_loop(
     mut settings: StreamSettings,
     control: &Control,
     mut noticed: impl FnMut(crate::clipboard::Notice) -> Result<()>,
+    keyboard_audit: Option<&Scope>,
 ) -> Result<()> {
+    let mut keyboard_trace = crate::input::diagnostics::Trace::default();
     let mut clipboard = crate::clipboard::Transport::new(false);
     let mut last_request = Instant::now();
     let mut pending = None;
@@ -633,6 +636,12 @@ fn write_loop(
             }
             Ok(WriterCommand::Input(command)) => {
                 command.write(writer)?;
+                if let (Some(scope), Command::Key { keysym, down }) = (keyboard_audit, command)
+                    && let Some(record) = keyboard_trace
+                        .sent(crate::input::keyboard::Key { keysym, down }, "rfb_written")
+                {
+                    let _ = scope.event("input.keyboard.transport", Level::Info, record);
+                }
                 if matches!(command, Command::Refresh { .. }) {
                     last_request = Instant::now();
                     pending = None;
@@ -686,6 +695,7 @@ mod tests {
                 },
                 &worker_control,
                 |_| Ok(()),
+                None,
             )
             .unwrap()
         });
@@ -726,6 +736,7 @@ mod tests {
                 },
                 &worker_control,
                 |_| Ok(()),
+                None,
             )
             .unwrap()
         });

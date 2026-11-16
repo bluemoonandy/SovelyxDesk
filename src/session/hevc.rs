@@ -83,6 +83,7 @@ pub(super) fn run(
     )?;
     let mut profile = Some(request.profile);
     let mut credentials = Some(credentials);
+    let mut keyboard_trace = crate::input::diagnostics::Trace::default();
     while !control.cancelled.load(Ordering::Acquire) {
         while let Some(status) = client.audio_status()? {
             events
@@ -91,7 +92,20 @@ pub(super) fn run(
         }
         for _ in 0..128 {
             match incoming.try_recv() {
-                Ok(WriterCommand::Input(command)) => client.input(command)?,
+                Ok(WriterCommand::Input(command)) => {
+                    client.input(command)?;
+                    if let crate::input::Command::Key { keysym, down } = command
+                        && let Some(record) = keyboard_trace.sent(
+                            crate::input::keyboard::Key { keysym, down },
+                            "encrypted_control_queued",
+                        )
+                    {
+                        let _ =
+                            request
+                                .audit
+                                .event("input.keyboard.transport", Level::Info, record);
+                    }
+                }
                 Ok(WriterCommand::ClipboardEnabled(false)) | Ok(WriterCommand::Complete { .. }) => {
                 }
                 Ok(

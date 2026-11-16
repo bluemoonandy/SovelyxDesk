@@ -2,7 +2,6 @@ mod files_ui;
 
 use std::{
     cell::RefCell,
-    collections::HashMap,
     path::PathBuf,
     rc::Rc,
     sync::atomic::{AtomicBool, Ordering},
@@ -83,8 +82,8 @@ struct State {
     pending_pointer: Option<(u16, u16)>,
     scroll: input::ScrollAccumulator,
     scroll_scale: input::ScrollScale,
-    keys: HashMap<String, u32>,
-    modifiers: [bool; 4],
+    keyboard: input::keyboard::Keyboard,
+    keyboard_trace: input::diagnostics::Trace,
     monitor: Monitor,
     frame_number: u64,
     last_displayed_frame: u64,
@@ -137,36 +136,41 @@ impl State {
     fn release(&mut self) -> Result<()> {
         self.pending_pointer = None;
         self.scroll.clear();
-        let keys: Vec<_> = self.keys.drain().map(|(_, value)| value).collect();
-        let modifiers = std::mem::take(&mut self.modifiers);
+        let keys = self.keyboard.release();
         let buttons = std::mem::take(&mut self.buttons);
+        if self.keyboard_trace.enabled() {
+            let _ = self.audit.event(
+                "input.keyboard.cleanup",
+                Level::Info,
+                json!({"input.reason":"release_input"}),
+            );
+        }
         if self.session.as_ref().is_none_or(Session::is_closed) {
+            self.keyboard_trace = input::diagnostics::Trace::default();
             return Ok(());
         }
-        for keysym in keys {
-            self.send(Command::Key {
-                keysym,
-                down: false,
-            })?;
-        }
-        for (pressed, keysym) in
-            modifiers
-                .into_iter()
-                .zip([input::SHIFT, input::CONTROL, input::OPTION, input::COMMAND])
-        {
-            if pressed {
-                self.send(Command::Key {
-                    keysym,
-                    down: false,
-                })?;
-            }
-        }
+        self.send_keys(keys)?;
         if buttons != 0 {
             self.send(Command::Pointer {
                 x: self.pointer.0,
                 y: self.pointer.1,
                 buttons: 0,
             })?;
+        }
+        Ok(())
+    }
+
+    fn send_keys(&mut self, keys: Vec<input::keyboard::Key>) -> Result<()> {
+        for key in keys {
+            self.send(Command::Key {
+                keysym: key.keysym,
+                down: key.down,
+            })?;
+            if let Some(record) = self.keyboard_trace.sent(key, "ui_enqueued") {
+                let _ = self
+                    .audit
+                    .event("input.keyboard.mapped", Level::Info, record);
+            }
         }
         Ok(())
     }
@@ -319,6 +323,8 @@ fn select(app: &App, state: &Rc<RefCell<State>>, index: Option<usize>) -> Result
 
 fn preferences(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
     let mut state = state.borrow_mut();
+    let keys = state.keyboard.set_mode(app.get_ctrl_as_command());
+    state.send_keys(keys)?;
     state.settings.ctrl_as_command = app.get_ctrl_as_command();
     state.settings.sidebar_open = app.get_sidebar_open();
     state.settings.show_fps = app.get_show_fps();
@@ -1174,57 +1180,6 @@ fn tick_updates(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
     Ok(())
 }
 
-fn keysym(text: &str, control: bool) -> Option<u32> {
-    use slint::platform::Key;
-    let special = [
-        (Key::Backspace, 0xff08),
-        (Key::Tab, 0xff09),
-        (Key::Return, 0xff0d),
-        (Key::Escape, 0xff1b),
-        (Key::Delete, 0xffff),
-        (Key::Home, 0xff50),
-        (Key::End, 0xff57),
-        (Key::LeftArrow, 0xff51),
-        (Key::UpArrow, 0xff52),
-        (Key::RightArrow, 0xff53),
-        (Key::DownArrow, 0xff54),
-        (Key::PageUp, 0xff55),
-        (Key::PageDown, 0xff56),
-        (Key::Insert, 0xff63),
-        (Key::F1, 0xffbe),
-        (Key::F2, 0xffbf),
-        (Key::F3, 0xffc0),
-        (Key::F4, 0xffc1),
-        (Key::F5, 0xffc2),
-        (Key::F6, 0xffc3),
-        (Key::F7, 0xffc4),
-        (Key::F8, 0xffc5),
-        (Key::F9, 0xffc6),
-        (Key::F10, 0xffc7),
-        (Key::F11, 0xffc8),
-        (Key::F12, 0xffc9),
-    ];
-    for (key, symbol) in special {
-        let character: char = key.into();
-        if text == character.to_string() {
-            return Some(symbol);
-        }
-    }
-    let mut characters = text.chars();
-    let character = characters.next()?;
-    if characters.next().is_some() {
-        return None;
-    }
-    let code = character as u32;
-    if control && (1..=26).contains(&code) {
-        return Some(u32::from(b'a') + code - 1);
-    }
-    if character.is_control() || (0xe000..=0xf8ff).contains(&code) {
-        return None;
-    }
-    Some(input::character_keysym(character))
-}
-
 pub fn run(
     data_directory: Option<PathBuf>,
     preview_theme: Option<bool>,
@@ -1326,8 +1281,8 @@ pub fn run(
         pending_pointer: None,
         scroll: input::ScrollAccumulator::default(),
         scroll_scale: input::ScrollScale::system()?,
-        keys: HashMap::new(),
-        modifiers: [false; 4],
+        keyboard: input::keyboard::Keyboard::new(app.get_ctrl_as_command()),
+        keyboard_trace: input::diagnostics::Trace::default(),
         monitor: Monitor::new(Instant::now()),
         frame_number: 0,
         last_displayed_frame: 0,
@@ -1935,69 +1890,127 @@ pub fn run(
             notify(&app, error);
         }
     });
+    let release_state = state.clone();
+    let release_app = app.as_weak();
+    let commit_state = state.clone();
+    let commit_app = app.as_weak();
+    let pending_key = input::window::observe(
+        app.window(),
+        move |reason| {
+            let mut state = release_state.borrow_mut();
+            if state.keyboard_trace.enabled() {
+                let _ = state.audit.event(
+                    "input.keyboard.focus",
+                    Level::Info,
+                    json!({"input.reason":reason}),
+                );
+            }
+            if let Err(error) = state.release()
+                && let Some(app) = release_app.upgrade()
+            {
+                notify(&app, error);
+            }
+        },
+        move |text| {
+            let Some(app) = commit_app.upgrade() else {
+                return false;
+            };
+            if !app.get_connected() || !app.get_canvas_focused() || app.get_modal_open() {
+                return false;
+            }
+            let result = {
+                let mut state = commit_state.borrow_mut();
+                let keys = state.keyboard.commit(text);
+                state.send_keys(keys)
+            };
+            if let Err(error) = result {
+                let _ = close_stream(&app, &commit_state);
+                notify(&app, error);
+            }
+            true
+        },
+    );
     let weak = app.as_weak();
     let key_state = state.clone();
     app.on_keyboard_event(move |event, down| {
+        let raw = pending_key.borrow_mut().take();
         let Some(app) = weak.upgrade() else {
             return false;
         };
         if !app.get_connected() || app.get_modal_open() {
             return false;
         }
+        if matches!(
+            raw,
+            Some(input::window::Pending::Key {
+                synthetic: true,
+                ..
+            })
+        ) {
+            return true;
+        }
         let result = (|| -> Result<()> {
             let mut state = key_state.borrow_mut();
             state.flush_pointer()?;
+            let changed = state.keyboard.set_mode(app.get_ctrl_as_command());
+            state.send_keys(changed)?;
+            let modifiers = [
+                event.modifiers.shift,
+                event.modifiers.control,
+                event.modifiers.alt,
+                event.modifiers.meta,
+            ];
+            let (physical, scancode, text) = match &raw {
+                Some(input::window::Pending::Key {
+                    physical,
+                    scancode,
+                    text,
+                    ..
+                }) => (
+                    physical.as_deref(),
+                    *scancode,
+                    text.as_deref().unwrap_or(event.text.as_str()),
+                ),
+                _ => (None, None, event.text.as_str()),
+            };
+            // Keep the existing clipboard gate and transport unchanged.
             if down
                 && app.get_clipboard_shared()
                 && (event.modifiers.meta || (event.modifiers.control && app.get_ctrl_as_command()))
                 && !event.modifiers.alt
-                && matches!(event.text.as_str(), "v" | "V" | "\u{16}")
+                && matches!(text, "v" | "V")
             {
                 paste_windows(&app, &mut state)?;
             }
-            let modifiers = [
-                event.modifiers.shift,
-                event.modifiers.control && !app.get_ctrl_as_command(),
-                event.modifiers.alt,
-                event.modifiers.meta || (event.modifiers.control && app.get_ctrl_as_command()),
-            ];
-            for (index, keysym) in [input::SHIFT, input::CONTROL, input::OPTION, input::COMMAND]
-                .into_iter()
-                .enumerate()
+            if let Some(symbol) = input::keyboard::modifier_keysym(text)
+                .or_else(|| input::keyboard::keysym(text, event.modifiers.control))
+                && let Some(record) = state.keyboard_trace.input(
+                    input::keyboard::Key {
+                        keysym: symbol,
+                        down,
+                    },
+                    modifiers,
+                    physical,
+                    scancode,
+                    event.repeat,
+                )
             {
-                if state.modifiers[index] != modifiers[index] {
-                    state.send(Command::Key {
-                        keysym,
-                        down: modifiers[index],
-                    })?;
-                    state.modifiers[index] = modifiers[index];
-                }
+                let _ = state
+                    .audit
+                    .event("input.keyboard.local", Level::Info, record);
             }
-            if let Some(symbol) = keysym(event.text.as_str(), event.modifiers.control) {
-                let identifier = if symbol <= 255 {
-                    char::from_u32(symbol)
-                        .unwrap_or('\0')
-                        .to_ascii_lowercase()
-                        .to_string()
-                } else {
-                    event.text.to_string()
-                };
-                if down {
-                    state.keys.insert(identifier, symbol);
-                    state.send(Command::Key {
-                        keysym: symbol,
-                        down: true,
-                    })?;
-                } else if let Some(symbol) = state.keys.remove(&identifier) {
-                    state.send(Command::Key {
-                        keysym: symbol,
-                        down: false,
-                    })?;
-                }
-            }
-            Ok(())
+            let keys = state.keyboard.event(input::keyboard::Event {
+                physical,
+                text,
+                modifiers,
+                down,
+                repeat: event.repeat,
+            });
+            state.send_keys(keys)
         })();
         if let Err(error) = result {
+            // A failed input queue cannot safely retain remote modifier state.
+            let _ = close_stream(&app, &key_state);
             notify(&app, error);
         }
         true

@@ -279,9 +279,23 @@ fn encrypted_apple_peer(drop_connection: bool) {
             timestamp += 900;
         }
         let mut pointer = false;
-        let mut key = false;
+        let expected_keys = [
+            [4, 1, 0, 0, 0, 0, 255, 235], // Command down
+            [4, 1, 0, 0, 0, 0, 0, 99],
+            [4, 0, 0, 0, 0, 0, 0, 99], // C
+            [4, 1, 0, 0, 0, 0, 0, 118],
+            [4, 0, 0, 0, 0, 0, 0, 118], // V
+            [4, 0, 0, 0, 0, 0, 255, 235],
+            [4, 1, 0, 0, 0, 0, 255, 227], // Command -> Control
+            [4, 1, 0, 0, 0, 0, 0, 32],
+            [4, 0, 0, 0, 0, 0, 0, 32], // Space
+            [4, 0, 0, 0, 0, 0, 255, 227],
+            [4, 1, 0, 0, 0, 0, 255, 235],
+            [4, 0, 0, 0, 0, 0, 255, 235],
+        ];
+        let mut keys = 0;
         let mut wheel = Vec::new();
-        while !(pointer && key && wheel.len() == 10) {
+        while !(pointer && keys == expected_keys.len() && wheel.len() == 10) {
             let message = read_record(&mut socket, &mut cipher);
             match message.first() {
                 Some(0x10) => {
@@ -298,8 +312,8 @@ fn encrypted_apple_peer(drop_connection: bool) {
                     }
                 }
                 Some(4) => {
-                    assert_eq!(message, [4, 0, 0, 0, 0, 0, 0xff, 0xeb]);
-                    key = true;
+                    assert_eq!(message, expected_keys[keys]);
+                    keys += 1;
                 }
                 _ => (),
             }
@@ -455,12 +469,33 @@ fn encrypted_apple_peer(drop_connection: bool) {
             steps: crate::input::ScrollSteps::new(2, 3).unwrap(),
         })
         .unwrap();
-    session
-        .send(Command::Key {
-            keysym: 0xffeb,
-            down: false,
-        })
-        .unwrap();
+    let mut keyboard = crate::input::keyboard::Keyboard::new(true);
+    for (physical, text, control, down) in [
+        ("ControlLeft", "\u{11}", true, true),
+        ("KeyC", "c", true, true),
+        ("KeyC", "c", true, false),
+        ("KeyV", "v", true, true),
+        ("KeyV", "v", true, false),
+        ("Space", " ", true, true),
+        ("Space", " ", true, false),
+        ("ControlLeft", "\u{11}", false, false),
+    ] {
+        for key in keyboard.event(crate::input::keyboard::Event {
+            physical: Some(physical),
+            text,
+            modifiers: [false, control, false, false],
+            down,
+            repeat: false,
+        }) {
+            session
+                .send(Command::Key {
+                    keysym: key.keysym,
+                    down: key.down,
+                })
+                .unwrap();
+        }
+    }
+    assert!(keyboard.release().is_empty());
     received.recv_timeout(Duration::from_secs(5)).unwrap();
     assert!(!session.is_closed());
     let audio_deadline = Instant::now() + Duration::from_secs(5);
