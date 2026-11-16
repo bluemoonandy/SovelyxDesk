@@ -13,6 +13,7 @@ use fast_image_resize::{
 
 pub mod gpu;
 mod pacing;
+pub mod pixels;
 
 pub use pacing::Pacer;
 

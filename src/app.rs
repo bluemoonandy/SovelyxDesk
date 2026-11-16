@@ -1410,7 +1410,10 @@ pub fn run(
                         let unchanged = fallback_image.as_ref().is_some_and(|(previous, _)| Arc::ptr_eq(previous, &frame));
                         if !unchanged {
                             let allocate_started = diagnostics.as_ref().map(|_| Instant::now());
-                            let mut pixels = SharedPixelBuffer::<Rgba8Pixel>::new(frame.size.width, frame.size.height);
+                            let mut pixels = maccanvas::render::pixels::readback_buffer(
+                                frame.size.width, frame.size.height,
+                                fallback_image.as_ref().map(|(_, image)| image),
+                            );
                             if let (Some(d),Some(started)) = (&diagnostics,allocate_started) { d.timing(telemetry::hevc::Timing::PixelBufferAllocate,started.elapsed()); }
                             let readback_started = diagnostics.as_ref().map(|_| Instant::now());
                             let readback = frame.read_rgba_into(pixels.make_mut_bytes());
