@@ -271,6 +271,14 @@ impl Channel {
         self.flush()
     }
 
+    pub fn pending_bytes(&self) -> usize {
+        self.output
+            .iter()
+            .map(Vec::len)
+            .sum::<usize>()
+            .saturating_sub(self.output_offset)
+    }
+
     fn flush(&mut self) -> Result<()> {
         while let Some(bytes) = self.output.front() {
             match self.stream.write(&bytes[self.output_offset..]) {
@@ -466,15 +474,21 @@ pub(super) fn wait_canvas(
     channel: &mut Channel,
     configuration: &[u8],
     mut punch: impl FnMut() -> Result<()>,
+    mut offer_flushed: impl FnMut() -> Result<()>,
 ) -> Result<(Extent, Option<(Extent, Extent)>)> {
-    channel.send(&set_encodings())?;
-    channel.send(configuration)?;
+    // Initial encodings/offer are already queued by Client::open, in the same order.
+    let mut awaiting_flush = channel.pending_bytes() != 0;
     let deadline = Instant::now() + Duration::from_secs(12);
     let mut layout = None;
     let mut last_offer = Instant::now();
     while Instant::now() < deadline {
         punch()?;
-        for notice in channel.poll()? {
+        let notices = channel.poll()?;
+        if awaiting_flush && channel.pending_bytes() == 0 {
+            awaiting_flush = false;
+            offer_flushed()?;
+        }
+        for notice in notices {
             match notice {
                 Notice::Canvas(size) => return Ok((size, layout)),
                 Notice::Layout { scaled, backing } => layout = Some((scaled, backing)),

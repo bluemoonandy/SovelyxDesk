@@ -5,6 +5,7 @@ mod control;
 mod crypto;
 pub mod cursor;
 mod offers;
+mod preparation;
 mod rtp;
 #[cfg(test)]
 mod tests;
@@ -185,70 +186,91 @@ impl Client {
             "event.outcome":"success","rfb.security.type":33,"rfb.authentication.variant":"rsa1",
             "rfb.protocol.version":"003.889",
         }))?;
-        let (mut channel, info) = Channel::bootstrap(stream, &key)?;
+        let mut preparing = preparation::Preparation::new(&scope);
+        let (mut channel, info) =
+            preparing.run("control_bootstrap", || Channel::bootstrap(stream, &key))?;
         drop(key);
-        scope.critical(
+        preparing.run("control_ready_audit_wait", ||scope.critical(
             "media.hevc.control.ready",
             Level::Info,
             json!({"network.encrypted":true,"media.physical.width":info.size.width,"media.physical.height":info.size.height}),
-        )?;
-        audio_settings.validate()?;
+        ))?;
+        preparing.run("session_state_prepare", || audio_settings.validate())?;
         let mut audio_pending = VecDeque::new();
-        let converter = match crate::audio::codec_available() {
-            Ok(path) => {
-                if path.is_none() {
-                    audio_pending.push_back(AudioStatus::CodecMissing(
-                        "Enable audio to install the optional codec component.".into(),
-                    ));
-                }
-                path
-            }
-            Err(error) => {
-                scope.critical(
-                    "media.audio.component.rejected",
-                    Level::Error,
-                    crate::audit::error_attributes(&error),
-                )?;
-                audio_pending.push_back(AudioStatus::CodecMissing(error.to_string()));
-                None
-            }
-        };
-        let offers = Offers::new(converter.is_some(), settings.hevc_bitrate_bps)?;
-        let configuration = offers.configuration(sixty_fps)?;
-        scope.critical("media.hevc.offer.requested",Level::Info,json!({"media.codec.name":"hevc","media.tiles_per_frame":1,"media.requested_fps":if sixty_fps{60}else{30},"media.bitrate.requested_bps":settings.hevc_bitrate_bps}))?;
+        let converter =
+            preparing.run(
+                "audio_component_verify",
+                || match crate::audio::codec_available() {
+                    Ok(path) => {
+                        if path.is_none() {
+                            audio_pending.push_back(AudioStatus::CodecMissing(
+                                "Enable audio to install the optional codec component.".into(),
+                            ));
+                        }
+                        Ok(path)
+                    }
+                    Err(error) => {
+                        scope.critical(
+                            "media.audio.component.rejected",
+                            Level::Error,
+                            crate::audit::error_attributes(&error),
+                        )?;
+                        audio_pending.push_back(AudioStatus::CodecMissing(error.to_string()));
+                        Ok(None)
+                    }
+                },
+            )?;
+        let offers = preparing.run("offer_build", || {
+            Offers::new(converter.is_some(), settings.hevc_bitrate_bps)
+        })?;
+        let configuration = preparing.run("offer_serialize", || offers.configuration(sixty_fps))?;
+        preparing.run("offer_requested_audit_wait", ||scope.critical("media.hevc.offer.requested",Level::Info,json!({"media.codec.name":"hevc","media.tiles_per_frame":1,"media.requested_fps":if sixty_fps{60}else{30},"media.bitrate.requested_bps":settings.hevc_bitrate_bps})))?;
+        // Same send order as wait_canvas previously used; only expose timing boundaries.
+        preparing.run("set_encodings_send", || {
+            channel.send(&control::set_encodings())
+        })?;
+        preparing.run("offer_send", || channel.send(&configuration))?;
+        preparing.record("offer_queued", Some(channel.pending_bytes()))?;
         let mut early = VecDeque::new();
         let mut early_bytes = 0;
         let mut buffer = [0; 65_536];
         let mut last_punch = Instant::now() - Duration::from_secs(1);
-        let (canvas, layout) = control::wait_canvas(&mut channel, &configuration, || {
-            if last_punch.elapsed() >= Duration::from_millis(100) {
-                send_udp(&control_socket, control_peer, &[0], &counters)?;
-                send_udp(&video_socket, video_peer, &[0], &counters)?;
-                last_punch = Instant::now();
-            }
-            for _ in 0..256 {
-                match video_socket.recv_from(&mut buffer) {
-                    Ok((length, sender)) if sender == video_peer => {
-                        if let Some(d) = &counters.hevc {
-                            d.video_bytes(length);
-                        }
-                        counters
-                            .received
-                            .fetch_add(length as u64, Ordering::Relaxed);
-                        if early_bytes + length > 4 * 1024 * 1024 {
-                            return Err(failed("startup media burst exceeded its buffer limit"));
-                        }
-                        early.push_back(buffer[..length].to_vec());
-                        early_bytes += length;
-                    }
-                    Ok(_) => (),
-                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => break,
-                    Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => break,
-                    Err(error) => return Err(error.into()),
+        let (canvas, layout) = control::wait_canvas(
+            &mut channel,
+            &configuration,
+            || {
+                if last_punch.elapsed() >= Duration::from_millis(100) {
+                    send_udp(&control_socket, control_peer, &[0], &counters)?;
+                    send_udp(&video_socket, video_peer, &[0], &counters)?;
+                    last_punch = Instant::now();
                 }
-            }
-            Ok(())
-        })?;
+                for _ in 0..256 {
+                    match video_socket.recv_from(&mut buffer) {
+                        Ok((length, sender)) if sender == video_peer => {
+                            if let Some(d) = &counters.hevc {
+                                d.video_bytes(length);
+                            }
+                            counters
+                                .received
+                                .fetch_add(length as u64, Ordering::Relaxed);
+                            if early_bytes + length > 4 * 1024 * 1024 {
+                                return Err(failed(
+                                    "startup media burst exceeded its buffer limit",
+                                ));
+                            }
+                            early.push_back(buffer[..length].to_vec());
+                            early_bytes += length;
+                        }
+                        Ok(_) => (),
+                        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => break,
+                        Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => break,
+                        Err(error) => return Err(error.into()),
+                    }
+                }
+                Ok(())
+            },
+            || preparing.flushed(),
+        )?;
         if canvas.width * canvas.height > 16_777_216 {
             return Err(failed("negotiated HEVC canvas exceeds the pixel limit"));
         }

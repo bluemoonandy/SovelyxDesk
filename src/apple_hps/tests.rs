@@ -541,6 +541,32 @@ fn encrypted_apple_peer(drop_connection: bool) {
     server.join().unwrap();
     audit.shutdown().unwrap();
     let log = std::fs::read_to_string(audit.audit().path()).unwrap();
+    let preparation: serde_json::Value = log
+        .lines()
+        .map(|line| serde_json::from_str::<serde_json::Value>(line).unwrap())
+        .find(|r| r["event_name"] == "media.hevc.preparation.summary")
+        .unwrap();
+    let phases = preparation["attributes"]["media.preparation.phases"]
+        .as_array()
+        .unwrap();
+    assert_eq!(
+        phases
+            .iter()
+            .map(|p| p["phase"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        [
+            "control_bootstrap",
+            "control_ready_audit_wait",
+            "session_state_prepare",
+            "audio_component_verify",
+            "offer_build",
+            "offer_serialize",
+            "offer_requested_audit_wait",
+            "set_encodings_send",
+            "offer_send",
+        ]
+    );
+    assert!(preparation["attributes"]["control.offer_socket_write_complete"].is_boolean());
     assert!(log.contains("media.hevc.first_frame"));
     assert!(log.contains("media.audio.first_frame"));
     assert!(log.contains("media.audio.codec.process.closed"));
