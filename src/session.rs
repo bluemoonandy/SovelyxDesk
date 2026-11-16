@@ -25,6 +25,10 @@ use zeroize::Zeroizing;
 
 mod hevc;
 
+fn reconnect_after_connection(hevc: bool, cancelled: bool, outcome: &Result<()>) -> bool {
+    hevc && !cancelled && matches!(outcome, Err(Error::Io(_) | Error::ConnectionLost(_)))
+}
+
 pub type Frames = Arc<Mutex<Option<Arc<Framebuffer>>>>;
 
 pub enum Event {
@@ -181,9 +185,11 @@ impl Session {
                     &worker_control,
                     traffic,
                 );
-                let reconnect = encoding.is_hevc()
-                    && !worker_control.cancelled.load(Ordering::Acquire)
-                    && matches!(&outcome, Err(Error::Io(_) | Error::ConnectionLost(_)));
+                let reconnect = reconnect_after_connection(
+                    encoding.is_hevc(),
+                    worker_control.cancelled.load(Ordering::Acquire),
+                    &outcome,
+                );
                 if let Err(error) = &outcome
                     && events
                         .send((generation, Event::Error(error.to_string())))
@@ -665,6 +671,27 @@ fn write_loop(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn transport_loss_retries_but_authentication_refusal_and_manual_disconnect_do_not() {
+        let lost = Err(Error::ConnectionLost("fixture transport loss".into()));
+        assert!(reconnect_after_connection(true, false, &lost));
+        assert!(!reconnect_after_connection(true, true, &lost));
+        assert!(!reconnect_after_connection(false, false, &lost));
+        let io = Err(Error::Io(std::io::Error::from(
+            std::io::ErrorKind::ConnectionReset,
+        )));
+        assert!(reconnect_after_connection(true, false, &io));
+        for outcome in [
+            Ok(()),
+            Err(Error::Authentication("fixture refusal".into())),
+            Err(Error::Consent("fixture refusal".into())),
+            Err(Error::Credential("fixture refusal".into())),
+            Err(Error::Audit("fixture audit failure".into())),
+            Err(Error::Cancelled),
+        ] {
+            assert!(!reconnect_after_connection(true, false, &outcome));
+        }
+    }
     struct Sink {
         sent: Sender<Vec<u8>>,
     }
