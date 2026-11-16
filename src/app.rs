@@ -343,10 +343,15 @@ fn refresh_layout(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
         state.ticket += 1;
         if let Some(frame) = state.frame.clone() {
             if state.gpu_renderer {
+                let diagnostics = hevc_diagnostics(&state);
+                let started = diagnostics.as_ref().map(|_| Instant::now());
                 let mut pixels =
                     SharedPixelBuffer::<Rgba8Pixel>::new(frame.size.width, frame.size.height);
                 pixels.make_mut_bytes().copy_from_slice(&frame.rgba);
                 app.set_frame_image(slint::Image::from_rgba8(pixels));
+                if let (Some(d), Some(started)) = (diagnostics, started) {
+                    d.submitted(state.frame_number, started.elapsed());
+                }
             } else {
                 state.renderer.request(Job {
                     frame,
@@ -354,6 +359,7 @@ fn refresh_layout(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
                     generation: state.generation,
                     ticket: state.ticket,
                     frame_number: state.frame_number,
+                    diagnostics: hevc_diagnostics(&state),
                 })?;
             }
         }
@@ -389,6 +395,13 @@ fn disconnect(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
     result
 }
 
+fn hevc_diagnostics(state: &State) -> Option<Arc<telemetry::hevc::Diagnostics>> {
+    state
+        .session
+        .as_ref()
+        .and_then(|session| session.counters.hevc.clone())
+}
+
 fn tick_video(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
     let gpu = state
         .borrow()
@@ -408,7 +421,12 @@ fn tick_video(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
         if state.gpu_renderer {
             state.gpu_frame = Some(frame);
         } else {
+            let diagnostics = hevc_diagnostics(&state);
+            let started = diagnostics.as_ref().map(|_| Instant::now());
             let rgba = frame.read_rgba()?;
+            if let (Some(d), Some(started)) = (diagnostics, started) {
+                d.timing(telemetry::hevc::Timing::GpuReadback, started.elapsed());
+            }
             state.frame = Some(Arc::new(Framebuffer {
                 size: frame.size,
                 rgba,
@@ -472,17 +490,23 @@ fn tick_video(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
                 && state.viewport == Some(rendered.viewport)
         };
         if valid {
+            let started = rendered.diagnostics.as_ref().map(|_| Instant::now());
             let mut pixels = SharedPixelBuffer::<Rgba8Pixel>::new(
                 rendered.viewport.pixels.width,
                 rendered.viewport.pixels.height,
             );
             pixels.make_mut_bytes().copy_from_slice(&rendered.rgba);
             app.set_frame_image(slint::Image::from_rgba8(pixels));
+            if let (Some(d), Some(started)) = (&rendered.diagnostics, started) {
+                d.submitted(rendered.frame_number, started.elapsed());
+            }
             let mut state = state.borrow_mut();
             if rendered.frame_number != state.last_displayed_frame {
                 state.last_displayed_frame = rendered.frame_number;
                 state.monitor.displayed();
             }
+        } else if let Some(d) = &rendered.diagnostics {
+            d.event(telemetry::hevc::Event::RenderStale, 1);
         }
     }
     Ok(())
@@ -1319,6 +1343,8 @@ pub fn run(
     let mut fallback_image: Option<(Arc<maccanvas::render::gpu::nvdec::Frame>, slint::Image)> =
         None;
     let mut presented = None;
+    let mut diagnostic_presented: Option<(Arc<telemetry::hevc::Diagnostics>, u64, u64, Instant)> =
+        None;
     let mut render_generation = 0;
     let _ = app.window().set_rendering_notifier(move |phase, api| {
         let Some(app) = render_app.upgrade() else { return };
@@ -1329,6 +1355,10 @@ pub fn run(
                     json!({"media.renderer":if matches!(api, slint::GraphicsAPI::NativeOpenGL { .. }) { "opengl" } else { "software" }}));
             }
             slint::RenderingState::BeforeRendering => {
+                let diagnostics = hevc_diagnostics(&render_state.borrow());
+                let submit_started = diagnostics.as_ref().map(|_| Instant::now());
+                if let Some(d) = &diagnostics { d.event(telemetry::hevc::Event::RenderCallbacks,1); }
+                let mut image_submitted = false;
                 let (frame, generation, number, has_frame) = {
                     let state = render_state.borrow();
                     (state.gpu_frame.clone(), state.generation, state.frame_number, state.source_size.is_some())
@@ -1373,11 +1403,16 @@ pub fn run(
                         }
                         fallback_image = None;
                         app.set_frame_image(image);
+                        image_submitted = true;
                     } else {
                         if sharing_failed { shared_gpu = None; }
+                        let current = diagnostics.as_ref().map(|_| Arc::as_ptr(&frame));
                         let unchanged = fallback_image.as_ref().is_some_and(|(previous, _)| Arc::ptr_eq(previous, &frame));
                         if !unchanged {
-                            match frame.read_rgba() {
+                            let readback_started = diagnostics.as_ref().map(|_| Instant::now());
+                            let readback = frame.read_rgba();
+                            if let (Some(d),Some(started)) = (&diagnostics,readback_started) { d.timing(telemetry::hevc::Timing::GpuReadback,started.elapsed()); }
+                            match readback {
                                 Ok(rgba) => {
                                     let mut pixels = SharedPixelBuffer::<Rgba8Pixel>::new(frame.size.width, frame.size.height);
                                     pixels.make_mut_bytes().copy_from_slice(&rgba);
@@ -1393,13 +1428,26 @@ pub fn run(
                                 sharing_reported = true;
                             }
                             app.set_frame_image(image.clone());
+                            image_submitted = current.is_some_and(|current| fallback_image.as_ref().is_some_and(|(previous,_)| Arc::as_ptr(previous)==current));
                         }
+                    }
+                }
+                if let (Some(d),Some(started)) = (diagnostics,submit_started) {
+                    if image_submitted { d.submitted(number,started.elapsed()); }
+                    // CPU frames were submitted earlier; only count them after submission.
+                    if image_submitted || (has_frame && render_state.borrow().gpu_frame.is_none()) {
+                        diagnostic_presented = Some((d,generation,number,started));
                     }
                 }
                 presented = has_frame.then_some((generation, number));
             }
             slint::RenderingState::AfterRendering => {
                 if let Some(interop) = shared_gpu.as_mut() { interop.finish(); }
+                if let Some((d,generation,_number,started)) = diagnostic_presented.take()
+                    && render_state.borrow().generation == generation {
+                    d.timing(telemetry::hevc::Timing::SlintRenderCycle,started.elapsed());
+                    d.after_render();
+                }
                 if let Some((generation, number)) = presented.take() {
                     let mut state = render_state.borrow_mut();
                     if state.generation == generation && state.last_displayed_frame != number {
@@ -2203,6 +2251,7 @@ pub fn run(
                     .as_ref()
                     .map(|session| session.counters.clone())
                 {
+                    telemetry::report_hevc(&counters,&state.audit,now);
                     app.set_active_encoding(
                         if let Some(decoder) = match counters.decoder.load(Ordering::Relaxed) {
                             1 => Some("NVIDIA NVDEC"),

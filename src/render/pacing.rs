@@ -20,6 +20,10 @@ impl<T> Pacer<T> {
         self.next = None;
     }
 
+    pub fn has_pending(&self) -> bool {
+        self.pending.is_some()
+    }
+
     pub fn submit(&mut self, frame: T) {
         self.pending = Some(frame);
     }
@@ -47,6 +51,20 @@ impl<T> Pacer<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn configured_60_and_30_have_distinct_output_ceilings_with_fast_polling() {
+        let start = Instant::now();
+        for fps in [30, 60] {
+            let mut pacer = Pacer::new(fps);
+            let mut count = 0;
+            for tick in 0..10_000 {
+                pacer.submit(tick);
+                count += u64::from(pacer.take(start + Duration::from_millis(tick)).is_some());
+            }
+            assert_eq!(count, u64::from(fps) * 10);
+        }
+    }
 
     #[test]
     fn early_frame_is_presented_even_when_no_later_frame_arrives() {

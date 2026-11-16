@@ -28,6 +28,7 @@ pub struct Job {
     pub generation: u64,
     pub ticket: u64,
     pub frame_number: u64,
+    pub diagnostics: Option<Arc<crate::telemetry::hevc::Diagnostics>>,
 }
 
 pub struct Rendered {
@@ -35,6 +36,7 @@ pub struct Rendered {
     pub generation: u64,
     pub ticket: u64,
     pub frame_number: u64,
+    pub diagnostics: Option<Arc<crate::telemetry::hevc::Diagnostics>>,
     pub rgba: Vec<u8>,
 }
 
@@ -117,15 +119,34 @@ impl Renderer {
                 }
                 let Some(job) = pending.take() else { continue };
                 drop(pending);
-                let result = scale(&mut resizer, &job).map(|rgba| Rendered {
+                let started = job.diagnostics.as_ref().map(|_| std::time::Instant::now());
+                let scaled = scale(&mut resizer, &job);
+                if let (Some(d), Some(started)) = (&job.diagnostics, started) {
+                    d.timing(
+                        crate::telemetry::hevc::Timing::SoftwareScale,
+                        started.elapsed(),
+                    );
+                }
+                let result = scaled.map(|rgba| Rendered {
                     viewport: job.viewport,
                     generation: job.generation,
                     ticket: job.ticket,
                     frame_number: job.frame_number,
                     rgba,
+                    diagnostics: job.diagnostics.clone(),
                 });
                 match outgoing.lock() {
-                    Ok(mut slot) => *slot = Some(result),
+                    Ok(mut slot) => {
+                        if let Some(Ok(previous)) = slot.as_ref()
+                            && let Ok(next) = result.as_ref()
+                            && (previous.generation, previous.frame_number)
+                                != (next.generation, next.frame_number)
+                            && let Some(d) = &previous.diagnostics
+                        {
+                            d.event(crate::telemetry::hevc::Event::RenderOutputOverwrite, 1);
+                        }
+                        *slot = Some(result);
+                    }
                     Err(_) => {
                         eprintln!("MacCanvas rendering output was interrupted");
                         return;
@@ -147,6 +168,12 @@ impl Renderer {
             .0
             .lock()
             .map_err(|_| Error::Display("Rendering queue is unavailable".into()))?;
+        if let Some(previous) = pending.as_ref()
+            && (previous.generation, previous.frame_number) != (job.generation, job.frame_number)
+            && let Some(d) = &previous.diagnostics
+        {
+            d.event(crate::telemetry::hevc::Event::RenderRequestOverwrite, 1);
+        }
         *pending = Some(job);
         self.queue.1.notify_one();
         Ok(())
@@ -219,6 +246,7 @@ mod tests {
             generation: 1,
             ticket: 1,
             frame_number: 1,
+            diagnostics: None,
         };
         let output = scale(&mut Resizer::new(), &job).unwrap();
         assert_eq!(output.len(), 2560 * 1440 * 4);
@@ -228,6 +256,40 @@ mod tests {
                 .0
                 .iter()
                 .all(|pixel| *pixel == [37, 80, 120, 255])
+        );
+    }
+
+    #[test]
+    fn replacement_requests_record_the_dropped_frame_without_changing_latest_wins() {
+        let start = std::time::Instant::now();
+        let diagnostics = Arc::new(crate::telemetry::hevc::Diagnostics::new(start));
+        // No worker: hold the pending queue deterministically until both requests arrive.
+        let renderer = Renderer {
+            queue: Arc::new((Mutex::new(None), Condvar::new())),
+            output: Arc::new(Mutex::new(None)),
+            stopped: Arc::new(AtomicBool::new(false)),
+            worker: None,
+        };
+        let frame = Arc::new(Framebuffer::new(Extent::new(64, 64).unwrap()));
+        for ticket in 1..=2 {
+            renderer
+                .request(Job {
+                    frame: frame.clone(),
+                    viewport: Viewport::fit(frame.size, 32.0, 32.0, 1.0).unwrap(),
+                    generation: 1,
+                    ticket,
+                    frame_number: ticket,
+                    diagnostics: Some(diagnostics.clone()),
+                })
+                .unwrap();
+        }
+        assert_eq!(renderer.queue.0.lock().unwrap().as_ref().unwrap().ticket, 2);
+        let summary = diagnostics
+            .snapshot(start + std::time::Duration::from_secs(1), 0)
+            .unwrap();
+        assert_eq!(
+            summary.events[crate::telemetry::hevc::Event::RenderRequestOverwrite as usize],
+            1
         );
     }
 
@@ -243,6 +305,7 @@ mod tests {
                     generation: 1,
                     ticket,
                     frame_number: 1,
+                    diagnostics: None,
                 })
                 .unwrap();
         }

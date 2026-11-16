@@ -34,6 +34,7 @@ use crate::{
     telemetry::{Counters, Metered},
 };
 
+use crate::telemetry::hevc::{Configuration as DiagnosticConfiguration, Event as DiagnosticEvent};
 use control::{Channel, Notice};
 use crypto::{Packet, Srtcp, Srtp, SrtpSender};
 use offers::Offers;
@@ -177,6 +178,7 @@ pub struct Client {
     watchdog: VideoWatchdog,
     started: Instant,
     fps_ceiling: u16,
+    diagnostic_max_fps: u16,
     hevc_bitrate_bps: u32,
     last_recovery: Instant,
     decoded: u64,
@@ -263,6 +265,9 @@ impl Client {
             for _ in 0..256 {
                 match video_socket.recv_from(&mut buffer) {
                     Ok((length, sender)) if sender == video_peer => {
+                        if let Some(d) = &counters.hevc {
+                            d.video_bytes(length);
+                        }
                         counters
                             .received
                             .fetch_add(length as u64, Ordering::Relaxed);
@@ -366,6 +371,7 @@ impl Client {
             watchdog: VideoWatchdog::default(),
             started: now,
             fps_ceiling: if sixty_fps { 60 } else { 30 },
+            diagnostic_max_fps: settings.max_fps,
             hevc_bitrate_bps: settings.hevc_bitrate_bps,
             last_recovery: now - Duration::from_secs(1),
             decoded: 0,
@@ -377,8 +383,27 @@ impl Client {
             authenticated: 0,
             nal_types: HashMap::new(),
         };
+        client.configure_diagnostics(settings.max_fps);
         client.start_audio()?;
         Ok(client)
+    }
+
+    fn configure_diagnostics(&self, local_max_fps: u16) {
+        if let Some(d) = &self.counters.hevc {
+            d.configure(DiagnosticConfiguration {
+                requested_fps: self.fps_ceiling,
+                local_max_fps,
+                pacer_fps: local_max_fps.min(self.fps_ceiling),
+                wire_flags: u32::from_be_bytes(
+                    self.configuration[6..10]
+                        .try_into()
+                        .expect("validated HEVC configuration"),
+                ),
+                proposal_bank: if self.alternate_bank { 123 } else { 100 },
+                width: self.encoded.width,
+                height: self.encoded.height,
+            });
+        }
     }
 
     fn start_audio(&mut self) -> Result<()> {
@@ -466,6 +491,8 @@ impl Client {
                     ));
                 }
                 self.pacer.set_fps(settings.max_fps.min(self.fps_ceiling));
+                self.diagnostic_max_fps = settings.max_fps;
+                self.configure_diagnostics(settings.max_fps);
                 Ok(())
             }
             other => self.channel.input(other, self.scaled, self.backing),
@@ -495,6 +522,12 @@ impl Client {
     fn recovery(&mut self, reason: &str) -> Result<()> {
         self.watchdog.expect_picture(Instant::now());
         self.need_keyframe = true;
+        if let Some(d) = &self.counters.hevc {
+            if self.pacer.has_pending() {
+                d.event(DiagnosticEvent::PacerRecoveryClear, 1);
+            }
+            d.reset_stream();
+        }
         self.pacer.clear();
         if self.last_recovery.elapsed() < Duration::from_millis(300) {
             return Ok(());
@@ -542,6 +575,9 @@ impl Client {
         self.watchdog.packet(now);
         if let Some(selected) = self.selected {
             if packet.ssrc == selected {
+                if let Some(d) = &self.counters.hevc {
+                    d.rtp_packet(packet.timestamp, now);
+                }
                 self.highest = self.highest.max(packet.index);
                 self.assembler.push(packet, now)?;
             } else if self.last_frame.elapsed() > Duration::from_secs(2) {
@@ -586,6 +622,7 @@ impl Client {
         self.need_keyframe = true;
         self.watchdog = VideoWatchdog::default();
         self.alternate_bank = true;
+        self.configure_diagnostics(self.diagnostic_max_fps);
         self.video_started = now;
         self.channel.send(&self.configuration)?;
         self.start_audio()
@@ -593,6 +630,8 @@ impl Client {
 
     fn decode_video(&mut self, unit: &rtp::Unit) -> Result<Vec<Frame>> {
         if let Some(hardware) = self.hardware.as_mut() {
+            let started = self.counters.hevc.as_ref().map(|_| Instant::now());
+            let backend = hardware.counter() as usize;
             let decoded = hardware.push(&unit.annex_b, unit.timestamp).and_then(|frames| {
                 if let Some(frame) = frames.iter().find(|frame| frame.size != self.encoded) {
                     return Err(failed(format!(
@@ -602,6 +641,13 @@ impl Client {
                 }
                 Ok(frames)
             });
+            if let (Some(d), Some(started)) = (&self.counters.hevc, started) {
+                d.decode(
+                    backend,
+                    started.elapsed(),
+                    decoded.as_ref().ok().map(Vec::len),
+                );
+            }
             match decoded {
                 Ok(frames) => return Ok(frames.into_iter().map(Frame::Gpu).collect()),
                 Err(error) => {
@@ -620,8 +666,12 @@ impl Client {
                 }
             }
         }
-        self.decoder
-            .push(&unit.annex_b, unit.timestamp)
+        let started = self.counters.hevc.as_ref().map(|_| Instant::now());
+        let decoded = self.decoder.push(&unit.annex_b, unit.timestamp);
+        if let (Some(d), Some(started)) = (&self.counters.hevc, started) {
+            d.decode(0, started.elapsed(), decoded.as_ref().ok().map(Vec::len));
+        }
+        decoded
             .map_err(failed)?
             .into_iter()
             .map(|frame| {
@@ -651,7 +701,10 @@ impl Client {
         }
         for notice in self.channel.poll()? {
             match notice {
-                Notice::Canvas(size) => self.encoded = size,
+                Notice::Canvas(size) => {
+                    self.encoded = size;
+                    self.configure_diagnostics(self.diagnostic_max_fps);
+                }
                 Notice::Layout { scaled, backing } => {
                     let changed = self.backing != backing;
                     self.scaled = scaled;
@@ -698,6 +751,9 @@ impl Client {
             }
             match self.video_socket.recv_from(&mut buffer) {
                 Ok((length, peer)) if peer == self.video_peer => {
+                    if let Some(d) = &self.counters.hevc {
+                        d.video_bytes(length);
+                    }
                     self.counters
                         .received
                         .fetch_add(length as u64, Ordering::Relaxed);
@@ -814,6 +870,9 @@ impl Client {
         }
         units.extend(self.assembler.ready(Instant::now())?);
         if let Some(loss) = self.assembler.take_loss() {
+            if let Some(d) = &self.counters.hevc {
+                d.event(DiagnosticEvent::RtpIncomplete, loss.group_count() as u64);
+            }
             self.scope.event(
                 "media.hevc.rtp.loss",
                 Level::Warn,
@@ -821,9 +880,18 @@ impl Client {
             )?;
             self.recovery(&loss.reason)?;
         }
+        if let Some(d) = &self.counters.hevc {
+            let arrived = Instant::now();
+            for _ in &units {
+                d.complete_au(arrived);
+            }
+        }
         for unit in units {
             self.watchdog.expect_picture(now);
             if self.need_keyframe && !unit.random_access {
+                if let Some(d) = &self.counters.hevc {
+                    d.event(DiagnosticEvent::WaitingKeyframe, 1);
+                }
                 continue;
             }
             if unit.random_access {
@@ -856,6 +924,11 @@ impl Client {
                             },
                             Ordering::Relaxed,
                         );
+                        if self.pacer.has_pending()
+                            && let Some(d) = &self.counters.hevc
+                        {
+                            d.event(DiagnosticEvent::PacerOverwrite, 1);
+                        }
                         self.pacer.submit(frame);
                     }
                 }
@@ -895,6 +968,12 @@ impl Client {
                 }
             }
         }
-        Ok(self.pacer.take(Instant::now()))
+        let frame = self.pacer.take(Instant::now());
+        if frame.is_some()
+            && let Some(d) = &self.counters.hevc
+        {
+            d.event(DiagnosticEvent::PacerOutput, 1);
+        }
+        Ok(frame)
     }
 }

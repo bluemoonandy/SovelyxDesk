@@ -68,6 +68,7 @@ pub(super) fn run(
         Level::Info,
         json!({"network.protocol.name":"apple_screen_sharing","rfb.security.type":33}),
     )?;
+    let diagnostics = counters.hevc.clone();
     let stream = Metered {
         inner: stream,
         counters,
@@ -167,28 +168,36 @@ pub(super) fn run(
                     ))
                     .map_err(|_| Error::Protocol("Connection window closed".into()))?;
             }
-            match frame {
+            let overwritten = match frame {
                 apple_hps::Frame::Software(frame) => {
                     control
                         .gpu_frame
                         .lock()
                         .map_err(|_| Error::Display("GPU frame queue is unavailable".into()))?
                         .take();
-                    *frames
+                    frames
                         .lock()
-                        .map_err(|_| Error::Display("Frame queue is unavailable".into()))? =
-                        Some(Arc::new(frame));
+                        .map_err(|_| Error::Display("Frame queue is unavailable".into()))?
+                        .replace(Arc::new(frame))
+                        .is_some()
                 }
                 apple_hps::Frame::Gpu(frame) => {
                     frames
                         .lock()
                         .map_err(|_| Error::Display("Frame queue is unavailable".into()))?
                         .take();
-                    *control
+                    control
                         .gpu_frame
                         .lock()
-                        .map_err(|_| Error::Display("GPU frame queue is unavailable".into()))? =
-                        Some(frame);
+                        .map_err(|_| Error::Display("GPU frame queue is unavailable".into()))?
+                        .replace(frame)
+                        .is_some()
+                }
+            };
+            if let Some(d) = &diagnostics {
+                d.event(crate::telemetry::hevc::Event::SessionDelivery, 1);
+                if overwritten {
+                    d.event(crate::telemetry::hevc::Event::SessionQueueOverwrite, 1);
                 }
             }
             let notifier = control

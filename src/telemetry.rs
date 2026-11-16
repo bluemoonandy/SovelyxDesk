@@ -1,3 +1,5 @@
+pub mod hevc;
+
 use std::{
     collections::VecDeque,
     io::{Read, Write},
@@ -16,11 +18,20 @@ pub struct Counters {
     pub sent: AtomicU64,
     pub encoding: AtomicI32,
     pub decoder: AtomicI32,
+    pub hevc: Option<Arc<hevc::Diagnostics>>,
 }
 
 impl Counters {
     pub fn new() -> Arc<Self> {
+        Self::for_session(false)
+    }
+    pub fn for_session(is_hevc: bool) -> Arc<Self> {
+        let enabled = is_hevc
+            && hevc::Diagnostics::enabled(
+                std::env::var("MACCANVAS_HEVC_DIAGNOSTICS").ok().as_deref(),
+            );
         Arc::new(Self {
+            hevc: enabled.then(|| Arc::new(hevc::Diagnostics::new(Instant::now()))),
             encoding: AtomicI32::new(i32::MIN),
             ..Self::default()
         })
@@ -248,5 +259,88 @@ mod tests {
                 .iter()
                 .all(|&(rx, tx)| (0.0..=1.0).contains(&rx) && tx == 0.0)
         );
+    }
+}
+
+/// Emit one aggregate through the existing audit writer; no per-frame messages.
+pub fn report_hevc(counters: &Counters, scope: &crate::audit::Scope, now: Instant) {
+    let Some(diagnostics) = &counters.hevc else {
+        return;
+    };
+    let Some(s) = diagnostics.snapshot(now, counters.received.load(Ordering::Relaxed)) else {
+        return;
+    };
+    let _ = scope.event(
+        "media.hevc.diagnostics",
+        crate::audit::Level::Info,
+        hevc_summary(s),
+    );
+}
+
+fn hevc_summary(s: hevc::Snapshot) -> serde_json::Value {
+    let rates = hevc::EVENTS
+        .iter()
+        .enumerate()
+        .map(|(i, name)| {
+            (
+                (*name).to_owned(),
+                serde_json::json!({"count":s.events[i], "per_second":s.events[i] as f64/s.seconds}),
+            )
+        })
+        .collect::<serde_json::Map<_, _>>();
+    let timings = hevc::TIMINGS.iter().enumerate().map(|(i, name)| {
+        let t=s.timings[i];
+        ((*name).to_owned(), serde_json::json!({"samples":t.count,"average_ms":t.average_ms,"p95_upper_ms":t.p95_upper_ms}))
+    }).collect::<serde_json::Map<_,_>>();
+    let backends = ["software", "nvdec", "d3d11"].iter().enumerate().map(|(i,name)|
+        ((*name).to_owned(),serde_json::json!({"decode_calls":s.decode_calls_by_backend[i],"decoded_frames":s.decoded_by_backend[i],"decoded_fps":s.decoded_by_backend[i] as f64/s.seconds})))
+        .collect::<serde_json::Map<_,_>>();
+    let c = s.configuration;
+    serde_json::json!({
+        "schema":1,"window_seconds":s.seconds,
+        "requested_fps":c.requested_fps,"local_max_fps":c.local_max_fps,"pacer_fps":c.pacer_fps,
+        "wire_flags":c.wire_flags,"proposal_bank":c.proposal_bank,
+        "negotiated_fps":null,"negotiated_fps_status":"not_exposed_by_current_response_parser",
+        "canvas_width":c.width,"canvas_height":c.height,
+        "stages":rates,"timings":timings,"backends":backends,
+        "last_decode_backend":s.last_backend.map(|i| ["software","nvdec","d3d11"][i]),
+        "decode_zero_output_calls":s.decode_zero_output,
+        "video_receive_mbps":s.video_bytes as f64*8.0/s.seconds/1e6,
+        "session_receive_mbps":s.session_bytes as f64*8.0/s.seconds/1e6,
+        "rtp_timestamps_per_second":s.rtp_frames as f64/s.seconds,"rtp_clock_fps":s.rtp_clock_fps,
+        "p95_bucket_us":250,"after_render_is_physical_present":false
+    })
+}
+
+#[cfg(test)]
+mod hevc_schema_tests {
+    use super::*;
+    #[test]
+    fn summaries_keep_unknown_negotiation_and_actual_backend_separate_from_requests() {
+        let start = Instant::now();
+        let d = hevc::Diagnostics::new(start);
+        d.configure(hevc::Configuration {
+            requested_fps: 60,
+            local_max_fps: 30,
+            pacer_fps: 30,
+            wire_flags: 5,
+            proposal_bank: 100,
+            width: 1920,
+            height: 1080,
+        });
+        d.event(hevc::Event::CompleteAu, 60);
+        d.video_bytes(5_000_000);
+        let json = hevc_summary(
+            d.snapshot(start + Duration::from_secs(2), 5_000_000)
+                .unwrap(),
+        );
+        assert!(json["negotiated_fps"].is_null());
+        assert!(json["last_decode_backend"].is_null());
+        assert_eq!(json["requested_fps"], 60);
+        assert_eq!(json["pacer_fps"], 30);
+        assert_eq!(json["stages"]["complete_au"]["per_second"], 30.0);
+        assert_eq!(json["video_receive_mbps"], 20.0);
+        assert_eq!(json["timings"]["decode_call"]["samples"], 0);
+        assert_eq!(json["after_render_is_physical_present"], false);
     }
 }

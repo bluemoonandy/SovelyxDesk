@@ -161,7 +161,7 @@ impl Session {
                 request.clipboard && !encoding.is_hevc(),
             ))
             .map_err(|_| Error::Protocol("Cannot initialize the clipboard writer".into()))?;
-        let counters = Counters::new();
+        let counters = Counters::for_session(encoding.is_hevc());
         let traffic = counters.clone();
         let worker_control = control.clone();
         let refresh = sender.clone();

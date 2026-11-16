@@ -4,3 +4,5 @@
 /crates/audio-codec-tool/target/
 /crates/audio-codec-tool/Cargo.lock
 __pycache__/
+
+/diagnostic-dist/

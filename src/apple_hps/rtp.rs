@@ -66,6 +66,12 @@ pub(super) struct Loss {
     groups: Vec<GroupSnapshot>,
 }
 
+impl Loss {
+    pub fn group_count(&self) -> usize {
+        self.groups.len()
+    }
+}
+
 pub(super) struct Unit {
     pub annex_b: Vec<u8>,
     pub timestamp: i64,
