@@ -281,6 +281,13 @@ impl Channel {
     }
 
     pub fn native_clipboard(&mut self, command: apple::Command) -> Result<()> {
+        // Reject before mutating fetch state: an unsent request must never become
+        // a timed-out request whose late-reply handling taints the next session.
+        if self.pending_bytes() > 65_536 || self.output.len() >= 128 {
+            return Err(Error::Clipboard(
+                "Native Apple clipboard: encrypted control is busy".into(),
+            ));
+        }
         let sent = match &command {
             apple::Command::Send { epoch, .. } => Some(*epoch),
             _ => None,

@@ -141,14 +141,16 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                 },
             )?;
         }
-        app.set_native_clipboard_status(
-            if active {
-                "Encrypted Apple clipboard: establishing baseline"
-            } else {
-                "Paused — disabled, disconnected or Windows session locked"
-            }
-            .into(),
-        );
+        if !state.native_clipboard.paused {
+            app.set_native_clipboard_status(
+                if active {
+                    "Encrypted Apple clipboard: establishing baseline"
+                } else {
+                    "Paused — disabled, disconnected or Windows session locked"
+                }
+                .into(),
+            );
+        }
     }
     let events = state
         .session
@@ -244,8 +246,18 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                 );
             }
             NativeEvent::Problem { epoch, reason } if epoch == state.native_clipboard.epoch => {
-                if reason == "fetch_timeout" || reason == "echo_mismatch" {
+                if matches!(
+                    reason,
+                    "fetch_timeout" | "echo_mismatch" | "request_rejected"
+                ) {
                     state.native_clipboard.paused = true;
+                }
+                if reason == "request_rejected" {
+                    // No sender acceptance: invalidate older reads instead of letting an
+                    // old Mac snapshot replace the Windows copy that could not be sent.
+                    state.native_clipboard.epoch = state.native_clipboard.epoch.wrapping_add(1);
+                    state.native_clipboard.configured = None;
+                    state.native_clipboard.baseline = true;
                 }
                 app.set_native_clipboard_status(format!("Native experiment: {reason}; inspect clipboard.apple logs (no SSH fallback)").into());
             }
