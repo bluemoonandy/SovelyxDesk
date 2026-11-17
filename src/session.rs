@@ -3,7 +3,7 @@ use std::{
     net::{Shutdown, TcpStream},
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering},
         mpsc::{self, Receiver, Sender, SyncSender, TrySendError},
     },
     thread,
@@ -25,6 +25,8 @@ use serde_json::json;
 use zeroize::Zeroizing;
 
 mod hevc;
+mod native_files;
+pub use native_files::Port as NativeFilePort;
 
 fn reconnect_after_connection(hevc: bool, cancelled: bool, outcome: &Result<()>) -> bool {
     hevc && !cancelled && matches!(outcome, Err(Error::Io(_) | Error::ConnectionLost(_)))
@@ -74,11 +76,17 @@ struct Control {
     native_clipboard: Mutex<VecDeque<crate::clipboard::apple::Event>>,
     native_epoch: AtomicU64,
     native_enabled: AtomicBool,
+    file_enabled: AtomicBool,
+    file_capability: AtomicU32,
+    file_next: AtomicU32,
+    file_route: Mutex<Option<Arc<native_files::Route>>>,
 }
 
 impl Control {
     fn configure_native(&self, epoch: u64, enabled: bool) -> Result<()> {
         self.native_enabled.store(false, Ordering::Release);
+        self.file_enabled.store(false, Ordering::Release);
+        self.revoke_files();
         self.native_epoch.store(epoch, Ordering::Release);
         self.native_clipboard
             .lock()
@@ -101,6 +109,9 @@ impl Control {
             .epoch()
             .is_some_and(|epoch| self.accepts_native(epoch))
         {
+            if event.is_snapshot() {
+                queue.retain(|queued| !queued.is_snapshot());
+            }
             if queue.len() == 16 {
                 queue.pop_front();
             }
@@ -121,11 +132,16 @@ impl Control {
             native_clipboard: Mutex::new(VecDeque::new()),
             native_epoch: AtomicU64::new(0),
             native_enabled: AtomicBool::new(false),
+            file_enabled: AtomicBool::new(false),
+            file_capability: AtomicU32::new(0),
+            file_next: AtomicU32::new(1),
+            file_route: Mutex::new(None),
         }
     }
 
     fn close(&self) -> Result<()> {
         self.cancelled.store(true, Ordering::Release);
+        self.revoke_files();
         let socket = self
             .socket
             .lock()
@@ -151,6 +167,13 @@ pub struct Session {
 }
 
 enum WriterCommand {
+    NativeFile {
+        epoch: u64,
+        session: u32,
+        packet: Zeroizing<Vec<u8>>,
+        receipt: SyncSender<native_files::Receipt>,
+    },
+    NativeFileCancel(u32),
     Input(Command),
     ClipboardServer(crate::clipboard::Packet),
     ClipboardLocal(Zeroizing<String>),
@@ -337,6 +360,9 @@ impl Session {
                 self.control.configure_native(*epoch, *enabled)?
             }
             crate::clipboard::apple::Command::Fetch { epoch, .. }
+            | crate::clipboard::apple::Command::SendFiles { epoch, .. }
+            | crate::clipboard::apple::Command::SendRich { epoch, .. }
+            | crate::clipboard::apple::Command::SendImage { epoch, .. }
             | crate::clipboard::apple::Command::Send { epoch, .. }
                 if !self.control.accepts_native(*epoch) =>
             {
@@ -353,6 +379,16 @@ impl Session {
                 }
             }
             crate::clipboard::apple::Command::Fetch { .. } => "fetch",
+            crate::clipboard::apple::Command::SendFiles { .. } => {
+                if !self.control.file_enabled.load(Ordering::Acquire) {
+                    return Err(Error::Clipboard(
+                        "File clipboard sharing is disabled".into(),
+                    ));
+                }
+                "send_files"
+            }
+            crate::clipboard::apple::Command::SendRich { .. } => "send_rich",
+            crate::clipboard::apple::Command::SendImage { .. } => "send_image",
             crate::clipboard::apple::Command::Send { text, .. } => {
                 crate::clipboard::validate(text, true)?;
                 "send"
@@ -363,6 +399,17 @@ impl Session {
             Level::Info,
             json!({"clipboard.operation":operation,"network.encrypted":true}),
         )?;
+        if matches!(&command, crate::clipboard::apple::Command::SendFiles { .. }) {
+            return self
+                .sender
+                .try_send(WriterCommand::NativeClipboard(command))
+                .map_err(|_| {
+                    Error::Clipboard(
+                        "File clipboard publication queue is busy or closed; copy again to retry"
+                            .into(),
+                    )
+                });
+        }
         self.post(WriterCommand::NativeClipboard(command))
     }
     pub fn take_native_clipboard(&self) -> Result<Vec<crate::clipboard::apple::Event>> {
@@ -703,7 +750,11 @@ fn write_loop(
             continue;
         }
         match incoming.recv_timeout(delay) {
-            Ok(WriterCommand::NativeClipboard(_)) => {
+            Ok(
+                WriterCommand::NativeFile { .. }
+                | WriterCommand::NativeFileCancel(_)
+                | WriterCommand::NativeClipboard(_),
+            ) => {
                 return Err(Error::Clipboard(
                     "Native clipboard cannot use an unencrypted VNC writer".into(),
                 ));

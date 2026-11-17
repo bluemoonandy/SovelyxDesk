@@ -175,6 +175,8 @@ pub(super) struct Channel {
     clipboard_frame: apple::Framer,
     clipboard_status: Vec<u8>,
     native_pending_flush: bool,
+    file_frame: crate::clipboard::filecopy::wire::Framer,
+    file_messages: VecDeque<crate::clipboard::filecopy::wire::Message>,
 }
 
 impl Channel {
@@ -190,8 +192,8 @@ impl Channel {
         let mut format = [0; 16];
         stream.read_exact(&mut format)?;
         let name_size = integer(&mut stream)? as usize;
-        let name =
-            crate::protocol::desktop_name(&read_bytes(&mut stream, name_size, 1_048_576)?, true)?;
+        let raw_name = read_bytes(&mut stream, name_size, 1_048_576)?;
+        let name = crate::protocol::desktop_name(&raw_name, true)?;
         stream.write_all(&viewer_info())?;
         stream.write_all(&[0x12, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1])?;
         stream.flush()?;
@@ -259,10 +261,12 @@ impl Channel {
                 fallback: Decoder::new(size),
                 cursor_cache: cursor::Cache::default(),
                 cursor: None,
-                clipboard: apple::Transport::default(),
+                clipboard: apple::Transport::from_server_name(&raw_name),
                 clipboard_frame: apple::Framer::default(),
                 clipboard_status: Vec::new(),
                 native_pending_flush: false,
+                file_frame: Default::default(),
+                file_messages: VecDeque::new(),
             },
             ServerInfo { size, name },
         ))
@@ -291,7 +295,10 @@ impl Channel {
             ));
         }
         let sent = match &command {
-            apple::Command::Send { epoch, .. } => Some(*epoch),
+            apple::Command::SendFiles { epoch, .. }
+            | apple::Command::SendRich { epoch, .. }
+            | apple::Command::SendImage { epoch, .. }
+            | apple::Command::Send { epoch, .. } => Some(*epoch),
             _ => None,
         };
         if let Some(packet) = self.clipboard.command(command)? {
@@ -319,6 +326,29 @@ impl Channel {
             }
         }
         Ok(())
+    }
+    pub fn native_file_capability(&self) -> u32 {
+        self.clipboard.file_capability_bits()
+    }
+    pub fn native_file_send(&mut self, packet: &[u8]) -> Result<bool> {
+        if self.native_file_capability() & 3 != 3
+            || self.native_file_capability() & 4 != 0
+            || packet.len() < 14
+            || packet[0] != 0x22
+            || packet.len() > 1024 * 1024 + 6
+        {
+            return Err(Error::Clipboard("Native file send refused".into()));
+        }
+        if self.pending_bytes() > 65_536 || self.output.len() >= 128 {
+            return Ok(false);
+        }
+        for chunk in packet.chunks(32768) {
+            self.send(chunk)?;
+        }
+        Ok(true)
+    }
+    pub fn take_native_file(&mut self) -> Option<crate::clipboard::filecopy::wire::Message> {
+        self.file_messages.pop_front()
     }
     pub fn take_native_clipboard(&mut self) -> Option<apple::Event> {
         self.clipboard.take()
@@ -392,6 +422,9 @@ impl Channel {
     pub fn poll(&mut self) -> Result<Vec<Notice>> {
         self.flush()?;
         self.clipboard.tick(Instant::now());
+        if self.file_frame.expired(Instant::now()) {
+            return Err(failed("incomplete native file message timed out"));
+        }
         if self.clipboard_frame.expired(Instant::now()) {
             return Err(failed("native pasteboard framing timed out"));
         }
@@ -447,7 +480,30 @@ impl Channel {
             return Err(failed("empty authenticated control message"));
         }
         while !body.is_empty() {
-            if self.clipboard_frame.active() || body[0] == 0x1f {
+            if self.file_frame.active() || body[0] == 0x22 {
+                let (used, message) = self
+                    .file_frame
+                    .feed(body)
+                    .map_err(|_| failed("invalid native file framing"))?;
+                if used == 0 {
+                    return Err(failed("file parser made no progress"));
+                }
+                body = &body[used..];
+                if let Some(message) = message {
+                    if self.file_messages.len() >= 8 {
+                        self.file_messages.clear();
+                        self.file_messages.push_back(
+                            crate::clipboard::filecopy::wire::Message::new(
+                                crate::clipboard::filecopy::wire::STOP,
+                                message.session,
+                                vec![],
+                            ),
+                        );
+                    } else {
+                        self.file_messages.push_back(message);
+                    }
+                }
+            } else if self.clipboard_frame.active() || body[0] == 0x1f {
                 let (used, packet) = self
                     .clipboard_frame
                     .feed(body)
@@ -631,6 +687,23 @@ mod native_clipboard_tests {
     use crate::{clipboard::apple, telemetry::Counters};
     use std::net::TcpListener;
 
+    fn rich_fixture() -> crate::clipboard::rich::RichText {
+        crate::clipboard::rich::RichText {
+            plain: Some(Zeroizing::new("中文🍎".into())),
+            html: Some(Zeroizing::new("<b>中文🍎</b>".into())),
+            rtf: Some(Zeroizing::new(b"{\\rtf1 bold}".to_vec())),
+        }
+    }
+    fn image_fixture() -> Zeroizing<Vec<u8>> {
+        let mut dib = vec![0; 44];
+        dib[..4].copy_from_slice(&40u32.to_le_bytes());
+        dib[4..8].copy_from_slice(&1u32.to_le_bytes());
+        dib[8..12].copy_from_slice(&1u32.to_le_bytes());
+        dib[12..14].copy_from_slice(&1u16.to_le_bytes());
+        dib[14..16].copy_from_slice(&24u16.to_le_bytes());
+        dib[40..43].copy_from_slice(&[0, 0, 255]);
+        crate::clipboard::image::dib_to_png(&dib).unwrap()
+    }
     fn read_record(stream: &mut TcpStream, records: &mut Records) -> Vec<u8> {
         let len = word(stream).unwrap() as usize;
         let mut data = vec![0; len];
@@ -653,7 +726,10 @@ mod native_clipboard_tests {
             socket.write_all(&64u16.to_be_bytes()).unwrap();
             socket.write_all(&48u16.to_be_bytes()).unwrap();
             socket.write_all(&[0; 16]).unwrap();
-            socket.write_all(&0u32.to_be_bytes()).unwrap();
+            let mut server_name = [0u8; 22];
+            server_name[10] = 0x20;
+            socket.write_all(&22u32.to_be_bytes()).unwrap();
+            socket.write_all(&server_name).unwrap();
             let mut viewer = [0; 66];
             socket.read_exact(&mut viewer).unwrap();
             assert_eq!(&viewer[..4], &[0x21, 0, 0, 62]);
@@ -701,6 +777,60 @@ mod native_clipboard_tests {
                 result.text.unwrap().unwrap().as_str(),
                 "Windows 中文🍎\n    code"
             );
+            let request = read_record(&mut socket, &mut cipher);
+            assert_eq!(request[0], 0x0b);
+            let image = image_fixture();
+            let mut packet = apple::encode_image(&image).unwrap();
+            packet[4..8].copy_from_slice(&request[4..8]);
+            for chunk in packet.chunks(7) {
+                socket.write_all(&cipher.encrypt(chunk).unwrap()).unwrap();
+            }
+            let sent = read_record(&mut socket, &mut cipher);
+            let result = apple::Framer::default().feed(&sent).unwrap().1.unwrap();
+            assert!(result.text.unwrap().is_none());
+            assert_eq!(*result.image.unwrap(), *image);
+            let request = read_record(&mut socket, &mut cipher);
+            assert_eq!(request[0], 0x0b);
+            let rich = rich_fixture();
+            let mut packet = apple::encode_rich(&rich).unwrap();
+            packet[4..8].copy_from_slice(&request[4..8]);
+            for chunk in packet.chunks(7) {
+                socket.write_all(&cipher.encrypt(chunk).unwrap()).unwrap();
+            }
+            let sent = read_record(&mut socket, &mut cipher);
+            let result = apple::Framer::default().feed(&sent).unwrap().1.unwrap();
+            assert_eq!(&**result.text.unwrap().as_ref().unwrap(), "中文🍎");
+            assert_eq!(&**result.rich.unwrap().html.unwrap(), "<b>中文🍎</b>");
+            let mut file_frame = crate::clipboard::filecopy::wire::Framer::default();
+            loop {
+                let record = read_record(&mut socket, &mut cipher);
+                let (used, message) = file_frame.feed(&record).unwrap();
+                assert_eq!(used, record.len());
+                if let Some(message) = message {
+                    assert_eq!((message.command, message.session), (102, 81));
+                    assert!(
+                        crate::clipboard::filecopy::wire::data_body(&message.body)
+                            .unwrap()
+                            .iter()
+                            .all(|&b| b == 0x35)
+                    );
+                    break;
+                }
+            }
+            let mut response = crate::clipboard::filecopy::wire::data(81, b"file reply")
+                .encode()
+                .unwrap();
+            response.extend_from_slice(&[0x14, 0, 0, 4, 0, 1, 0, 4]);
+            for chunk in response.chunks(7) {
+                socket.write_all(&cipher.encrypt(chunk).unwrap()).unwrap();
+            }
+            let clipboard = read_record(&mut socket, &mut cipher);
+            let metadata = apple::Framer::default()
+                .feed(&clipboard)
+                .unwrap()
+                .1
+                .unwrap();
+            assert_eq!(metadata.files, vec!["/tmp/maccanvas-fixture/file.txt"]);
             assert_eq!(read_record(&mut socket, &mut cipher), apple::monitor(false));
         });
         let stream = TcpStream::connect(address).unwrap();
@@ -760,6 +890,92 @@ mod native_clipboard_tests {
             .native_clipboard(apple::Command::Send {
                 epoch: 9,
                 text: Zeroizing::new("Windows 中文🍎\n    code".into()),
+            })
+            .unwrap();
+        channel
+            .native_clipboard(apple::Command::Fetch {
+                epoch: 9,
+                sequence: 78,
+            })
+            .unwrap();
+        let mut received_image = false;
+        while !received_image {
+            channel.poll().unwrap();
+            while let Some(event) = channel.take_native_clipboard() {
+                if let apple::Event::ImageSnapshot {
+                    epoch,
+                    sequence,
+                    png,
+                } = event
+                {
+                    assert_eq!((epoch, sequence), (9, 78));
+                    assert_eq!(*png, *image_fixture());
+                    received_image = true;
+                }
+            }
+            assert!(Instant::now() < deadline);
+            thread::sleep(Duration::from_millis(2));
+        }
+        channel
+            .native_clipboard(apple::Command::SendImage {
+                epoch: 9,
+                message: apple::ImageMessage::new(&image_fixture()).unwrap(),
+            })
+            .unwrap();
+        channel
+            .native_clipboard(apple::Command::Fetch {
+                epoch: 9,
+                sequence: 79,
+            })
+            .unwrap();
+        let mut received_rich = false;
+        while !received_rich {
+            channel.poll().unwrap();
+            while let Some(event) = channel.take_native_clipboard() {
+                if let apple::Event::RichSnapshot {
+                    epoch,
+                    sequence,
+                    rich,
+                } = event
+                {
+                    assert_eq!((epoch, sequence), (9, 79));
+                    assert_eq!(&**rich.plain.as_ref().unwrap(), "中文🍎");
+                    assert_eq!(&**rich.html.as_ref().unwrap(), "<b>中文🍎</b>");
+                    received_rich = true;
+                }
+            }
+            assert!(Instant::now() < deadline);
+            thread::sleep(Duration::from_millis(2));
+        }
+        channel
+            .native_clipboard(apple::Command::SendRich {
+                epoch: 9,
+                message: apple::RichMessage::new(&rich_fixture()).unwrap(),
+            })
+            .unwrap();
+        assert_eq!(channel.native_file_capability(), 3);
+        let packet = crate::clipboard::filecopy::wire::data(81, &vec![0x35; 65_536])
+            .encode()
+            .unwrap();
+        assert!(channel.native_file_send(&packet).unwrap());
+        loop {
+            channel.poll().unwrap();
+            if let Some(message) = channel.take_native_file() {
+                assert_eq!((message.command, message.session), (102, 81));
+                assert_eq!(
+                    crate::clipboard::filecopy::wire::data_body(&message.body).unwrap(),
+                    b"file reply"
+                );
+                break;
+            }
+            assert!(Instant::now() < deadline);
+            thread::sleep(Duration::from_millis(2));
+        }
+        channel
+            .native_clipboard(apple::Command::SendFiles {
+                epoch: 9,
+                message: apple::FileMessage::new(&["/tmp/maccanvas-fixture/file.txt".into()])
+                    .unwrap(),
             })
             .unwrap();
         channel

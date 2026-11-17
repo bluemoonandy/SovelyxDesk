@@ -10,9 +10,13 @@ use std::{
 use zeroize::{Zeroize, Zeroizing};
 
 pub const MAX_TEXT: usize = super::MAX_TEXT;
-const MAX_ARCHIVE: usize = 8 * 1024 * 1024;
+const MAX_ARCHIVE: usize = 36 * 1024 * 1024;
 const MAX_COMPRESSED: usize = 4 * 1024 * 1024;
 const SERVER_LIMIT: usize = 100 * 1024 * 1024;
+const TIFF: &[u8] = b"public.tiff";
+const HTML: &[u8] = b"public.html";
+const RTF: &[u8] = b"public.rtf";
+const PNG: &[u8] = b"public.png";
 const UTF8: &[u8] = b"public.utf8-plain-text";
 const UTF16: &[u8] = b"public.utf16-plain-text";
 fn invalid(reason: &'static str) -> Error {
@@ -43,21 +47,56 @@ pub fn encode_text(text: &str) -> Result<Zeroizing<Vec<u8>>> {
     if text.is_empty() {
         return Err(invalid("empty text is not shared"));
     }
-    let mut archive = Zeroizing::new(Vec::with_capacity(text.len() + 64));
-    put(&mut archive, 1);
-    counted(&mut archive, UTF8);
-    put(&mut archive, 0);
-    put(&mut archive, 0);
-    counted(&mut archive, text.as_bytes());
+    encode_flavor(UTF8, text.as_bytes())
+}
+pub fn encode_image(png: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
+    super::image::validate_png(png)?;
+    encode_flavor(PNG, png)
+}
+fn encode_flavor(kind: &[u8], data: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
+    encode_flavors(&[(kind, data)])
+}
+pub fn encode_rich(rich: &super::rich::RichText) -> Result<Zeroizing<Vec<u8>>> {
+    rich.validate()?;
+    let mut flavors = Vec::new();
+    if let Some(plain) = &rich.plain {
+        flavors.push((UTF8, plain.as_bytes()));
+    }
+    if let Some(html) = &rich.html {
+        flavors.push((HTML, html.as_bytes()));
+    }
+    if let Some(rtf) = &rich.rtf {
+        flavors.push((RTF, rtf.as_slice()));
+    }
+    encode_flavors(&flavors)
+}
+fn encode_flavors(flavors: &[(&[u8], &[u8])]) -> Result<Zeroizing<Vec<u8>>> {
+    let mut archive = Zeroizing::new(Vec::new());
+    put(&mut archive, flavors.len() as u32);
+    for (kind, data) in flavors {
+        counted(&mut archive, kind);
+        put(&mut archive, 0);
+        put(&mut archive, 0);
+        counted(&mut archive, data);
+    }
+    if archive.len() > MAX_ARCHIVE {
+        return Err(invalid("archive exceeds limit"));
+    }
+    compress_archive(&archive)
+}
+fn compress_archive(archive: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
     let mut compressor = Compress::new(Compression::fast(), true);
     let mut compressed = Zeroizing::new(vec![0; archive.len() + archive.len() / 100 + 128]);
     compressor
-        .compress(&archive, &mut compressed, FlushCompress::Sync)
+        .compress(archive, &mut compressed, FlushCompress::Sync)
         .map_err(|_| invalid("compression failed"))?;
     if compressor.total_in() != archive.len() as u64 {
         return Err(invalid("compression exceeded its bound"));
     }
     compressed.truncate(compressor.total_out() as usize);
+    if compressed.len() > MAX_COMPRESSED {
+        return Err(invalid("compressed payload exceeds limit"));
+    }
     let mut out = Zeroizing::new(vec![0x1f, 0, 0, 0]);
     put(&mut out, 0);
     put(&mut out, archive.len() as u32);
@@ -87,10 +126,23 @@ impl<'a> Reader<'a> {
         self.take(n)
     }
 }
-fn archive_text(archive: &[u8]) -> Result<Option<Zeroizing<String>>> {
+#[derive(Default)]
+struct ArchiveContent {
+    text: Option<Zeroizing<String>>,
+    image: Option<Zeroizing<Vec<u8>>>,
+    tiff: Option<Zeroizing<Vec<u8>>>,
+    rich: Option<super::rich::RichText>,
+    files: Vec<String>,
+}
+fn archive_content(archive: &[u8]) -> Result<ArchiveContent> {
     let mut reader = Reader(archive);
     let mut preferred = None;
     let mut fallback = None;
+    let mut image = None;
+    let mut file_copy = false;
+    let mut files = Vec::new();
+    let mut tiff = None;
+    let mut rich = super::rich::RichText::default();
     let mut items = 0;
     while !reader.0.is_empty() {
         items += 1;
@@ -103,6 +155,9 @@ fn archive_text(archive: &[u8]) -> Result<Option<Zeroizing<String>>> {
         }
         for _ in 0..flavors {
             let kind = reader.field(4096)?;
+            file_copy |= kind == b"public.file-url"
+                || kind == b"NSFilenamesPboardType"
+                || kind.starts_with(b"com.apple.pasteboard.promised-file");
             let _flags = reader.num()?;
             let tags = reader.num()?;
             if tags > 64 {
@@ -113,10 +168,25 @@ fn archive_text(archive: &[u8]) -> Result<Option<Zeroizing<String>>> {
                 reader.field(4096)?;
             }
             let data = reader.field(MAX_ARCHIVE)?;
+            if kind == b"public.file-url" && !data.is_empty() {
+                files.push(super::filecopy::urls::decode(data)?);
+            }
             if data.is_empty() {
                 continue;
             }
-            if kind == UTF8 && preferred.is_none() {
+            if kind == PNG && image.is_none() {
+                super::image::validate_png(data)?;
+                image = Some(Zeroizing::new(data.to_vec()));
+            } else if kind == TIFF && tiff.is_none() {
+                super::image::validate_tiff(data)?;
+                tiff = Some(Zeroizing::new(data.to_vec()));
+            } else if kind == HTML && rich.html.is_none() {
+                rich.html = super::rich::html(data).ok();
+            } else if kind == RTF && rich.rtf.is_none() {
+                if super::rich::validate_rtf(data).is_ok() {
+                    rich.rtf = Some(Zeroizing::new(data.to_vec()));
+                }
+            } else if kind == UTF8 && preferred.is_none() {
                 if data.len() > MAX_TEXT {
                     return Err(invalid("text exceeds 1 MiB"));
                 }
@@ -141,7 +211,24 @@ fn archive_text(archive: &[u8]) -> Result<Option<Zeroizing<String>>> {
             }
         }
     }
-    Ok(preferred.or(fallback))
+    // A file's path/preview is not the file itself. Preserve the destination clipboard.
+    if file_copy {
+        return Ok(ArchiveContent {
+            files,
+            ..Default::default()
+        });
+    }
+    Ok(ArchiveContent {
+        text: preferred.or(fallback),
+        image,
+        tiff,
+        rich: (rich.html.is_some() || rich.rtf.is_some()).then_some(rich),
+        files: Vec::new(),
+    })
+}
+#[cfg(test)]
+fn archive_text(archive: &[u8]) -> Result<Option<Zeroizing<String>>> {
+    archive_content(archive).map(|content| content.text)
 }
 fn inflate(compressed: &[u8], size: usize) -> Result<Zeroizing<Vec<u8>>> {
     if size > MAX_ARCHIVE || compressed.len() > MAX_COMPRESSED {
@@ -171,6 +258,10 @@ pub struct Packet {
     pub compressed: usize,
     pub uncompressed: usize,
     pub text: Result<Option<Zeroizing<String>>>,
+    pub image: Option<Zeroizing<Vec<u8>>>,
+    pub tiff: Option<Zeroizing<Vec<u8>>>,
+    pub rich: Option<super::rich::RichText>,
+    pub files: Vec<String>,
 }
 #[derive(Default)]
 pub struct Framer {
@@ -238,12 +329,22 @@ impl Framer {
         let uncompressed = number(&self.header[8..12]) as usize;
         let compressed = number(&self.header[12..16]) as usize;
         let promise = self.header[2] & 1 != 0;
-        let text = if self.discard {
+        let content = if self.discard {
             Err(invalid("unsupported pasteboard size or flags"))
         } else {
             // A top-level promise can still include materialized text flavors.
             // Only a flavor with no actual data is a promise we cannot apply.
-            inflate(&self.body, uncompressed).and_then(|archive| archive_text(&archive))
+            inflate(&self.body, uncompressed).and_then(|archive| archive_content(&archive))
+        };
+        let (text, image, tiff, rich, files) = match content {
+            Ok(content) => (
+                Ok(content.text),
+                content.image,
+                content.tiff,
+                content.rich,
+                content.files,
+            ),
+            Err(error) => (Err(error), None, None, None, Vec::new()),
         };
         self.body.zeroize();
         self.header.clear();
@@ -259,12 +360,59 @@ impl Framer {
                 compressed,
                 uncompressed,
                 text,
+                image,
+                tiff,
+                rich,
+                files,
             }),
         ))
     }
 }
 
+/// Prepared off the HEVC/UI threads; callers cannot forge an unvalidated wire packet.
+pub struct ImageMessage(Zeroizing<Vec<u8>>);
+impl ImageMessage {
+    pub fn new(png: &[u8]) -> Result<Self> {
+        encode_image(png).map(Self)
+    }
+}
+pub struct RichMessage(Zeroizing<Vec<u8>>);
+impl RichMessage {
+    pub fn new(rich: &super::rich::RichText) -> Result<Self> {
+        encode_rich(rich).map(Self)
+    }
+}
+pub struct FileMessage(Zeroizing<Vec<u8>>);
+impl FileMessage {
+    pub fn new(paths: &[String]) -> Result<Self> {
+        if paths.is_empty() || paths.len() > 16 {
+            return Err(invalid("invalid file root count"));
+        }
+        let mut archive = Zeroizing::new(Vec::new());
+        for path in paths {
+            let uri = super::filecopy::urls::encode(path)?;
+            put(&mut archive, 1);
+            counted(&mut archive, b"public.file-url");
+            put(&mut archive, 0);
+            put(&mut archive, 0);
+            counted(&mut archive, uri.as_bytes());
+        }
+        compress_archive(&archive).map(Self)
+    }
+}
 pub enum Command {
+    SendFiles {
+        epoch: u64,
+        message: FileMessage,
+    },
+    SendRich {
+        epoch: u64,
+        message: RichMessage,
+    },
+    SendImage {
+        epoch: u64,
+        message: ImageMessage,
+    },
     Configure {
         epoch: u64,
         enabled: bool,
@@ -281,6 +429,26 @@ pub enum Command {
     },
 }
 pub enum Event {
+    FilesSnapshot {
+        epoch: u64,
+        sequence: u32,
+        paths: Vec<String>,
+    },
+    TiffSnapshot {
+        epoch: u64,
+        sequence: u32,
+        tiff: Zeroizing<Vec<u8>>,
+    },
+    RichSnapshot {
+        epoch: u64,
+        sequence: u32,
+        rich: super::rich::RichText,
+    },
+    ImageSnapshot {
+        epoch: u64,
+        sequence: u32,
+        png: Zeroizing<Vec<u8>>,
+    },
     Changed {
         epoch: u64,
     },
@@ -308,10 +476,24 @@ pub enum Event {
     },
 }
 impl Event {
+    pub fn is_snapshot(&self) -> bool {
+        matches!(
+            self,
+            Self::FilesSnapshot { .. }
+                | Self::Snapshot { .. }
+                | Self::ImageSnapshot { .. }
+                | Self::TiffSnapshot { .. }
+                | Self::RichSnapshot { .. }
+        )
+    }
     pub fn epoch(&self) -> Option<u64> {
         match self {
-            Self::Changed { epoch }
+            Self::FilesSnapshot { epoch, .. }
+            | Self::Changed { epoch }
             | Self::SessionChanged { epoch }
+            | Self::TiffSnapshot { epoch, .. }
+            | Self::RichSnapshot { epoch, .. }
+            | Self::ImageSnapshot { epoch, .. }
             | Self::Snapshot { epoch, .. }
             | Self::Sent { epoch }
             | Self::Problem { epoch, .. } => Some(*epoch),
@@ -325,8 +507,21 @@ struct Pending {
     sequence: u32,
     started: Instant,
 }
+/// Apple extended ServerInit: two-byte prefix, flags, then 16-byte MSB-first command mask.
+/// Only capability bits are retained; the host name is neither retained nor logged here.
+pub fn file_capability(server_name: &[u8]) -> Option<(bool, bool)> {
+    if server_name.len() < 22 || !server_name.starts_with(&[0, 0]) {
+        return None;
+    }
+    let flags = u32::from_be_bytes(server_name[2..6].try_into().unwrap());
+    Some((
+        server_name[6 + 0x22 / 8] & (0x80 >> (0x22 % 8)) != 0,
+        flags & 1 != 0,
+    ))
+}
 #[derive(Default)]
 pub struct Transport {
+    file_capability: Option<(bool, bool)>,
     epoch: u64,
     enabled: bool,
     receive: bool,
@@ -339,7 +534,22 @@ pub struct Transport {
     events: VecDeque<Event>,
 }
 impl Transport {
+    pub fn file_capability_bits(&self) -> u32 {
+        self.file_capability.map_or(0, |(supported, observe_only)| {
+            1 | ((supported as u32) << 1) | ((observe_only as u32) << 2)
+        })
+    }
+    pub fn from_server_name(name: &[u8]) -> Self {
+        Self {
+            file_capability: file_capability(name),
+            ..Default::default()
+        }
+    }
     fn event(&mut self, event: Event) {
+        // TIFF can be much larger than text: keep one latest payload, not sixteen images.
+        if event.is_snapshot() {
+            self.events.retain(|queued| !queued.is_snapshot());
+        }
         if self.events.len() == 16 {
             if matches!(event, Event::Trace { .. }) {
                 return;
@@ -389,6 +599,18 @@ impl Transport {
                     packed: 0,
                     unpacked: 0,
                 });
+                if enabled {
+                    let bits = self.file_capability.map_or(0, |(supported, observe_only)| {
+                        1 | ((supported as u32) << 1) | ((observe_only as u32) << 2)
+                    });
+                    self.event(Event::Trace {
+                        opcode: 0x22,
+                        detail: "file_copy_capability",
+                        value: bits,
+                        packed: 0,
+                        unpacked: 0,
+                    });
+                }
                 self.changed();
                 Ok(Some(Zeroizing::new(monitor(enabled))))
             }
@@ -416,6 +638,24 @@ impl Transport {
                     unpacked: 0,
                 });
                 Ok(Some(Zeroizing::new(fetch(self.echo))))
+            }
+            Command::SendFiles { epoch, message } => {
+                if !self.enabled || !self.send || epoch != self.epoch {
+                    return Ok(None);
+                }
+                Ok(Some(message.0))
+            }
+            Command::SendRich { epoch, message } => {
+                if !self.enabled || !self.send || epoch != self.epoch {
+                    return Ok(None);
+                }
+                Ok(Some(message.0))
+            }
+            Command::SendImage { epoch, message } => {
+                if !self.enabled || !self.send || epoch != self.epoch {
+                    return Ok(None);
+                }
+                Ok(Some(message.0))
             }
             Command::Send { epoch, text } => {
                 if !self.enabled || !self.send || epoch != self.epoch {
@@ -451,6 +691,9 @@ impl Transport {
         if command == 2 {
             self.dirty = true;
             self.changed();
+        }
+        if command == 17 {
+            self.file_capability = None;
         }
         if matches!(command, 6 | 8 | 17) {
             self.session_changed();
@@ -519,6 +762,42 @@ impl Transport {
         let pending = self.pending.take().unwrap();
         if pending.epoch == self.epoch && self.enabled && self.receive && !self.dirty {
             match packet.text {
+                Ok(_) if !packet.files.is_empty() => self.event(Event::FilesSnapshot {
+                    epoch: self.epoch,
+                    sequence: pending.sequence,
+                    paths: packet.files,
+                }),
+                Ok(text)
+                    if packet.rich.is_some()
+                        && text.as_ref().is_some_and(|plain| !plain.is_empty()) =>
+                {
+                    let mut rich = packet.rich.unwrap();
+                    rich.plain = text;
+                    self.event(Event::RichSnapshot {
+                        epoch: self.epoch,
+                        sequence: pending.sequence,
+                        rich,
+                    });
+                }
+                Ok(_) if packet.image.is_some() => self.event(Event::ImageSnapshot {
+                    epoch: self.epoch,
+                    sequence: pending.sequence,
+                    png: packet.image.unwrap(),
+                }),
+                Ok(_) if packet.tiff.is_some() => self.event(Event::TiffSnapshot {
+                    epoch: self.epoch,
+                    sequence: pending.sequence,
+                    tiff: packet.tiff.unwrap(),
+                }),
+                Ok(text) if packet.rich.is_some() => {
+                    let mut rich = packet.rich.unwrap();
+                    rich.plain = text;
+                    self.event(Event::RichSnapshot {
+                        epoch: self.epoch,
+                        sequence: pending.sequence,
+                        rich,
+                    });
+                }
                 Ok(text) => self.event(Event::Snapshot {
                     epoch: self.epoch,
                     sequence: pending.sequence,
@@ -558,6 +837,344 @@ mod tests {
     fn request(t: &mut Transport, sequence: u32) -> u32 {
         t.command(Command::Fetch { epoch: 1, sequence }).unwrap();
         t.echo
+    }
+    fn png_fixture() -> Zeroizing<Vec<u8>> {
+        let mut dib = vec![0; 44];
+        dib[..4].copy_from_slice(&40u32.to_le_bytes());
+        dib[4..8].copy_from_slice(&1u32.to_le_bytes());
+        dib[8..12].copy_from_slice(&1u32.to_le_bytes());
+        dib[12..14].copy_from_slice(&1u16.to_le_bytes());
+        dib[14..16].copy_from_slice(&24u16.to_le_bytes());
+        dib[40..43].copy_from_slice(&[0, 0, 255]);
+        super::super::image::dib_to_png(&dib).unwrap()
+    }
+    fn rich_fixture() -> super::super::rich::RichText {
+        super::super::rich::RichText {
+            plain: Some(Zeroizing::new("中文🍎".into())),
+            html: Some(Zeroizing::new("<b>中文🍎</b>".into())),
+            rtf: Some(Zeroizing::new(b"{\\rtf1 bold}".to_vec())),
+        }
+    }
+    #[test]
+    fn user_session_change_revokes_cached_file_capability_until_new_handshake() {
+        let mut name = vec![0; 22];
+        name[10] = 0x20;
+        let mut transport = Transport::from_server_name(&name);
+        assert_eq!(transport.file_capability_bits(), 3);
+        transport.status(17);
+        assert_eq!(transport.file_capability_bits(), 0);
+    }
+    #[test]
+    fn file_url_items_preserve_each_root_and_stale_epochs_never_send_them() {
+        let paths = vec![
+            "/tmp/maccanvas-fixture/中文 a.txt".into(),
+            "/tmp/maccanvas-fixture/folder".into(),
+        ];
+        let message = FileMessage::new(&paths).unwrap();
+        let packet = decode(&message.0);
+        assert_eq!(packet.files, paths);
+        assert!(packet.text.unwrap().is_none());
+        let mut transport = Transport::default();
+        assert!(
+            transport
+                .command(Command::SendFiles {
+                    epoch: 1,
+                    message: FileMessage::new(&paths).unwrap()
+                })
+                .unwrap()
+                .is_none()
+        );
+        transport
+            .command(Command::Configure {
+                epoch: 1,
+                enabled: true,
+                receive: true,
+                send: true,
+            })
+            .unwrap();
+        transport
+            .command(Command::Fetch {
+                epoch: 1,
+                sequence: 23,
+            })
+            .unwrap();
+        transport.packet(decode(&FileMessage::new(&paths).unwrap().0));
+        assert!(transport.events.iter().any(|event|matches!(event,Event::FilesSnapshot{epoch:1,sequence:23,paths:received} if received==&paths)));
+    }
+    #[test]
+    fn native_file_capability_uses_server_mask_without_sending_a_file_command() {
+        let mut name = vec![0; 22];
+        name[10] = 0x20;
+        assert_eq!(file_capability(&name), Some((true, false)));
+        name[5] = 1;
+        assert_eq!(file_capability(&name), Some((true, true)));
+        name[10] = 0x10;
+        assert_eq!(file_capability(&name), Some((false, true)));
+        assert_eq!(file_capability(b"ordinary Mac name"), None);
+        let mut transport = Transport::from_server_name(&name);
+        assert_eq!(
+            &*transport
+                .command(Command::Configure {
+                    epoch: 1,
+                    enabled: true,
+                    receive: true,
+                    send: true
+                })
+                .unwrap()
+                .unwrap(),
+            &monitor(true)
+        );
+        assert!(transport.events.iter().any(|event| matches!(
+            event,
+            Event::Trace {
+                opcode: 0x22,
+                detail: "file_copy_capability",
+                value: 5,
+                ..
+            }
+        )));
+    }
+    #[test]
+    fn snapshot_queue_coalesces_images_rich_and_text_while_preserving_state() {
+        let mut transport = Transport::default();
+        transport.event(Event::SessionChanged { epoch: 1 });
+        transport.event(Event::TiffSnapshot {
+            epoch: 1,
+            sequence: 1,
+            tiff: Zeroizing::new(vec![0; 8]),
+        });
+        transport.event(Event::RichSnapshot {
+            epoch: 1,
+            sequence: 2,
+            rich: rich_fixture(),
+        });
+        transport.event(Event::Snapshot {
+            epoch: 1,
+            sequence: 3,
+            text: Some(Zeroizing::new("latest".into())),
+        });
+        assert_eq!(transport.events.len(), 2);
+        assert!(matches!(
+            transport.events.front(),
+            Some(Event::SessionChanged { epoch: 1 })
+        ));
+        assert!(matches!(
+            transport.events.back(),
+            Some(Event::Snapshot { sequence: 3, .. })
+        ));
+    }
+    #[test]
+    fn rich_flavors_keep_plain_fallback_and_use_authorized_epoch() {
+        let rich = rich_fixture();
+        let wire = encode_rich(&rich).unwrap();
+        let packet = decode(&wire);
+        assert_eq!(&**packet.text.as_ref().unwrap().as_ref().unwrap(), "中文🍎");
+        assert_eq!(
+            &**packet.rich.as_ref().unwrap().html.as_ref().unwrap(),
+            "<b>中文🍎</b>"
+        );
+        assert_eq!(
+            &**packet.rich.as_ref().unwrap().rtf.as_ref().unwrap(),
+            b"{\\rtf1 bold}"
+        );
+        let mut transport = Transport::default();
+        assert!(
+            transport
+                .command(Command::SendRich {
+                    epoch: 1,
+                    message: RichMessage::new(&rich).unwrap()
+                })
+                .unwrap()
+                .is_none()
+        );
+        transport
+            .command(Command::Configure {
+                epoch: 1,
+                enabled: true,
+                receive: true,
+                send: true,
+            })
+            .unwrap();
+        transport
+            .command(Command::Fetch {
+                epoch: 1,
+                sequence: 7,
+            })
+            .unwrap();
+        transport.packet(decode(&wire));
+        assert!(transport.events.iter().any(|event|matches!(event,Event::RichSnapshot{epoch:1,sequence:7,rich} if rich.plain.as_deref().map(|s|s.as_str())==Some("中文🍎"))));
+        assert!(
+            transport
+                .command(Command::SendRich {
+                    epoch: 2,
+                    message: RichMessage::new(&rich).unwrap()
+                })
+                .unwrap()
+                .is_none()
+        );
+    }
+    #[test]
+    fn invalid_rich_does_not_destroy_valid_plain_fallback() {
+        let wire = encode_flavors(&[
+            (UTF8, b"plain"),
+            (HTML, b"invalid\0html"),
+            (RTF, b"invalid rtf"),
+        ])
+        .unwrap();
+        let packet = decode(&wire);
+        assert_eq!(&**packet.text.unwrap().as_ref().unwrap(), "plain");
+        assert!(packet.rich.is_none());
+    }
+    #[test]
+    fn tiff_flavor_is_framed_without_decoding_on_the_video_thread() {
+        let mut cursor = std::io::Cursor::new(Vec::new());
+        {
+            let mut encoder = tiff::encoder::TiffEncoder::new(&mut cursor).unwrap();
+            encoder
+                .write_image::<tiff::encoder::colortype::RGB8>(1, 1, &[255, 0, 0])
+                .unwrap();
+        }
+        let wire = encode_flavors(&[(TIFF, cursor.get_ref())]).unwrap();
+        let packet = decode(&wire);
+        assert_eq!(&**packet.tiff.as_ref().unwrap(), cursor.get_ref());
+        assert!(packet.image.is_none());
+        let mut transport = Transport::default();
+        transport
+            .command(Command::Configure {
+                epoch: 1,
+                enabled: true,
+                receive: true,
+                send: false,
+            })
+            .unwrap();
+        transport
+            .command(Command::Fetch {
+                epoch: 1,
+                sequence: 9,
+            })
+            .unwrap();
+        transport.packet(decode(&wire));
+        assert!(transport.events.iter().any(|e| matches!(
+            e,
+            Event::TiffSnapshot {
+                epoch: 1,
+                sequence: 9,
+                ..
+            }
+        )));
+    }
+    #[test]
+    fn png_flavor_uses_existing_archive_and_survives_encrypted_record_boundaries() {
+        let png = png_fixture();
+        let wire = encode_image(&png).unwrap();
+        let mut framer = Framer::default();
+        let mut complete = None;
+        for chunk in wire.chunks(7) {
+            let (used, packet) = framer.feed(chunk).unwrap();
+            assert_eq!(used, chunk.len());
+            if packet.is_some() {
+                complete = packet;
+            }
+        }
+        let packet = complete.unwrap();
+        assert!(packet.text.unwrap().is_none());
+        assert_eq!(&**packet.image.as_ref().unwrap(), &*png);
+        let mut transport = Transport::default();
+        transport
+            .command(Command::Configure {
+                epoch: 1,
+                enabled: true,
+                receive: true,
+                send: true,
+            })
+            .unwrap();
+        transport
+            .command(Command::Fetch {
+                epoch: 1,
+                sequence: 77,
+            })
+            .unwrap();
+        transport.packet(decode(&wire));
+        assert!(transport.events.iter().any(|event|matches!(event,Event::ImageSnapshot{epoch:1,sequence:77,png:data} if **data==*png)));
+        let mut transport = Transport::default();
+        assert!(
+            transport
+                .command(Command::SendImage {
+                    epoch: 1,
+                    message: ImageMessage::new(&png).unwrap()
+                })
+                .unwrap()
+                .is_none()
+        );
+        transport
+            .command(Command::Configure {
+                epoch: 2,
+                enabled: true,
+                receive: false,
+                send: true,
+            })
+            .unwrap();
+        assert!(
+            transport
+                .command(Command::SendImage {
+                    epoch: 1,
+                    message: ImageMessage::new(&png).unwrap()
+                })
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            transport
+                .command(Command::SendImage {
+                    epoch: 2,
+                    message: ImageMessage::new(&png).unwrap()
+                })
+                .unwrap()
+                .is_some()
+        );
+    }
+    #[test]
+    fn file_paths_and_preview_images_never_masquerade_as_file_transfer() {
+        let png = png_fixture();
+        let mut archive = Vec::new();
+        put(&mut archive, 3);
+        for (kind, data) in [
+            (
+                b"public.file-url".as_slice(),
+                b"file:///fixture.txt".as_slice(),
+            ),
+            (UTF8, b"fixture.txt".as_slice()),
+            (PNG, png.as_slice()),
+        ] {
+            counted(&mut archive, kind);
+            put(&mut archive, 0);
+            put(&mut archive, 0);
+            counted(&mut archive, data);
+        }
+        let content = archive_content(&archive).unwrap();
+        let (text, image) = (content.text, content.image);
+        assert!(text.is_none());
+        assert!(image.is_none());
+    }
+    #[test]
+    fn png_and_text_flavors_are_parsed_without_treating_images_as_text() {
+        let png = png_fixture();
+        let mut archive = Vec::new();
+        put(&mut archive, 2);
+        for (kind, data) in [(UTF8, b"caption".as_slice()), (PNG, png.as_slice())] {
+            counted(&mut archive, kind);
+            put(&mut archive, 0);
+            put(&mut archive, 0);
+            counted(&mut archive, data);
+        }
+        let content = archive_content(&archive).unwrap();
+        let (text, image) = (content.text, content.image);
+        assert_eq!(&**text.as_ref().unwrap(), "caption");
+        assert_eq!(&**image.as_ref().unwrap(), &*png);
+        assert!(encode_image(b"invalid").is_err());
+        let mut invalid = png.to_vec();
+        invalid[16..20].copy_from_slice(&u32::MAX.to_be_bytes());
+        assert!(encode_image(&invalid).is_err());
     }
     #[test]
     fn fixed_messages_match_documented_bytes() {

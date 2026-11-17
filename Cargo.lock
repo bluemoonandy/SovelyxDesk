@@ -3219,6 +3219,7 @@ dependencies = [
  "md-5",
  "native-hevc",
  "plist",
+ "png",
  "rand 0.8.8",
  "raw-window-handle",
  "resvg",
@@ -3237,6 +3238,7 @@ dependencies = [
  "subtle",
  "tempfile",
  "thiserror 2.0.21",
+ "tiff",
  "tokio",
  "tokio-util",
  "url",
@@ -5838,6 +5840,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
+]
+
+[[package]]
+name = "tiff"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b63feaf3343d35b6ca4d50483f94843803b0f51634937cc2ec519fc32232bc52"
+dependencies = [
+ "flate2",
+ "half",
+ "quick-error",
+ "weezl",
 ]
 
 [[package]]
