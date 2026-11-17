@@ -460,7 +460,12 @@ impl FileMessage {
             put(&mut archive, 0);
             counted(&mut archive, uri.as_bytes());
         }
-        compress_archive(&archive).map(Self)
+        let mut packet = compress_archive(&archive)?;
+        // Apple routes data-only sends into an existing helper's cache without
+        // publishing new items. Declare this file pasteboard explicitly; its URL
+        // data is already materialized, so no deferred file-data request is needed.
+        packet[2] = 1;
+        Ok(Self(packet))
     }
 }
 pub enum Command {
@@ -929,6 +934,20 @@ mod tests {
             html: Some(Zeroizing::new("<b>中文🍎</b>".into())),
             rtf: Some(Zeroizing::new(b"{\\rtf1 bold}".to_vec())),
         }
+    }
+    #[test]
+    fn new_file_clipboard_declares_items_instead_of_only_fulfilling_cached_data() {
+        let paths = vec!["/tmp/maccanvas-fixture/file.txt".to_owned()];
+        let wire = FileMessage::new(&paths).unwrap();
+        // A running Apple helper acknowledges data-only messages without publishing
+        // new pasteboard items. File publication must take the declaration path.
+        assert_eq!(
+            wire.0[2], 1,
+            "new file items must take the declaration path"
+        );
+        let packet = decode(&wire.0);
+        assert!(packet.promise);
+        assert_eq!(packet.files, paths);
     }
     #[test]
     fn file_format_inventory_is_bounded_and_never_contains_names_or_values() {

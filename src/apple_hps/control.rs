@@ -830,6 +830,10 @@ mod native_clipboard_tests {
                 .unwrap()
                 .1
                 .unwrap();
+            assert!(
+                metadata.promise,
+                "encrypted file publication must declare new items"
+            );
             assert_eq!(metadata.files, vec!["/tmp/maccanvas-fixture/file.txt"]);
             assert_eq!(read_record(&mut socket, &mut cipher), apple::monitor(false));
         });
