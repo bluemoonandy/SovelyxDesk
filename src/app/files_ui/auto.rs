@@ -74,14 +74,13 @@ pub(super) fn guard(app: &App, state: &mut State) {
         app.set_clipboard_shared(false);
         if let Some(session) = &state.session
             && !session.uses_hevc()
+            && session.share_clipboard(false).is_err()
         {
-            if session.share_clipboard(false).is_err() {
-                state.files.auto.clear();
-                app.set_auto_clipboard_status(
-                    "Error — disable VNC sharing before starting automatic SSH sync".into(),
-                );
-                return;
-            }
+            state.files.auto.clear();
+            app.set_auto_clipboard_status(
+                "Error — disable VNC sharing before starting automatic SSH sync".into(),
+            );
+            return;
         }
     }
     let auto = &mut state.files.auto;
@@ -178,7 +177,10 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
 pub(super) fn complete(app: &App, state: &mut State, id: u64, result: Result<Reply>) -> Result<()> {
     // Recheck at application time; a lock or disconnect can occur while SSH is awaiting output.
     guard(app, state);
-    if !state.files.auto.running || !native::interactive_session() {
+    if !state.files.auto.running
+        || !state.files.auto.sync.expects(id)
+        || !native::interactive_session()
+    {
         return Ok(());
     }
     let now = state.files.auto.now();
@@ -205,7 +207,7 @@ pub(super) fn complete(app: &App, state: &mut State, id: u64, result: Result<Rep
                     Ok(None) => (), // Another application copied newer data while the result was in transit.
                     Err(_) => {
                         app.set_auto_clipboard_status(
-                            "Error — Windows clipboard unavailable; next change will retry".into(),
+                            "Error — Windows clipboard unavailable; retrying with backoff".into(),
                         );
                         return Ok(());
                     }

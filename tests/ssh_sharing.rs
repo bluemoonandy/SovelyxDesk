@@ -952,14 +952,42 @@ fn auto_clipboard_reuses_verified_ssh_checks_revisions_and_keeps_contents_out_of
     let read = exchange(5, Some(written.revision), None);
     assert_eq!(read.text.unwrap().as_str(), CLIPBOARD);
     assert_eq!(fixture.evidence.authentications.load(Ordering::Relaxed), 1);
+    // Disable/disconnect cancels queued work before execution; it must not write or emit a stale result.
+    let cancel = CancellationToken::new();
+    cancel.cancel();
+    client
+        .command(Command::AutoClipboard {
+            request: SyncRequest {
+                id: 6,
+                sequence: 6,
+                since: Some(stale.revision),
+                text: Some(Zeroizing::new("CANCELLED_PRIVATE_TEXT".into())),
+                max_bytes: 1024 * 1024,
+            },
+            cancel,
+        })
+        .unwrap();
     // Existing manual operations remain available on that same session.
     client.command(Command::CopyClipboard).unwrap();
-    wait(&client, |e| matches!(e, Event::Clipboard(_)));
+    wait(&client, |e| match e {
+        Event::Clipboard(text) => {
+            assert_eq!(text.as_str(), CLIPBOARD);
+            true
+        }
+        Event::AutoClipboard { .. } => panic!("cancelled work must not escape its generation"),
+        _ => false,
+    });
     client.close();
     client.finish().unwrap();
     audit.shutdown().unwrap();
     let log = std::fs::read_to_string(audit.audit().path()).unwrap();
-    for secret in [PASSWORD, CLIPBOARD, text, "STALE_PRIVATE_TEXT"] {
+    for secret in [
+        PASSWORD,
+        CLIPBOARD,
+        text,
+        "STALE_PRIVATE_TEXT",
+        "CANCELLED_PRIVATE_TEXT",
+    ] {
         assert!(!log.contains(secret));
     }
 }

@@ -57,6 +57,7 @@ pub struct Sync {
     prefs: Preferences,
     sequence: u32,
     revision: Option<i64>,
+    apply_revision: Option<i64>,
     digest: Option<[u8; 32]>,
     pending: Option<Pending>,
     flight: Option<Flight>,
@@ -72,6 +73,7 @@ impl Sync {
         self.prefs = prefs;
         self.sequence = sequence;
         self.revision = None;
+        self.apply_revision = None;
         self.digest = None;
         self.pending = None;
         self.flight = None;
@@ -102,6 +104,10 @@ impl Sync {
     pub fn busy(&self) -> bool {
         self.flight.is_some()
     }
+    pub fn expects(&self, id: u64) -> bool {
+        self.flight.as_ref().is_some_and(|flight| flight.id == id)
+    }
+
     pub fn start(&mut self, now: u64) -> Option<Request> {
         if !self.prefs.enabled
             || !self.prefs.valid()
@@ -175,12 +181,22 @@ impl Sync {
         {
             return None;
         }
-        reply
+        let text = reply
             .text
-            .filter(|text| self.accepts(text) && Some(hash(text)) != self.digest)
+            .filter(|text| self.accepts(text) && Some(hash(text)) != self.digest);
+        if text.is_some() {
+            // A Windows clipboard lock can fail after the SSH read succeeded. Acknowledge
+            // the remote revision only after a successful local commit, so polling retries it.
+            self.revision = previous;
+            self.apply_revision = Some(reply.revision);
+        }
+        text
     }
     pub fn applied(&mut self, sequence: u32, text: &str) {
         self.sequence = sequence;
+        if let Some(revision) = self.apply_revision.take() {
+            self.revision = Some(revision);
+        }
         self.digest = Some(hash(text));
         self.pending = None;
     }
@@ -315,6 +331,24 @@ mod tests {
         );
         s.prefs.to_windows = false;
         assert!(s.start(1600).is_none());
+    }
+    #[test]
+    fn a_failed_windows_apply_retries_the_remote_revision() {
+        let mut s = ready();
+        let r = s.start(750).unwrap();
+        assert!(
+            s.complete(r.id, reply(2, Some("remote")), 10, 800)
+                .is_some()
+        );
+        // Simulate OpenClipboard failing: no applied() acknowledgement.
+        let r = s.start(1550).unwrap();
+        assert_eq!(r.since, Some(1));
+        let text = s
+            .complete(r.id, reply(2, Some("remote")), 10, 1600)
+            .unwrap();
+        s.applied(11, &text);
+        let r = s.start(2350).unwrap();
+        assert_eq!(r.since, Some(2));
     }
     #[test]
     fn bounded_retry_and_single_flight() {

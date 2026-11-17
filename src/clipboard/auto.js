@@ -20,6 +20,7 @@ function run() {
                 if (input.text.length === 0 || input.text.indexOf("\u0000") !== -1 || Number(text.lengthOfBytesUsingEncoding($.NSUTF8StringEncoding)) > input.max_bytes) { throw Error(); }
                 // Conditional write: a remote copy after the snapshot must not be silently overwritten.
                 // NSPasteboard has no atomic compare-and-set API; keep this check next to the write.
+                result.revision = Number(pb.changeCount);
                 if (input.since === result.revision) {
                     pb.clearContents;
                     if (!pb.setStringForType(text, $.NSPasteboardTypeString)) { throw Error(); }
