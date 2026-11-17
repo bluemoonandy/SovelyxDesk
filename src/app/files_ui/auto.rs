@@ -201,6 +201,7 @@ pub(super) fn complete(app: &App, state: &mut State, id: u64, result: Result<Rep
             if let Some(text) = text
                 && !app.get_files_busy()
             {
+                scope(&state.files)?.event("clipboard.auto.apply_requested",Level::Info,json!({"clipboard.direction":"mac_to_windows","clipboard.text_bytes":text.len(),"clipboard.request_id":id}))?;
                 match native::write_if_sequence(
                     window_handle(app)?,
                     &text,

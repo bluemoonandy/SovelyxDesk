@@ -718,7 +718,30 @@ async fn run(
         } = command
         {
             let id = sync_request.id;
+            if cancel.is_cancelled() {
+                continue;
+            }
+            let sending = sync_request.text.is_some();
+            let bytes = sync_request.text.as_ref().map_or(0, |text| text.len());
+            let attributes = json!({"clipboard.direction":if sending {"windows_to_mac"} else {"mac_to_windows"},"clipboard.request_id":id,"clipboard.text_bytes":bytes,"network.encrypted":true});
+            // Retain the existing fail-closed audit gate. Polls are asynchronous metadata;
+            // writes wait for durable intent before any clipboard bytes leave this client.
+            if sending {
+                request
+                    .audit
+                    .critical("ssh.clipboard.auto.requested", Level::Info, attributes)?;
+            } else {
+                request
+                    .audit
+                    .event("ssh.clipboard.auto.poll", Level::Info, attributes)?;
+            }
             let result = auto_clipboard(&ssh, sync_request, &cancel, &control.stop).await;
+            match &result {
+                Ok(reply) if reply.applied || reply.text.is_some() => request.audit.critical(
+                    "ssh.clipboard.auto.completed",Level::Info,json!({"clipboard.request_id":id,"clipboard.applied":reply.applied,"clipboard.text_bytes":reply.text.as_ref().map_or(bytes,|text|text.len()),"network.encrypted":true}))?,
+                Err(error) if !matches!(error,Error::Cancelled) => request.audit.event("ssh.clipboard.auto.failed",Level::Warn,audit::error_attributes(error))?,
+                _ => (),
+            }
             if control.stop.is_cancelled() {
                 break;
             }

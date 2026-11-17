@@ -984,6 +984,8 @@ fn auto_clipboard_reuses_verified_ssh_checks_revisions_and_keeps_contents_out_of
     client.finish().unwrap();
     audit.shutdown().unwrap();
     let log = std::fs::read_to_string(audit.audit().path()).unwrap();
+    assert!(log.contains("ssh.clipboard.auto.requested"));
+    assert!(log.contains("ssh.clipboard.auto.completed"));
     for secret in [
         PASSWORD,
         CLIPBOARD,

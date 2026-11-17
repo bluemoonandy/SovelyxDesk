@@ -14,7 +14,7 @@ MacCanvas 基线在 `src/session.rs` 显式禁止 HEVC 使用普通 VNC clipboar
 
 复用现有 `files::Client`、主机指纹绑定、认证及 Windows Hello 门禁。保持一个已认证 SSH 连接，每次同步只创建有界 exec channel，不为每次复制重新连接或认证。不安装 Mac 服务端组件。仍需启用 macOS Remote Login，并以当前 `/dev/console` 图形登录账号建立 SSH。
 
-- `src/clipboard/sync.rs`：单任务状态机、SHA-256 内容摘要、Windows 变化序号、Mac changeCount、150ms 去抖、正常操作完成后 750ms 轮询间隔；失败退避 2/4/8/16/30 秒，后续最多每 30 秒尝试一次。不打印每次轮询或剪贴板内容。
+- `src/clipboard/sync.rs`：单任务状态机、SHA-256 内容摘要、Windows 变化序号、Mac changeCount、150ms 去抖、正常操作完成后 750ms 轮询间隔；失败退避 2/4/8/16/30 秒，后续最多每 30 秒尝试一次。轮询仅记录异步元数据；写入意图及变化结果保留原有持久化安全审计门禁。剪贴板原文及摘要不进入日志。
 - `src/clipboard/auto.js`：固定 JXA/AppKit helper；先验证图形登录账号；通过标准输入读取 JSON，文本绝不拼进 shell 命令。使用纯文本类型、changeCount 条件写入和读前/读后版本检查。错误仅返回固定代码。
 - `src/files.rs`：在现有 SSH 工作线程内串行执行自动请求，5 秒通道打开超时、5 秒操作超时、有界输出、取消 token、独立结果事件。自动操作不清除手动文件操作的取消标志或进度。
 - `src/clipboard/native.rs`：Unicode Windows 快照；在持有剪贴板锁期间核对变化序号并提交，防止迟到的 Mac 读取覆盖 Windows 新复制内容。通过会话状态和输入桌面名称拒绝锁屏/切换会话/安全桌面。
@@ -33,7 +33,7 @@ MacCanvas 基线在 `src/session.rs` 显式禁止 HEVC 使用普通 VNC clipboar
 
 Mac 的 NSPasteboard 不提供跨进程原子 compare-and-set。本实现把 changeCount 复查紧靠写入，但仍不能承诺另一 Mac 应用恰在检查与写入之间复制时绝无竞争；未宣称具备服务端事务语义。取消也无法撤销已经在远端完成的写入。
 
-不识别所有密码或敏感文本。开启后属于用户授权的跨设备纯文本共享。没有剪贴板内容日志、认证信息日志或剪贴板文本落盘。
+不识别所有密码或敏感文本。开启后属于用户授权的跨设备纯文本共享。没有剪贴板内容日志、认证信息日志或剪贴板文本落盘。新增审计事件为 `ssh.clipboard.auto.poll/requested/completed/failed` 及 `clipboard.auto.apply_requested`，只含方向、字节数、应用结果、本地请求编号或错误类别。
 
 ## 自动化验证与真实机器验收分开记录
 
