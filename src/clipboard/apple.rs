@@ -240,9 +240,9 @@ impl Framer {
         let promise = self.header[2] & 1 != 0;
         let text = if self.discard {
             Err(invalid("unsupported pasteboard size or flags"))
-        } else if promise {
-            Ok(None)
         } else {
+            // A top-level promise can still include materialized text flavors.
+            // Only a flavor with no actual data is a promise we cannot apply.
             inflate(&self.body, uncompressed).and_then(|archive| archive_text(&archive))
         };
         self.body.zeroize();
@@ -639,7 +639,14 @@ mod tests {
         assert!(decode(&p).text.is_err());
         let mut p = encode_text("fixture").unwrap();
         p[2] = 1;
-        assert!(decode(&p).text.unwrap().is_none());
+        assert_eq!(decode(&p).text.unwrap().unwrap().as_str(), "fixture");
+        let mut promised_flavor = Vec::new();
+        put(&mut promised_flavor, 1);
+        counted(&mut promised_flavor, UTF8);
+        put(&mut promised_flavor, 0);
+        put(&mut promised_flavor, 0);
+        put(&mut promised_flavor, 0);
+        assert!(archive_text(&promised_flavor).unwrap().is_none());
         let mut p = encode_text("fixture").unwrap();
         p[8..12].copy_from_slice(&u32::MAX.to_be_bytes());
         assert!(Framer::default().feed(&p).is_err());

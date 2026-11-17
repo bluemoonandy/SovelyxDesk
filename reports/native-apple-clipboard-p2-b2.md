@@ -32,7 +32,7 @@
 
 ViewerInfo：MacCanvas 当前位图与 Go 实现一致。RFC只明确服务器查询其中观察模式相关位，尚无证据要求额外的剪贴板能力位；不修改既有认证、ViewerInfo或视频 Offer。Go 既会在初始 prelude 中启用，也提供 `SetSharedClipboard` 在运行中切换。本实验选择**加密控制通道就绪后**按用户授权发送，不在明文 prelude 中试发。
 
-Pasteboard：归档是一个或多个 item 的连续记录，每个 item 为 flavor_count，随后每种 flavor：计数长度 UTI、reserved、tag_count、计数长度 key/value 对、计数长度 primary data。UTF-8 用 `public.utf8-plain-text`；接收兼容 `public.utf16-plain-text` 的大端 UTF-16，严格校验代理项。0x1F 顶层 promise 不作为实际文本应用。空归档/无文本不清空另一端。zlib 接收完整流及 Z_SYNC_FLUSH 非终结流，发送后者，不把正常缺少 zlib终结尾误判为损坏。
+Pasteboard：归档是一个或多个 item 的连续记录，每个 item 为 flavor_count，随后每种 flavor：计数长度 UTI、reserved、tag_count、计数长度 key/value 对、计数长度 primary data。UTF-8 用 `public.utf8-plain-text`；接收兼容 `public.utf16-plain-text` 的大端 UTF-16，严格校验代理项。0x1F 顶层 promise 仅作为标记保留；按 Go Text() 的语义，有实际数据的文本 flavor 仍可接收，没有 primary data 的 flavor 不应用、不自动兑现文件承诺。空归档/无文本不清空另一端。zlib 接收完整流及 Z_SYNC_FLUSH 非终结流，发送后者，不把正常缺少 zlib终结尾误判为损坏。
 
 ## 最小改动与安全界限
 
