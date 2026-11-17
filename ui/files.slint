@@ -40,6 +40,12 @@ export component SshSharingOverlay inherits Rectangle {
     callback cancel();
     callback copy-text();
     callback send-text();
+    in-out property <bool> auto-enabled: false;
+    in-out property <bool> auto-to-mac: true;
+    in-out property <bool> auto-to-windows: true;
+    in-out property <string> auto-limit: "1048576";
+    in property <string> auto-status;
+    callback auto-changed();
     callback changed();
     callback paste-text();
     background: GlassTheme.dark ? #00000099 : #00000033;
@@ -72,12 +78,24 @@ export component SshSharingOverlay inherits Rectangle {
                 if root.error != "" : Text { text: root.error; accessible-label: "SSH operation error: " + root.error; color: GlassTheme.dark ? #ff6961 : #c62820; wrap: word-wrap; font-size: 12px; }
                 if root.clipboard-view && !root.key-pending : VerticalLayout {
                     spacing: 12px;
-                    if root.vnc-available : CheckBox { text: "Share plain-text clipboard over VNC"; checked <=> root.shared; toggled => { root.changed(); } }
+                    if root.vnc-available : CheckBox { text: "Share plain-text clipboard over VNC"; checked <=> root.shared; enabled: !root.auto-enabled; toggled => { root.changed(); } }
                     Text { text: root.mode; color: GlassTheme.accent; font-size: 12px; wrap: word-wrap; }
                     if root.vnc-available : Text { text: "Ctrl+V sends Windows text when pasting into your Mac. Incoming Mac text can replace your Windows clipboard while the viewer is active. Clipboard contents are never logged."; color: GlassTheme.muted; wrap: word-wrap; font-size: 13px; }
-                    if root.vnc-available : Button { text: "Paste Windows text"; enabled: root.shared; clicked => { root.paste-text(); } }
+                    if root.vnc-available : Button { text: "Paste Windows text"; enabled: root.shared && !root.auto-enabled; clicked => { root.paste-text(); } }
                     if root.vnc-available : Text { text: "VNC clipboard traffic is not encrypted. Use a VPN. Files, images, and rich text are not shared."; color: GlassTheme.muted; wrap: word-wrap; font-size: 12px; }
                     Text { text: "Encrypted SSH clipboard"; color: GlassTheme.ink; font-size: 16px; font-weight: 600; }
+                    CheckBox { text: "Auto Sync Clipboard"; checked <=> root.auto-enabled; toggled => { root.auto-changed(); } }
+                    Text { text: "Shares new plain-text copies, including potentially sensitive text, in the background. Default: off. SSH must match the Mac desktop account."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }
+                    HorizontalLayout {
+                        CheckBox { text: "Windows → Mac"; checked <=> root.auto-to-mac; toggled => { root.auto-changed(); } }
+                        CheckBox { text: "Mac → Windows"; checked <=> root.auto-to-windows; toggled => { root.auto-changed(); } }
+                    }
+                    HorizontalLayout {
+                        Text { text: "Text limit (UTF-8 bytes)"; color: GlassTheme.muted; vertical-alignment: center; }
+                        LineEdit { text <=> root.auto-limit; accepted => { root.auto-changed(); } }
+                        Button { text: "Apply"; clicked => { root.auto-changed(); } }
+                    }
+                    Text { text: root.auto-status; color: GlassTheme.accent; wrap: word-wrap; font-size: 12px; }
                     HorizontalLayout {
                         Button { text: "Copy Mac text"; enabled: root.connected && !root.busy; clicked => { root.copy-text(); } }
                         Button { text: "Send Windows text"; enabled: root.connected && !root.busy; clicked => { root.send-text(); } }

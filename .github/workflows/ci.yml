@@ -2,7 +2,7 @@ name: Windows checks
 
 on:
   push:
-    branches: [main, fix/hevc-frame-size]
+    branches: [main, fix/hevc-frame-size, codex/auto-text-clipboard]
   pull_request:
   workflow_dispatch:
 

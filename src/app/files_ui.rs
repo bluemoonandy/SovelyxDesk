@@ -1,3 +1,5 @@
+mod auto;
+
 use std::{cell::RefCell, rc::Rc, sync::atomic::Ordering};
 
 use maccanvas::{
@@ -19,6 +21,7 @@ use crate::{App, FileRow};
 
 #[derive(Default)]
 pub(super) struct Files {
+    auto: auto::Auto,
     client: Option<Client>,
     retiring: Vec<Client>,
     profile: Option<Profile>,
@@ -34,6 +37,8 @@ pub(super) struct Files {
 
 impl Files {
     pub fn stop(&mut self, app: &App) {
+        self.auto.clear();
+        app.set_auto_clipboard_status("Paused — SSH disconnected".into());
         self.approval = None;
         if let Some(client) = self.client.take() {
             client.close();
@@ -179,6 +184,7 @@ fn prepare_ssh(app: &App, state: &mut State) -> Result<()> {
 }
 
 pub(super) fn wire(app: &App, state: Rc<RefCell<State>>) {
+    auto::wire(app, state.clone());
     let weak = app.as_weak();
     let open = state.clone();
     app.on_open_files(move || {
@@ -467,6 +473,7 @@ pub(super) fn wire(app: &App, state: Rc<RefCell<State>>) {
 }
 
 pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
+    auto::guard(app, state);
     while let Some(index) = state.files.retiring.iter().position(Client::is_finished) {
         let client = state.files.retiring.remove(index);
         state.files.received = state
@@ -543,7 +550,7 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                     .files
                     .command(app, Command::List(state.files.directory.clone()))?;
             }
-            Event::AutoClipboard { .. } => (),
+            Event::AutoClipboard { id, result } => auto::complete(app, state, id, result)?,
             Event::Clipboard(text) => {
                 app.set_files_busy(false);
                 let result = state.clipboard.receive(window_handle(app)?,&text).and_then(|_| {
@@ -631,6 +638,7 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
             });
         }
     }
+    auto::tick(app, state)?;
     Ok(())
 }
 
