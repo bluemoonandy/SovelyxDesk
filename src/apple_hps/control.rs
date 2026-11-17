@@ -547,7 +547,9 @@ impl Channel {
                         }
                         unknown => {
                             notices.push(Notice::Unsupported(unknown));
-                            break;
+                            // Its payload size is unknown: preserve the previous behavior and
+                            // skip the remaining record, never reinterpret pixel bytes as opcodes.
+                            return Ok(body.len());
                         }
                     }
                 }
@@ -663,7 +665,7 @@ mod native_clipboard_tests {
             let mut packet = apple::encode_text("Mac 中文🍎\n    code").unwrap();
             packet[4..8].copy_from_slice(&echo.to_be_bytes());
             // Include a trailing status in the same logical stream and fragment the header too.
-            packet.extend_from_slice(&[0x14, 0, 0, 4, 0, 1, 0, 12]);
+            packet.extend_from_slice(&[0x14, 0, 0, 4, 0, 1, 0, 4]);
             for chunk in packet.chunks(7) {
                 socket.write_all(&cipher.encrypt(chunk).unwrap()).unwrap();
             }
@@ -701,9 +703,20 @@ mod native_clipboard_tests {
             .unwrap();
         let deadline = Instant::now() + Duration::from_secs(5);
         let mut received = false;
-        while !received {
+        let mut status_seen = false;
+        while !received || !status_seen {
             channel.poll().unwrap();
             while let Some(event) = channel.take_native_clipboard() {
+                if matches!(
+                    &event,
+                    apple::Event::Trace {
+                        opcode: 0x14,
+                        value: 4,
+                        ..
+                    }
+                ) {
+                    status_seen = true;
+                }
                 if let apple::Event::Snapshot {
                     epoch,
                     sequence,
