@@ -58,12 +58,17 @@ fn encode_flavor(kind: &[u8], data: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
 }
 pub fn encode_rich(rich: &super::rich::RichText) -> Result<Zeroizing<Vec<u8>>> {
     rich.validate()?;
+    let mac_html = rich
+        .html
+        .as_deref()
+        .map(|html| super::rich::mac_html(html))
+        .transpose()?;
     let mut flavors = Vec::new();
     if let Some(plain) = &rich.plain {
         flavors.push((UTF8, plain.as_bytes()));
     }
-    if let Some(html) = &rich.html {
-        flavors.push((HTML, html.as_bytes()));
+    if let Some(html) = &mac_html {
+        flavors.push((HTML, html.as_slice()));
     }
     if let Some(rtf) = &rich.rtf {
         flavors.push((RTF, rtf.as_slice()));
@@ -854,6 +859,33 @@ mod tests {
             html: Some(Zeroizing::new("<b>中文🍎</b>".into())),
             rtf: Some(Zeroizing::new(b"{\\rtf1 bold}".to_vec())),
         }
+    }
+    #[test]
+    fn outgoing_html_declares_utf8_for_cocoa_importers() {
+        let rich = rich_fixture();
+        let packet = encode_rich(&rich).unwrap();
+        let archive = inflate(&packet[16..], number(&packet[8..12]) as usize).unwrap();
+        let mut reader = Reader(&archive);
+        let count = reader.num().unwrap();
+        let mut found = false;
+        for _ in 0..count {
+            let kind = reader.field(4096).unwrap();
+            reader.num().unwrap();
+            assert_eq!(reader.num().unwrap(), 0);
+            let data = reader.field(MAX_ARCHIVE).unwrap();
+            if kind == HTML {
+                found = true;
+                assert!(
+                    data.starts_with(&[0xef, 0xbb, 0xbf]),
+                    "Cocoa must not guess the encoding of Unicode HTML"
+                );
+                assert_eq!(
+                    std::str::from_utf8(&data[3..]).unwrap(),
+                    &**rich.html.as_ref().unwrap()
+                );
+            }
+        }
+        assert!(found);
     }
     #[test]
     fn user_session_change_revokes_cached_file_capability_until_new_handshake() {

@@ -12,15 +12,23 @@ fn invalid(reason: &str) -> Error {
     Error::Clipboard(format!("Rich clipboard: {reason}"))
 }
 pub fn html(bytes: &[u8]) -> Result<Zeroizing<String>> {
+    let bytes = bytes.strip_prefix(&[0xef, 0xbb, 0xbf]).unwrap_or(bytes);
     if bytes.is_empty() || bytes.len() > MAX_RICH || bytes.contains(&0) {
         return Err(invalid("invalid HTML size or encoding"));
     }
-    let bytes = bytes.strip_prefix(&[0xef, 0xbb, 0xbf]).unwrap_or(bytes);
     Ok(Zeroizing::new(
         std::str::from_utf8(bytes)
             .map_err(|_| invalid("HTML is not UTF-8"))?
             .to_owned(),
     ))
+}
+/// CF_HTML mandates UTF-8; public.html also needs an explicit encoding for Cocoa.
+pub fn mac_html(source: &str) -> Result<Zeroizing<Vec<u8>>> {
+    let normalized = html(source.as_bytes())?;
+    let mut bytes = Zeroizing::new(Vec::with_capacity(normalized.len() + 3));
+    bytes.extend_from_slice(&[0xef, 0xbb, 0xbf]);
+    bytes.extend_from_slice(normalized.as_bytes());
+    Ok(bytes)
 }
 pub fn validate_rtf(bytes: &[u8]) -> Result<()> {
     if bytes.len() > MAX_RICH
@@ -146,6 +154,27 @@ pub fn to_cf_html(source: &str) -> Result<Zeroizing<Vec<u8>>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn mac_html_preserves_unicode_and_is_idempotent() {
+        let source = "<html><head><meta charset=gbk></head><body>功能🍎\n  中文</body></html>";
+        let wire = mac_html(source).unwrap();
+        assert!(wire.starts_with(&[0xef, 0xbb, 0xbf]));
+        assert_eq!(&wire[3..], source.as_bytes());
+        assert_eq!(*html(&wire).unwrap(), source);
+        assert_eq!(
+            *mac_html(std::str::from_utf8(&wire).unwrap()).unwrap(),
+            *wire
+        );
+    }
+    #[test]
+    fn mac_html_limit_counts_content_not_encoding_signature() {
+        let source = "a".repeat(MAX_RICH);
+        let wire = mac_html(&source).unwrap();
+        assert_eq!(wire.len(), MAX_RICH + 3);
+        assert_eq!(html(&wire).unwrap().len(), MAX_RICH);
+        assert!(mac_html(&(source + "a")).is_err());
+        assert!(mac_html("\u{feff}").is_err());
+    }
     #[test]
     fn fragment_offsets_cannot_split_unicode_or_escape_the_context() {
         let mut wire = to_cf_html("<b>中</b>").unwrap();
