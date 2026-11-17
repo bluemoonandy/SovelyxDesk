@@ -112,6 +112,12 @@ pub(super) fn run(
                         | crate::clipboard::apple::Command::Fetch { epoch, .. }
                         | crate::clipboard::apple::Command::Send { epoch, .. } => *epoch,
                     };
+                    if control.native_epoch.load(Ordering::Acquire) != epoch
+                        || (!matches!(&command, crate::clipboard::apple::Command::Configure { .. })
+                            && !control.accepts_native(epoch))
+                    {
+                        continue;
+                    }
                     if let Err(error) = client.native_clipboard(command) {
                         if !matches!(error, Error::Clipboard(_)) {
                             return Err(error);
@@ -121,16 +127,10 @@ pub(super) fn run(
                             Level::Warn,
                             crate::audit::error_attributes(&error),
                         )?;
-                        let mut queue = control.native_clipboard.lock().map_err(|_| {
-                            Error::Clipboard("Native clipboard queue unavailable".into())
-                        })?;
-                        if queue.len() == 16 {
-                            queue.pop_front();
-                        }
-                        queue.push_back(crate::clipboard::apple::Event::Problem {
+                        control.push_native(crate::clipboard::apple::Event::Problem {
                             epoch,
                             reason: "request_rejected",
-                        });
+                        })?;
                     }
                 }
                 Ok(WriterCommand::ClipboardEnabled(false)) | Ok(WriterCommand::Complete { .. }) => {
@@ -172,14 +172,7 @@ pub(super) fn run(
                     json!({"clipboard.reason":reason,"network.encrypted":true}),
                 )?;
             }
-            let mut queue = control
-                .native_clipboard
-                .lock()
-                .map_err(|_| Error::Clipboard("Native clipboard queue unavailable".into()))?;
-            if queue.len() == 16 {
-                queue.pop_front();
-            }
-            queue.push_back(event);
+            control.push_native(event)?;
         }
         if let Some((update, point_scale)) = client.cursor_status() {
             events

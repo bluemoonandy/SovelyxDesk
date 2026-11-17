@@ -164,7 +164,8 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                 if active
                     && epoch == state.native_clipboard.epoch
                     && receive
-                    && !state.native_clipboard.paused =>
+                    && !state.native_clipboard.paused
+                    && native::interactive_session() =>
             {
                 state.native_clipboard.remote_dirty = true;
                 if !send
@@ -280,6 +281,7 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
         }
     }
     if state.native_clipboard.changed.elapsed() >= Duration::from_millis(150)
+        && native::interactive_session()
         && let Some(text) = state.native_clipboard.pending.take()
     {
         post(

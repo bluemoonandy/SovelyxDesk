@@ -299,6 +299,18 @@ pub enum Event {
         unpacked: usize,
     },
 }
+impl Event {
+    pub fn epoch(&self) -> Option<u64> {
+        match self {
+            Self::Changed { epoch }
+            | Self::SessionChanged { epoch }
+            | Self::Snapshot { epoch, .. }
+            | Self::Sent { epoch }
+            | Self::Problem { epoch, .. } => Some(*epoch),
+            Self::Trace { .. } => None,
+        }
+    }
+}
 struct Pending {
     epoch: u64,
     echo: u32,

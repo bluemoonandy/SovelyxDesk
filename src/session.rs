@@ -3,7 +3,7 @@ use std::{
     net::{Shutdown, TcpStream},
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         mpsc::{self, Receiver, Sender, SyncSender, TrySendError},
     },
     thread,
@@ -72,9 +72,42 @@ struct Control {
     clipboard_pending: AtomicUsize,
     clipboard_text: Mutex<Option<Zeroizing<String>>>,
     native_clipboard: Mutex<VecDeque<crate::clipboard::apple::Event>>,
+    native_epoch: AtomicU64,
+    native_enabled: AtomicBool,
 }
 
 impl Control {
+    fn configure_native(&self, epoch: u64, enabled: bool) -> Result<()> {
+        self.native_enabled.store(false, Ordering::Release);
+        self.native_epoch.store(epoch, Ordering::Release);
+        self.native_clipboard
+            .lock()
+            .map_err(|_| Error::Clipboard("Native clipboard queue unavailable".into()))?
+            .clear();
+        self.native_enabled.store(enabled, Ordering::Release);
+        Ok(())
+    }
+    fn accepts_native(&self, epoch: u64) -> bool {
+        self.native_enabled.load(Ordering::Acquire)
+            && self.native_epoch.load(Ordering::Acquire) == epoch
+    }
+    fn push_native(&self, event: crate::clipboard::apple::Event) -> Result<()> {
+        let mut queue = self
+            .native_clipboard
+            .lock()
+            .map_err(|_| Error::Clipboard("Native clipboard queue unavailable".into()))?;
+        // Check after acquiring the lock: revocation can happen while the worker is decoding.
+        if event
+            .epoch()
+            .is_some_and(|epoch| self.accepts_native(epoch))
+        {
+            if queue.len() == 16 {
+                queue.pop_front();
+            }
+            queue.push_back(event);
+        }
+        Ok(())
+    }
     fn new(clipboard: bool) -> Self {
         Self {
             cancelled: AtomicBool::new(false),
@@ -86,6 +119,8 @@ impl Control {
             clipboard_pending: AtomicUsize::new(0),
             clipboard_text: Mutex::new(None),
             native_clipboard: Mutex::new(VecDeque::new()),
+            native_epoch: AtomicU64::new(0),
+            native_enabled: AtomicBool::new(false),
         }
     }
 
@@ -296,6 +331,18 @@ impl Session {
             return Err(Error::Clipboard(
                 "Native Apple clipboard requires the encrypted HEVC connection".into(),
             ));
+        }
+        match &command {
+            crate::clipboard::apple::Command::Configure { epoch, enabled, .. } => {
+                self.control.configure_native(*epoch, *enabled)?
+            }
+            crate::clipboard::apple::Command::Fetch { epoch, .. }
+            | crate::clipboard::apple::Command::Send { epoch, .. }
+                if !self.control.accepts_native(*epoch) =>
+            {
+                return Ok(());
+            }
+            _ => (),
         }
         let operation = match &command {
             crate::clipboard::apple::Command::Configure { enabled, .. } => {
@@ -717,6 +764,40 @@ fn write_loop(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn disabling_native_sharing_rejects_a_worker_result_already_in_flight() {
+        use crate::clipboard::apple::Event as NativeEvent;
+        let control = Arc::new(Control::new(false));
+        control.configure_native(1, true).unwrap();
+        let barrier = Arc::new(std::sync::Barrier::new(2));
+        let worker_control = control.clone();
+        let worker_barrier = barrier.clone();
+        let worker = std::thread::spawn(move || {
+            let event = NativeEvent::Snapshot {
+                epoch: 1,
+                sequence: 9,
+                text: Some(Zeroizing::new("fixture".into())),
+            };
+            worker_barrier.wait();
+            worker_barrier.wait();
+            worker_control.push_native(event).unwrap();
+        });
+        barrier.wait();
+        control.configure_native(2, false).unwrap();
+        barrier.wait();
+        worker.join().unwrap();
+        assert!(control.native_clipboard.lock().unwrap().is_empty());
+        control.configure_native(3, true).unwrap();
+        control
+            .push_native(NativeEvent::Changed { epoch: 1 })
+            .unwrap();
+        assert!(control.native_clipboard.lock().unwrap().is_empty());
+        control
+            .push_native(NativeEvent::Changed { epoch: 3 })
+            .unwrap();
+        assert_eq!(control.native_clipboard.lock().unwrap().len(), 1);
+    }
+
     #[test]
     fn transport_loss_retries_but_authentication_refusal_and_manual_disconnect_do_not() {
         let lost = Err(Error::ConnectionLost("fixture transport loss".into()));
