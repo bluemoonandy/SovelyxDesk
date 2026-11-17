@@ -602,8 +602,8 @@ pub fn write_files_if_sequence(
         return Err(Error::Clipboard("Cannot register file copy format".into()));
     }
     let formats = vec![
-        (15, super::filecopy::dropfiles::encode(&paths)?),
         (format, Zeroizing::new(1u32.to_le_bytes().to_vec())),
+        (15, super::filecopy::dropfiles::encode(&paths)?),
     ];
     write_formats_if_sequence(owner, &formats, expected)
 }

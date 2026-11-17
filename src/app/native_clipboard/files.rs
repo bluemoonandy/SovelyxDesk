@@ -118,6 +118,16 @@ pub(super) fn start_download(state: &mut State, paths: Vec<String>, sequence: u3
     });
     Ok(())
 }
+fn publish_staged(
+    cache: &mut Vec<StagedFiles>,
+    staged: StagedFiles,
+    publish: impl FnOnce(&[std::path::PathBuf]) -> Result<Option<u32>>,
+) -> Result<Option<u32>> {
+    let result = publish(&staged.paths);
+    // The OS can accept CF_HDROP before the final ownership receipt fails or changes.
+    cache.push(staged);
+    result
+}
 pub(super) fn poll(
     app: &App,
     state: &mut State,
@@ -174,11 +184,13 @@ pub(super) fn poll(
         }
         Ok(Outcome::Downloaded(staged))=>{
             if state.native_clipboard.staged.iter().map(|x|x.bytes).sum::<u64>()+staged.bytes>1024*1024*1024{return Err(Error::Clipboard("File staging cache exceeds 1 GiB".into()));}
-            if let Some(written)=native::write_files_if_sequence(window_handle(app)?,&staged.paths,job.sequence)? {
-                let hash=filecopy::urls::digest(&staged.paths.iter().map(|path|path.to_string_lossy().into_owned()).collect::<Vec<_>>());
-                state.native_clipboard.sequence=written;state.native_clipboard.hash=Some(hash);state.clipboard.sent(written);state.native_clipboard.staged.push(staged);
+            let hash=filecopy::urls::digest(&staged.paths.iter().map(|path|path.to_string_lossy().into_owned()).collect::<Vec<_>>());
+            let owner=window_handle(app)?;
+            let written=publish_staged(&mut state.native_clipboard.staged,staged,|paths|native::write_files_if_sequence(owner,paths,job.sequence))?;
+            if let Some(written)=written {
+                state.native_clipboard.sequence=written;state.native_clipboard.hash=Some(hash);state.clipboard.sent(written);
                 app.set_native_clipboard_status("Files ready on Windows clipboard; keep MacCanvas open until pasting finishes".into());
-            }
+            } else {app.set_native_clipboard_status("Files staged; Windows clipboard changed, so the newer copy takes priority".into());}
         }
         Err(_)=>app.set_native_clipboard_status("Native file transfer failed or timed out; clipboard unchanged. Retry by copying again.".into()),
     }
@@ -188,6 +200,32 @@ pub(super) fn poll(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn completed_files_survive_a_failed_or_changed_clipboard_receipt() {
+        for fail in [false, true] {
+            let directory = tempfile::tempdir().unwrap();
+            let path = directory.path().join("fixture.txt");
+            std::fs::write(&path, b"complete").unwrap();
+            let staged = StagedFiles {
+                directory,
+                paths: vec![path.clone()],
+                bytes: 8,
+            };
+            let mut cache = Vec::new();
+            let result = publish_staged(&mut cache, staged, |_| {
+                if fail {
+                    Err(Error::Clipboard("fixture receipt failure".into()))
+                } else {
+                    Ok(None)
+                }
+            });
+            assert_eq!(result.is_err(), fail);
+            assert!(path.exists());
+            assert_eq!(cache.len(), 1);
+            drop(cache);
+            assert!(!path.exists());
+        }
+    }
     #[test]
     fn abandoned_file_workers_keep_the_global_slot_until_exit() {
         let slot = Slot::reserve().unwrap();

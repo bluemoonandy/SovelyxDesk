@@ -425,7 +425,7 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                     if send && capture.sequence == task.sequence =>
                 {
                     state.native_clipboard.sequence = capture.sequence;
-                    if state.native_clipboard.hash==Some(capture.hash)&&native::owns_clipboard(window_handle(app)?) {state.native_clipboard.pending=None;}
+                    if (state.native_clipboard.hash==Some(capture.hash)||matches!(&capture.content,Pending::Files(_)))&&native::owns_clipboard(window_handle(app)?) {state.native_clipboard.pending=None;}
                     else {state.native_clipboard.hash = Some(capture.hash);state.native_clipboard.pending = Some(capture.content);}
                     state.native_clipboard.changed = Instant::now();
                 }
