@@ -297,7 +297,8 @@ impl server::Handler for Ssh {
                             data.clipboard_revision.store(revision, Ordering::SeqCst);
                             applied = true;
                         }
-                    } else if !input["since"].is_null()
+                    } else if input["read_text"] == true
+                        && !input["since"].is_null()
                         && input["since"].as_u64() != Some(revision as u64)
                     {
                         text = Some(String::from_utf8(clipboard.clone()).unwrap());
@@ -910,6 +911,7 @@ fn auto_clipboard_reuses_verified_ssh_checks_revisions_and_keeps_contents_out_of
                     id,
                     sequence: id as u32,
                     since,
+                    read_text: true,
                     text: text.map(|t| Zeroizing::new(t.into())),
                     max_bytes: 1024 * 1024,
                 },
@@ -961,6 +963,7 @@ fn auto_clipboard_reuses_verified_ssh_checks_revisions_and_keeps_contents_out_of
                 id: 6,
                 sequence: 6,
                 since: Some(stale.revision),
+                read_text: true,
                 text: Some(Zeroizing::new("CANCELLED_PRIVATE_TEXT".into())),
                 max_bytes: 1024 * 1024,
             },

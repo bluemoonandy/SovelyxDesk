@@ -1270,7 +1270,7 @@ async fn auto_clipboard(
         return Err(Error::Cancelled);
     }
     let input = Zeroizing::new(serde_json::to_vec(&json!({
-        "since":request.since, "text":request.text.as_deref().map(|text|text.as_str()), "max_bytes":request.max_bytes,
+        "since":request.since, "read_text":request.read_text, "text":request.text.as_deref().map(|text|text.as_str()), "max_bytes":request.max_bytes,
     })).map_err(|_| Error::Clipboard("Cannot encode automatic clipboard request".into()))?);
     let mut channel = tokio::time::timeout(Duration::from_secs(5), ssh.channel_open_session())
         .await

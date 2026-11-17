@@ -134,7 +134,11 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
     let seq = native::sequence();
     if seq != auto.sequence {
         // The open clipboard snapshot includes its own sequence; a competing application wins.
-        let snapshot = native::read_snapshot(window_handle(app)?);
+        let snapshot = if auto.prefs.to_mac {
+            native::read_snapshot(window_handle(app)?)
+        } else {
+            Ok(None)
+        };
         match snapshot {
             Ok(Some((sequence, text))) => {
                 auto.sequence = sequence;

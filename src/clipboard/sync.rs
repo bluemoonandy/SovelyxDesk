@@ -31,6 +31,7 @@ pub struct Request {
     pub id: u64,
     pub sequence: u32,
     pub since: Option<i64>,
+    pub read_text: bool,
     pub text: Option<Zeroizing<String>>,
     pub max_bytes: usize,
 }
@@ -141,6 +142,7 @@ impl Sync {
             id: self.serial,
             sequence: self.sequence,
             since: self.revision,
+            read_text: self.prefs.to_windows,
             text,
             max_bytes: self.prefs.max_bytes,
         })
@@ -331,6 +333,8 @@ mod tests {
         );
         s.prefs.to_windows = false;
         assert!(s.start(1600).is_none());
+        s.prefs.to_mac = true;
+        assert!(!s.start(1600).unwrap().read_text);
     }
     #[test]
     fn a_failed_windows_apply_retries_the_remote_revision() {

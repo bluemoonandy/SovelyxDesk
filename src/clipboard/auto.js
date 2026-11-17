@@ -27,7 +27,7 @@ function run() {
                     result.revision = Number(pb.changeCount);
                     result.applied = true;
                 }
-            } else if (input.since !== null && input.since !== result.revision) {
+            } else if (input.read_text === true && input.since !== null && input.since !== result.revision) {
                 var current = pb.stringForType($.NSPasteboardTypeString);
                 if (!current.isNil() && Number(current.lengthOfBytesUsingEncoding($.NSUTF8StringEncoding)) <= input.max_bytes) {
                     result.text = ObjC.unwrap(current);

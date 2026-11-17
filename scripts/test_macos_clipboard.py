@@ -59,8 +59,8 @@ def main():
     # The automatic helper is stricter than the manual helper: no other login session.
     auto_source = (Path(__file__).resolve().parent.parent / "src/clipboard/auto.js").read_text(encoding="utf-8")
     auto = "/usr/bin/osascript -l JavaScript -e " + shlex.quote(auto_source)
-    def exchange(since=None, text=None, limit=1048576):
-        return json.loads(invoke(auto, json.dumps({"since": since, "text": text, "max_bytes": limit}).encode("utf-8")))
+    def exchange(since=None, text=None, limit=1048576, read_text=True):
+        return json.loads(invoke(auto, json.dumps({"since": since, "read_text": read_text, "text": text, "max_bytes": limit}).encode("utf-8")))
     baseline = exchange()
     if baseline["error"] == "desktop_account":
         print("PASS: auto sync rejects the CI SSH account without its own logged-in graphical desktop; positive auto helper round trip unavailable on this runner.")
@@ -73,6 +73,7 @@ def main():
         invoke(write, "new remote 中文".encode("utf-8"))
         rejected = exchange(applied["revision"], "old Windows text")
         assert rejected["error"] is None and not rejected["applied"]
+        assert exchange(applied["revision"], read_text=False)["text"] is None
         changed = exchange(applied["revision"])
         assert changed["text"] == "new remote 中文"
         assert exchange(changed["revision"])["text"] is None
