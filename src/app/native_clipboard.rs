@@ -115,6 +115,13 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
     let send = app.get_native_clipboard_send() && state.native_clipboard.verified;
     let config = (state.generation, active, receive, send);
     if state.native_clipboard.configured != Some(config) {
+        if state
+            .native_clipboard
+            .configured
+            .is_some_and(|previous| previous.0 != state.generation)
+        {
+            state.native_clipboard.paused = false;
+        }
         state.native_clipboard.epoch = state.native_clipboard.epoch.wrapping_add(1);
         state.native_clipboard.active = active;
         state.native_clipboard.baseline = true;
@@ -187,6 +194,8 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                 sequence,
                 text,
             } if active && epoch == state.native_clipboard.epoch && receive => {
+                // A current, validated reply resolves earlier transport ambiguity.
+                state.native_clipboard.paused = false;
                 if state.native_clipboard.baseline {
                     state.native_clipboard.baseline = false;
                     app.set_native_clipboard_status(

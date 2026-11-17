@@ -460,13 +460,28 @@ impl Transport {
             .as_ref()
             .is_some_and(|p| now.saturating_duration_since(p.started) > Duration::from_secs(5))
         {
+            let superseded = self
+                .pending
+                .as_ref()
+                .is_some_and(|pending| pending.epoch != self.epoch);
             self.pending = None;
             self.zero_tainted = true;
             self.changed_queued = false;
-            self.event(Event::Problem {
-                epoch: self.epoch,
-                reason: "fetch_timeout",
-            });
+            if superseded {
+                self.event(Event::Trace {
+                    opcode: 0x0b,
+                    detail: "superseded_fetch_expired",
+                    value: 0,
+                    packed: 0,
+                    unpacked: 0,
+                });
+                self.changed();
+            } else {
+                self.event(Event::Problem {
+                    epoch: self.epoch,
+                    reason: "fetch_timeout",
+                });
+            }
         }
         if self.dirty {
             self.changed();
@@ -714,6 +729,47 @@ mod tests {
                 .iter()
                 .any(|event| matches!(event, Event::Changed { epoch: 2 }))
         );
+    }
+    #[test]
+    fn an_expired_old_epoch_does_not_pause_the_new_session() {
+        let mut t = configured();
+        request(&mut t, 10);
+        t.command(Command::Configure {
+            epoch: 2,
+            enabled: true,
+            receive: true,
+            send: false,
+        })
+        .unwrap();
+        t.tick(Instant::now() + Duration::from_secs(6));
+        assert!(
+            t.events
+                .iter()
+                .any(|e| matches!(e, Event::Changed { epoch: 2 }))
+        );
+        assert!(!t.events.iter().any(|e| matches!(
+            e,
+            Event::Problem {
+                reason: "fetch_timeout",
+                ..
+            }
+        )));
+        t.command(Command::Fetch {
+            epoch: 2,
+            sequence: 20,
+        })
+        .unwrap();
+        let mut packet = decode(&encode_text("new session").unwrap());
+        packet.echo = t.echo;
+        t.packet(packet);
+        assert!(t.events.iter().any(|e| matches!(
+            e,
+            Event::Snapshot {
+                epoch: 2,
+                sequence: 20,
+                ..
+            }
+        )));
     }
     #[test]
     fn pointer_visibility_is_not_a_session_change() {
