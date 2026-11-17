@@ -2,8 +2,9 @@ use windows::Win32::{
     Foundation::{ERROR_SUCCESS, GetLastError, GlobalFree, HANDLE, HGLOBAL, HWND, SetLastError},
     System::{
         DataExchange::{
-            CloseClipboard, EmptyClipboard, GetClipboardData, GetClipboardSequenceNumber,
-            IsClipboardFormatAvailable, OpenClipboard, SetClipboardData,
+            CloseClipboard, EmptyClipboard, GetClipboardData, GetClipboardOwner,
+            GetClipboardSequenceNumber, IsClipboardFormatAvailable, OpenClipboard,
+            SetClipboardData,
         },
         Memory::{GMEM_MOVEABLE, GlobalAlloc, GlobalLock, GlobalSize, GlobalUnlock},
     },
@@ -125,7 +126,9 @@ pub fn write(owner: isize, text: &str) -> Result<()> {
 }
 
 /// The sequence check and replacement occur while the Windows clipboard is exclusively open.
-/// Returns the new sequence before releasing that lock, so other applications cannot race it.
+/// Windows may synthesize formats and advance its sequence on CloseClipboard. Reopen
+/// read-only and verify ownership before acknowledging that final sequence; a competing
+/// application's newer copy wins, including one made immediately after our write.
 pub fn write_if_sequence(owner: isize, text: &str, expected: u32) -> Result<Option<u32>> {
     write_checked(owner, text, Some(expected))
 }
@@ -158,9 +161,16 @@ fn write_checked(owner: isize, text: &str, expected: Option<u32>) -> Result<Opti
         unsafe { SetClipboardData(UNICODE_TEXT, Some(HANDLE(allocation.0))) }
             .map_err(|error| Error::Clipboard(error.to_string()))?;
         transferred = true;
-        let written = sequence();
         clipboard.close()?;
-        Ok(Some(written))
+        if expected.is_none() {
+            return Ok(Some(0));
+        } // Manual writes do not need an echo receipt.
+        let mut receipt = Clipboard::open(owner)?;
+        let still_owned =
+            unsafe { GetClipboardOwner() }.is_ok_and(|window| window.0 as isize == owner);
+        let written = still_owned.then(sequence);
+        receipt.close()?;
+        Ok(written)
     })();
     if !transferred {
         free(allocation)?;
