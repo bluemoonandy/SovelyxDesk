@@ -26,6 +26,11 @@ jobs:
           "$RUNNER_TEMP/hevc-diagnostics-tests"
       - name: Verify the native macOS Unicode clipboard helpers
         run: python3 scripts/test_macos_clipboard.py
+      - name: Verify native HTML and file URL clipboard formats
+        run: |
+          swift tests/macos_html_import.swift
+          swift tests/macos_file_url.swift
+          osascript -l JavaScript scripts/inspect_macos_file_clipboard.js --self-test
       - name: Verify native Apple audio conformance encoding
         run: |
           clang -std=c11 -O2 scripts/generate_macos_audio_fixture.c -framework AudioToolbox -framework AudioUnit -framework CoreAudio -o "$RUNNER_TEMP/native-audio-fixture"
@@ -91,6 +96,8 @@ jobs:
           $version = (Get-Content Cargo.toml -Raw | Select-String '(?m)^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
           .\scripts\Package-Release.ps1 -Version "v$version"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item scripts\inspect_macos_file_clipboard.js dist\Inspect-Mac-Clipboard-Formats.js
+          Copy-Item reports\native-file-clipboard-diagnostics.md dist\Native-File-Clipboard-Diagnostics.md
       - name: Export verified Windows x64 package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

@@ -138,6 +138,126 @@ pub fn upload(
     }
     result
 }
+/// Optional read-back of uploaded roots: stop at metadata, never decode or save file data.
+#[derive(Debug, serde::Serialize)]
+pub struct UploadProbe {
+    pub requested_roots: usize,
+    pub readable_roots: usize,
+    pub remote_status: Option<u32>,
+    pub outcome: &'static str,
+    pub elapsed_ms: u128,
+}
+pub fn probe_uploaded_paths(connection: &mut impl Connection, paths: &[String]) -> UploadProbe {
+    let began = Instant::now();
+    let deadline = began + Duration::from_secs(5);
+    let mut report = UploadProbe {
+        requested_roots: paths.len(),
+        readable_roots: 0,
+        remote_status: None,
+        outcome: "invalid_request",
+        elapsed_ms: 0,
+    };
+    if paths.is_empty() || paths.len() > 16 {
+        return report;
+    }
+    for path in paths {
+        let mut probe_session = None;
+        let result = (|| -> Result<bool> {
+            if connection.cancelled() {
+                return Err(failed("cancelled"));
+            }
+            if Instant::now() >= deadline {
+                return Err(failed("probe deadline"));
+            }
+            connection.rotate_session()?;
+            let session = connection.session();
+            probe_session = Some(session);
+            connection.send(start(START_SEND, session, path)?)?;
+            // All metadata waits share one deadline; sends retain the existing port I/O bound.
+            let mut messages = 0;
+            loop {
+                if Instant::now() >= deadline {
+                    return Err(failed("probe deadline"));
+                }
+                let message = next(
+                    connection,
+                    deadline.saturating_duration_since(Instant::now()),
+                )?;
+                messages += 1;
+                if messages > 8 {
+                    report.outcome = "unexpected_metadata";
+                    return Ok(false);
+                }
+                match message.command {
+                    INFO if message.body.len() >= 52 => (),
+                    ITEM => {
+                        let body = &message.body;
+                        let valid =
+                            body.len() >= 105 && matches!(body[0], 1 | 2) && body[92..94] == [0, 0];
+                        if !valid {
+                            report.outcome = "unexpected_metadata";
+                            return Ok(false);
+                        }
+                        let length = u16::from_be_bytes([body[100], body[101]]) as usize;
+                        let expected = path.rsplit('/').next().unwrap_or("").as_bytes();
+                        if length == 0
+                            || body.get(104..104 + length) != Some(expected)
+                            || body.get(104 + length) != Some(&0)
+                        {
+                            report.outcome = "unexpected_root";
+                            return Ok(false);
+                        }
+                        return Ok(true);
+                    }
+                    END if message.body.len() >= 4 => {
+                        let status = u32::from_le_bytes(message.body[..4].try_into().unwrap());
+                        report.remote_status = Some(status);
+                        report.outcome = if status == 0 {
+                            "no_root_metadata"
+                        } else {
+                            "remote_rejected"
+                        };
+                        return Ok(false);
+                    }
+                    STOP => {
+                        report.outcome = "remote_stopped";
+                        return Ok(false);
+                    }
+                    _ => {
+                        report.outcome = "unexpected_metadata";
+                        return Ok(false);
+                    }
+                }
+            }
+        })();
+        // A distinct transfer ID prevents this Stop from cancelling the completed upload.
+        // Also stop after errors; no full read-back or temporary local file is required.
+        if let Some(session) = probe_session
+            && connection.send(Message::new(STOP, session, vec![])).is_ok()
+        {
+            connection.complete();
+        }
+        match result {
+            Ok(true) => report.readable_roots += 1,
+            Ok(false) => break,
+            Err(_) => {
+                report.outcome = if connection.cancelled() {
+                    "cancelled"
+                } else if Instant::now() >= deadline {
+                    "timeout"
+                } else {
+                    "request_failed"
+                };
+                break;
+            }
+        }
+    }
+    if report.readable_roots == report.requested_roots {
+        report.outcome = "metadata_readable";
+    }
+    report.elapsed_ms = began.elapsed().as_millis();
+    report
+}
 pub fn download(
     connection: &mut impl Connection,
     paths: &[String],
@@ -320,6 +440,53 @@ mod tests {
             modified: None,
         }
         .message(42)
+    }
+    #[test]
+    fn upload_probe_uses_new_session_stops_at_metadata_and_preserves_file_data() {
+        let mut root = item("fixture.txt", 0, false, 5);
+        root.session = 43;
+        let data = Message::new(DATA, 43, vec![0; 9]);
+        let mut connection = Fake::new(vec![root, data]);
+        let report = probe_uploaded_paths(&mut connection, &["/tmp/fixture.txt".into()]);
+        assert_eq!(report.outcome, "metadata_readable");
+        assert_eq!(report.readable_roots, 1);
+        assert_eq!(connection.inbox.len(), 1); // File bytes are not consumed or copied.
+        assert_eq!(
+            connection
+                .sent
+                .iter()
+                .map(|x| x.command)
+                .collect::<Vec<_>>(),
+            [START_SEND, STOP]
+        );
+        assert!(connection.sent.iter().all(|x| x.session == 43));
+    }
+    #[test]
+    fn upload_probe_distinguishes_remote_rejection_and_wrong_root() {
+        let mut connection = Fake::new(vec![end(43, 2)]);
+        let report = probe_uploaded_paths(&mut connection, &["/tmp/missing.txt".into()]);
+        assert_eq!(report.outcome, "remote_rejected");
+        assert_eq!(report.remote_status, Some(2));
+        let safe = serde_json::to_string(&report).unwrap();
+        assert!(!safe.contains("missing.txt"));
+        assert!(!safe.contains("/tmp"));
+        let mut root = item("wrong.txt", 0, false, 0);
+        root.session = 43;
+        let mut connection = Fake::new(vec![root]);
+        assert_eq!(
+            probe_uploaded_paths(&mut connection, &["/tmp/fixture.txt".into()]).outcome,
+            "unexpected_root"
+        );
+        let mut connection = Fake::new(vec![]);
+        connection.cancel = true;
+        assert_eq!(
+            probe_uploaded_paths(&mut connection, &["/tmp/fixture.txt".into()]).outcome,
+            "cancelled"
+        );
+        assert!(
+            connection.sent.is_empty(),
+            "cancellation must not Stop the completed upload session"
+        );
     }
     #[test]
     fn directory_upload_is_chunked_and_committed_only_after_receiver_done() {

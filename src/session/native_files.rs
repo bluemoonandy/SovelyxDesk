@@ -8,6 +8,7 @@ use std::sync::atomic::AtomicU32;
 pub(super) struct Route {
     pub(super) id: AtomicU32,
     pub(super) cancelled: Arc<AtomicBool>,
+    metadata_only: AtomicBool,
     sender: SyncSender<Message>,
 }
 pub struct Port {
@@ -37,9 +38,21 @@ impl Control {
         if let Ok(route) = self.file_route.lock()
             && let Some(route) = route.as_ref()
             && route.id.load(Ordering::Acquire) == message.session
-            && route.sender.try_send(message).is_err()
         {
-            route.cancelled.store(true, Ordering::Release);
+            // A diagnostic read-back stops at the root item. Do not queue file bytes
+            // that the server may already have sent before processing our Stop.
+            if route.metadata_only.load(Ordering::Acquire)
+                && matches!(
+                    message.command,
+                    crate::clipboard::filecopy::wire::DATA
+                        | crate::clipboard::filecopy::wire::COMPRESSED
+                )
+            {
+                return;
+            }
+            if route.sender.try_send(message).is_err() {
+                route.cancelled.store(true, Ordering::Release);
+            }
         }
     }
     pub(super) fn file_id(&self) -> Result<u32> {
@@ -88,6 +101,7 @@ impl Session {
         let route = Arc::new(Route {
             id: AtomicU32::new(self.control.file_id()?),
             cancelled: Arc::new(AtomicBool::new(false)),
+            metadata_only: AtomicBool::new(false),
             sender,
         });
         *slot = Some(route.clone());
@@ -104,6 +118,14 @@ impl Session {
     }
 }
 impl Port {
+    /// Consumes this completed-upload port; its diagnostic route is never reused for a download.
+    pub fn probe_uploaded_paths(
+        mut self,
+        paths: &[String],
+    ) -> crate::clipboard::filecopy::UploadProbe {
+        self.route.metadata_only.store(true, Ordering::Release);
+        crate::clipboard::filecopy::probe_uploaded_paths(&mut self, paths)
+    }
     pub fn cancellation(&self) -> Arc<AtomicBool> {
         self.route.cancelled.clone()
     }
@@ -119,6 +141,7 @@ impl Connection for Port {
         self.route
             .id
             .store(self.control.file_id()?, Ordering::Release);
+        self.finished = false;
         Ok(())
     }
     fn cancelled(&self) -> bool {
@@ -210,6 +233,7 @@ mod tests {
         let route = Arc::new(Route {
             id: AtomicU32::new(42),
             cancelled: Arc::new(AtomicBool::new(false)),
+            metadata_only: AtomicBool::new(false),
             sender: incoming,
         });
         *control.file_route.lock().unwrap() = Some(route.clone());
@@ -226,6 +250,35 @@ mod tests {
             },
             receiver,
         )
+    }
+    #[test]
+    fn metadata_probe_discards_racing_file_data_without_cancelling_video_or_root_metadata() {
+        let (port, _receiver) = setup(4);
+        port.route.metadata_only.store(true, Ordering::Release);
+        for command in [102, 103].into_iter().cycle().take(32) {
+            port.control
+                .dispatch_file(Message::new(command, 42, vec![0; 4]));
+        }
+        port.control
+            .dispatch_file(Message::new(101, 42, vec![0; 104]));
+        assert!(!port.cancelled());
+        assert!(!port.control.cancelled.load(Ordering::Acquire));
+        assert_eq!(port.receiver.try_recv().unwrap().command, 101);
+        assert!(port.receiver.try_recv().is_err());
+    }
+    #[test]
+    fn readback_after_upload_cancels_only_the_new_transfer_on_drop() {
+        let (mut port, receiver) = setup(4);
+        port.complete();
+        port.rotate_session().unwrap();
+        let id = port.session();
+        assert_ne!(id, 42);
+        assert!(!port.finished);
+        drop(port);
+        assert!(
+            matches!(receiver.try_recv(), Ok(WriterCommand::NativeFileCancel(value)) if value == id)
+        );
+        assert!(receiver.try_recv().is_err());
     }
     #[test]
     fn completed_port_does_not_cancel_the_receipt_or_delete_finished_remote_staging() {

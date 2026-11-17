@@ -23,6 +23,7 @@ pub(super) enum Outcome {
     Uploaded {
         paths: Vec<String>,
         message: maccanvas::clipboard::apple::FileMessage,
+        probe: Option<filecopy::UploadProbe>,
     },
     Downloaded(StagedFiles),
 }
@@ -62,7 +63,13 @@ pub(super) fn start_upload(state: &mut State, paths: Vec<std::path::PathBuf>) ->
                 return Err(Error::Clipboard("File transfer cancelled".into()));
             }
             let message = maccanvas::clipboard::apple::FileMessage::new(&paths)?;
-            Ok(Outcome::Uploaded { paths, message })
+            let probe = maccanvas::clipboard::apple::file_diagnostics_enabled()
+                .then(|| port.probe_uploaded_paths(&paths));
+            Ok(Outcome::Uploaded {
+                paths,
+                message,
+                probe,
+            })
         })
         .map_err(|_| Error::Clipboard("Could not start file worker".into()))?;
     state.native_clipboard.file_task = Some(Job {
@@ -168,6 +175,12 @@ pub(super) fn poll(
         .join()
         .unwrap_or_else(|_| Err(Error::Clipboard("File worker failed".into())));
     state.audit.event("clipboard.apple.files.completed",Level::Info,json!({"clipboard.epoch":job.epoch,"transfer.direction":if job.upload{"windows_to_mac"}else{"mac_to_windows"},"transfer.bytes":completed,"transfer.stage":"data_transfer","event.outcome":if result.is_ok(){"complete"}else{"failed"},"network.encrypted":true}))?;
+    if let Ok(Outcome::Uploaded {
+        probe: Some(probe), ..
+    }) = &result
+    {
+        state.audit.event("clipboard.apple.files.probe", Level::Info, json!({"clipboard.epoch": job.epoch, "transfer.direction": "windows_to_mac", "transfer.probe": probe, "network.encrypted": true}))?;
+    }
     if !active
         || job.cancelled.load(Ordering::Acquire)
         || job.epoch != state.native_clipboard.epoch
@@ -177,7 +190,7 @@ pub(super) fn poll(
         return Ok(());
     }
     match result {
-        Ok(Outcome::Uploaded{paths,message})=>{
+        Ok(Outcome::Uploaded{paths,message,..})=>{
             state.native_clipboard.file_echo=Some(filecopy::urls::digest(&paths));
             post(state,NativeCommand::SendFiles{epoch:job.epoch,message})?;
             app.set_native_clipboard_status("File data uploaded; file URLs queued on encrypted control — verify by pasting on the Mac".into());

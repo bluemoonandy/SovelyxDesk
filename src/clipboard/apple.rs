@@ -131,8 +131,58 @@ impl<'a> Reader<'a> {
         self.take(n)
     }
 }
+/// Counts only fixed protocol format classes; never stores type names or clipboard data.
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct FormatInventory {
+    pub items: u16,
+    pub flavors: u16,
+    pub empty_flavors: u16,
+    pub file_urls: u16,
+    pub legacy_file_lists: u16,
+    pub finder_nodes: u16,
+    pub file_promises: u16,
+    pub plain: u16,
+    pub png: u16,
+    pub tiff: u16,
+    pub html: u16,
+    pub rtf: u16,
+    pub other: u16,
+}
+impl FormatInventory {
+    fn observe(&mut self, kind: &[u8], empty: bool) {
+        self.flavors += 1;
+        self.empty_flavors += u16::from(empty);
+        let count = match kind {
+            b"public.file-url" => &mut self.file_urls,
+            b"NSFilenamesPboardType" | b"com.apple.pasteboard.legacy-file-list" => {
+                &mut self.legacy_file_lists
+            }
+            b"com.apple.finder.node" => &mut self.finder_nodes,
+            kind if kind.starts_with(b"com.apple.pasteboard.promised-file")
+                || kind == b"com.apple.pasteboard.NSFilePromiseID" =>
+            {
+                &mut self.file_promises
+            }
+            UTF8 | UTF16 => &mut self.plain,
+            PNG => &mut self.png,
+            TIFF => &mut self.tiff,
+            HTML => &mut self.html,
+            RTF => &mut self.rtf,
+            _ => &mut self.other,
+        };
+        *count += 1;
+    }
+}
+/// Explicit opt-in; restart the application after changing the environment variable.
+pub fn file_diagnostics_enabled() -> bool {
+    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ENABLED.get_or_init(|| {
+        std::env::var("MACCANVAS_NATIVE_FILE_DIAGNOSTICS").is_ok_and(|value| value == "1")
+    })
+}
 #[derive(Default)]
 struct ArchiveContent {
+    inventory: FormatInventory,
     text: Option<Zeroizing<String>>,
     image: Option<Zeroizing<Vec<u8>>>,
     tiff: Option<Zeroizing<Vec<u8>>>,
@@ -149,11 +199,13 @@ fn archive_content(archive: &[u8]) -> Result<ArchiveContent> {
     let mut tiff = None;
     let mut rich = super::rich::RichText::default();
     let mut items = 0;
+    let mut inventory = FormatInventory::default();
     while !reader.0.is_empty() {
         items += 1;
         if items > 16 {
             return Err(invalid("too many pasteboard items"));
         }
+        inventory.items += 1;
         let flavors = reader.num()?;
         if flavors > 64 {
             return Err(invalid("too many pasteboard flavors"));
@@ -173,6 +225,7 @@ fn archive_content(archive: &[u8]) -> Result<ArchiveContent> {
                 reader.field(4096)?;
             }
             let data = reader.field(MAX_ARCHIVE)?;
+            inventory.observe(kind, data.is_empty());
             if kind == b"public.file-url" && !data.is_empty() {
                 files.push(super::filecopy::urls::decode(data)?);
             }
@@ -219,11 +272,13 @@ fn archive_content(archive: &[u8]) -> Result<ArchiveContent> {
     // A file's path/preview is not the file itself. Preserve the destination clipboard.
     if file_copy {
         return Ok(ArchiveContent {
+            inventory,
             files,
             ..Default::default()
         });
     }
     Ok(ArchiveContent {
+        inventory,
         text: preferred.or(fallback),
         image,
         tiff,
@@ -258,6 +313,7 @@ fn inflate(compressed: &[u8], size: usize) -> Result<Zeroizing<Vec<u8>>> {
 }
 
 pub struct Packet {
+    pub inventory: Option<FormatInventory>,
     pub echo: u32,
     pub promise: bool,
     pub compressed: usize,
@@ -341,15 +397,16 @@ impl Framer {
             // Only a flavor with no actual data is a promise we cannot apply.
             inflate(&self.body, uncompressed).and_then(|archive| archive_content(&archive))
         };
-        let (text, image, tiff, rich, files) = match content {
+        let (text, image, tiff, rich, files, inventory) = match content {
             Ok(content) => (
                 Ok(content.text),
                 content.image,
                 content.tiff,
                 content.rich,
                 content.files,
+                Some(content.inventory),
             ),
-            Err(error) => (Err(error), None, None, None, Vec::new()),
+            Err(error) => (Err(error), None, None, None, Vec::new(), None),
         };
         self.body.zeroize();
         self.header.clear();
@@ -360,6 +417,7 @@ impl Framer {
         Ok((
             used,
             Some(Packet {
+                inventory,
                 echo,
                 promise,
                 compressed,
@@ -434,6 +492,7 @@ pub enum Command {
     },
 }
 pub enum Event {
+    Inventory(FormatInventory),
     FilesSnapshot {
         epoch: u64,
         sequence: u32,
@@ -481,6 +540,9 @@ pub enum Event {
     },
 }
 impl Event {
+    fn is_diagnostic(&self) -> bool {
+        matches!(self, Self::Trace { .. } | Self::Inventory(_))
+    }
     pub fn is_snapshot(&self) -> bool {
         matches!(
             self,
@@ -502,7 +564,7 @@ impl Event {
             | Self::Snapshot { epoch, .. }
             | Self::Sent { epoch }
             | Self::Problem { epoch, .. } => Some(*epoch),
-            Self::Trace { .. } => None,
+            Self::Trace { .. } | Self::Inventory(_) => None,
         }
     }
 }
@@ -526,6 +588,7 @@ pub fn file_capability(server_name: &[u8]) -> Option<(bool, bool)> {
 }
 #[derive(Default)]
 pub struct Transport {
+    file_diagnostics: bool,
     file_capability: Option<(bool, bool)>,
     epoch: u64,
     enabled: bool,
@@ -547,6 +610,7 @@ impl Transport {
     pub fn from_server_name(name: &[u8]) -> Self {
         Self {
             file_capability: file_capability(name),
+            file_diagnostics: file_diagnostics_enabled(),
             ..Default::default()
         }
     }
@@ -556,13 +620,13 @@ impl Transport {
             self.events.retain(|queued| !queued.is_snapshot());
         }
         if self.events.len() == 16 {
-            if matches!(event, Event::Trace { .. }) {
+            if event.is_diagnostic() {
                 return;
             }
             let index = self
                 .events
                 .iter()
-                .position(|event| matches!(event, Event::Trace { .. }))
+                .position(Event::is_diagnostic)
                 .unwrap_or(0);
             if matches!(self.events.remove(index), Some(Event::Changed { .. })) {
                 self.changed_queued = false;
@@ -744,6 +808,12 @@ impl Transport {
         }
     }
     pub fn packet(&mut self, packet: Packet) {
+        if self.enabled
+            && self.file_diagnostics
+            && let Some(inventory) = packet.inventory
+        {
+            self.event(Event::Inventory(inventory));
+        }
         self.event(Event::Trace {
             opcode: 0x1f,
             detail: if packet.promise { "promise" } else { "reply" },
@@ -859,6 +929,46 @@ mod tests {
             html: Some(Zeroizing::new("<b>中文🍎</b>".into())),
             rtf: Some(Zeroizing::new(b"{\\rtf1 bold}".to_vec())),
         }
+    }
+    #[test]
+    fn file_format_inventory_is_bounded_and_never_contains_names_or_values() {
+        let payload = encode_flavors(&[
+            (b"NSFilenamesPboardType", b"private-filename"),
+            (b"com.apple.pasteboard.promised-file-url", b""),
+            (b"private.example.custom-name", b"private-content"),
+        ])
+        .unwrap();
+        let packet = decode(&payload);
+        let inventory = packet.inventory.unwrap();
+        assert_eq!(inventory.items, 1);
+        assert_eq!(inventory.flavors, 3);
+        assert_eq!(inventory.legacy_file_lists, 1);
+        assert_eq!(inventory.file_promises, 1);
+        assert_eq!(inventory.empty_flavors, 1);
+        assert_eq!(inventory.other, 1);
+        assert!(packet.files.is_empty());
+        let safe = serde_json::to_string(&inventory).unwrap();
+        assert!(!safe.contains("private"));
+        let mut transport = Transport {
+            enabled: true,
+            file_diagnostics: false,
+            ..Default::default()
+        };
+        transport.packet(decode(&payload));
+        assert!(
+            !transport
+                .events
+                .iter()
+                .any(|event| matches!(event, Event::Inventory(_)))
+        );
+        transport.file_diagnostics = true;
+        transport.packet(decode(&payload));
+        assert!(
+            transport
+                .events
+                .iter()
+                .any(|event| matches!(event, Event::Inventory(value) if *value == inventory))
+        );
     }
     #[test]
     fn outgoing_html_declares_utf8_for_cocoa_importers() {

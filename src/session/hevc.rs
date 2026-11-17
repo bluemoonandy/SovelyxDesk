@@ -213,6 +213,14 @@ pub(super) fn run(
                 control.revoke_files();
             }
 
+            if let crate::clipboard::apple::Event::Inventory(inventory) = &event {
+                request.audit.event(
+                    "clipboard.apple.formats",
+                    Level::Info,
+                    json!({"clipboard.formats": inventory, "network.encrypted": true}),
+                )?;
+                continue;
+            }
             if let crate::clipboard::apple::Event::Trace {
                 opcode,
                 detail,
