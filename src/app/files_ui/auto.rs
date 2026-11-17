@@ -239,6 +239,8 @@ pub(super) fn wire(app: &App, state: Rc<RefCell<State>>) {
         };
         let result = (|| {
             let mut state = state.borrow_mut();
+            // Revoke the previous direction/permission before validation or any disk wait.
+            state.files.auto.clear();
             let id = state
                 .connection_profile
                 .as_ref()
@@ -275,7 +277,15 @@ pub(super) fn wire(app: &App, state: Rc<RefCell<State>>) {
             Ok(())
         })();
         if let Err(error) = result {
-            app.set_auto_clipboard_status(format!("Error — {error}").into());
+            let mut state = state.borrow_mut();
+            let id = state.connection_profile.as_ref().map(|profile| profile.id);
+            if let Some(entry) = state.settings.clipboard_auto.iter_mut().find(|entry| Some(entry.profile_id) == id) {
+                entry.preferences.enabled = false;
+            }
+            state.files.auto.clear();
+            state.files.auto.profile = None;
+            load(&app, &mut state);
+            app.set_auto_clipboard_status(format!("Error — sharing stopped; preferences not saved: {error}").into());
         }
         // There must be only one automatic clipboard writer. Preserve the existing VNC implementation.
         if app.get_auto_clipboard_enabled() && app.get_clipboard_shared() {
