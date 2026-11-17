@@ -106,6 +106,16 @@ pub fn read_snapshot(owner: isize) -> Result<Option<(u32, Zeroizing<String>)>> {
 }
 
 pub fn write(owner: isize, text: &str) -> Result<()> {
+    write_checked(owner, text, None).map(|_| ())
+}
+
+/// The sequence check and replacement occur while the Windows clipboard is exclusively open.
+/// Returns the new sequence before releasing that lock, so other applications cannot race it.
+pub fn write_if_sequence(owner: isize, text: &str, expected: u32) -> Result<Option<u32>> {
+    write_checked(owner, text, Some(expected))
+}
+
+fn write_checked(owner: isize, text: &str, expected: Option<u32>) -> Result<Option<u32>> {
     super::validate(text, true)?;
     let text = Zeroizing::new(super::normalize(text).replace('\n', "\r\n"));
     let units = Zeroizing::new(text.encode_utf16().chain(Some(0)).collect::<Vec<_>>());
@@ -126,14 +136,19 @@ pub fn write(owner: isize, text: &str) -> Result<()> {
     let result = (|| {
         unlock(allocation)?;
         let mut clipboard = Clipboard::open(owner)?;
+        if expected.is_some_and(|expected| sequence() != expected) {
+            clipboard.close()?;
+            return Ok(None);
+        }
         unsafe { EmptyClipboard() }.map_err(|error| Error::Clipboard(error.to_string()))?;
         unsafe { SetClipboardData(UNICODE_TEXT, Some(HANDLE(allocation.0))) }
             .map_err(|error| Error::Clipboard(error.to_string()))?;
         transferred = true;
+        let written = sequence();
         clipboard.close()?;
-        Ok(())
+        Ok(Some(written))
     })();
-    if result.is_err() && !transferred {
+    if !transferred {
         unsafe { GlobalFree(Some(allocation)) }
             .map_err(|error| Error::Clipboard(error.to_string()))?;
     }
@@ -168,5 +183,57 @@ impl Watcher {
         let sequence = sequence();
         self.remote = Some(sequence);
         Ok(())
+    }
+}
+
+/// Fail closed on secure/locked desktops and disconnected/switched Windows sessions.
+/// Background application windows on the normal interactive desktop remain eligible.
+pub fn interactive_session() -> bool {
+    use windows::Win32::{
+        System::RemoteDesktop::{
+            WTS_CURRENT_SERVER_HANDLE, WTS_CURRENT_SESSION, WTSActive, WTSConnectState,
+            WTSFreeMemory, WTSQuerySessionInformationW,
+        },
+        System::StationsAndDesktops::{
+            CloseDesktop, DESKTOP_CONTROL_FLAGS, DESKTOP_READOBJECTS, GetUserObjectInformationW,
+            OpenInputDesktop, UOI_NAME,
+        },
+    };
+    unsafe {
+        let mut info = windows::core::PWSTR::null();
+        let mut bytes = 0;
+        if WTSQuerySessionInformationW(
+            Some(WTS_CURRENT_SERVER_HANDLE),
+            WTS_CURRENT_SESSION,
+            WTSConnectState,
+            &mut info,
+            &mut bytes,
+        )
+        .is_err()
+        {
+            return false;
+        }
+        let active =
+            bytes as usize >= std::mem::size_of::<i32>() && *info.0.cast::<i32>() == WTSActive.0;
+        WTSFreeMemory(info.0.cast());
+        if !active {
+            return false;
+        }
+        let Ok(desktop) = OpenInputDesktop(DESKTOP_CONTROL_FLAGS(0), false, DESKTOP_READOBJECTS)
+        else {
+            return false;
+        };
+        let mut name = [0u16; 64];
+        let mut needed = 0;
+        let read = GetUserObjectInformationW(
+            HANDLE(desktop.0),
+            UOI_NAME,
+            Some(name.as_mut_ptr().cast()),
+            std::mem::size_of_val(&name) as u32,
+            Some(&mut needed),
+        );
+        let _ = CloseDesktop(desktop);
+        read.is_ok()
+            && name.split(|&c| c == 0).next() == Some(&[68, 101, 102, 97, 117, 108, 116][..])
     }
 }

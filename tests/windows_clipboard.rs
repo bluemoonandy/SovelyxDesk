@@ -72,6 +72,30 @@ fn native_unicode_and_echo_prevention_use_a_private_station_not_the_users_clipbo
             assert_eq!(&*text, "new Windows text");
             watcher.sent(sequence);
             assert!(watcher.paste(owner).unwrap().is_none());
+            let before = native::sequence();
+            native::write(owner, "newer local copy").unwrap();
+            assert!(
+                native::write_if_sequence(owner, "stale remote", before)
+                    .unwrap()
+                    .is_none()
+            );
+            assert_eq!(
+                native::read(owner).unwrap().unwrap().as_str(),
+                "newer local copy"
+            );
+            let before = native::sequence();
+            let applied = native::write_if_sequence(owner, "fresh remote", before)
+                .unwrap()
+                .unwrap();
+            assert_eq!(applied, native::sequence());
+            assert_eq!(
+                native::read(owner).unwrap().unwrap().as_str(),
+                "fresh remote"
+            );
+            assert!(
+                !native::interactive_session(),
+                "a private test desktop is not an authorized interactive desktop"
+            );
             native::write(owner, "").unwrap();
             assert!(native::read(owner).unwrap().unwrap().is_empty());
             assert!(native::write(owner, "bad\0text").is_err());

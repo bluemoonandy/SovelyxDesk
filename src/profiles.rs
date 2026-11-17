@@ -112,6 +112,13 @@ impl SshHostKey {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct ClipboardPreference {
+    pub profile_id: Uuid,
+    pub preferences: crate::clipboard::sync::Preferences,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Settings {
     pub version: u32,
     pub profiles: Vec<Profile>,
@@ -130,6 +137,8 @@ pub struct Settings {
     pub audio: crate::audio::Settings,
     #[serde(default)]
     pub clipboard_enabled: bool,
+    #[serde(default)]
+    pub clipboard_auto: Vec<ClipboardPreference>,
     #[serde(default)]
     pub ssh_host_keys: Vec<SshHostKey>,
 }
@@ -151,6 +160,7 @@ impl Default for Settings {
             streaming: StreamSettings::default(),
             audio: crate::audio::Settings::default(),
             clipboard_enabled: false,
+            clipboard_auto: Vec::new(),
             ssh_host_keys: Vec::new(),
         }
     }
@@ -163,6 +173,16 @@ impl Settings {
         if self.version != 1 || self.profiles.len() > 128 || self.ssh_host_keys.len() > 128 {
             return Err(Error::Configuration(
                 "Unsupported settings version or too many machines".into(),
+            ));
+        }
+        let mut clipboard_profiles = HashSet::new();
+        if self.clipboard_auto.len() > 128
+            || self.clipboard_auto.iter().any(|entry| {
+                !entry.preferences.valid() || !clipboard_profiles.insert(entry.profile_id)
+            })
+        {
+            return Err(Error::Configuration(
+                "Invalid automatic clipboard preferences".into(),
             ));
         }
         let mut identifiers = HashSet::new();

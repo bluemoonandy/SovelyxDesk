@@ -42,6 +42,12 @@ const MAX_FILE: u64 = 1024 * 1024 * 1024 * 1024;
 const MAX_ENTRIES: usize = 2048;
 const MAX_PATH: usize = 4096;
 
+const AUTO_CLIPBOARD: &str = concat!(
+    "/usr/bin/osascript -l JavaScript -e '",
+    include_str!("clipboard/auto.js"),
+    "'"
+);
+
 const READ_CLIPBOARD: &str = r#"/usr/bin/osascript -l JavaScript -e '
 var stage = "load_foundation", reason = null, desktop = null, sameAccount = null;
 try {
@@ -237,6 +243,10 @@ pub enum Event {
     },
     Clipboard(Zeroizing<String>),
     ClipboardSent(u32),
+    AutoClipboard {
+        id: u64,
+        result: Result<clipboard::sync::Reply>,
+    },
     Failed(String),
     DirectoryFailed {
         path: String,
@@ -255,6 +265,10 @@ pub enum Command {
     Download {
         remote: String,
         local: PathBuf,
+    },
+    AutoClipboard {
+        request: clipboard::sync::Request,
+        cancel: CancellationToken,
     },
     CopyClipboard,
     SendClipboard {
@@ -282,6 +296,19 @@ impl Command {
             Self::Download { remote, local } => {
                 valid_path(remote)?;
                 json!({"operation.name":"file_download","file.source.path":remote,"file.destination.path":local})
+            }
+            Self::AutoClipboard { request, .. } => {
+                if !(1..=clipboard::MAX_TEXT).contains(&request.max_bytes)
+                    || request.since.is_some_and(|revision| revision < 0)
+                    || request.text.as_ref().is_some_and(|text| {
+                        text.is_empty() || text.len() > request.max_bytes || text.contains('\0')
+                    })
+                {
+                    return Err(Error::Clipboard(
+                        "Invalid automatic clipboard request".into(),
+                    ));
+                }
+                json!({"operation.name":"clipboard_auto"})
             }
             Self::CopyClipboard => {
                 json!({"operation.name":"clipboard_copy","clipboard.direction":"mac_to_windows"})
@@ -428,6 +455,12 @@ impl Client {
         }
         if self.control.stop.is_cancelled() {
             return Err(Error::Transfer("SSH is disconnected".into()));
+        }
+        if matches!(&command, Command::AutoClipboard { .. }) {
+            return self
+                .commands
+                .try_send(command)
+                .map_err(|_| Error::Clipboard("SSH clipboard queue is unavailable".into()));
         }
         self.control.cancel.store(false, Ordering::Release);
         *self
@@ -679,6 +712,21 @@ async fn run(
                 command = commands.recv() => match command { Some(command) => command, None => break },
             },
         };
+        if let Command::AutoClipboard {
+            request: sync_request,
+            cancel,
+        } = command
+        {
+            let id = sync_request.id;
+            let result = auto_clipboard(&ssh, sync_request, &cancel, &control.stop).await;
+            if control.stop.is_cancelled() {
+                break;
+            }
+            if !cancel.is_cancelled() {
+                emit(events, Event::AutoClipboard { id, result })?;
+            }
+            continue;
+        }
         let browse_path = match &command {
             Command::List(path) => Some(path.clone()),
             _ => None,
@@ -688,6 +736,7 @@ async fn run(
         let operation = request.audit.child(attributes);
         operation.critical("ssh.operation.requested", Level::Info, json!({}))?;
         let result = match command {
+            Command::AutoClipboard { .. } => unreachable!(),
             Command::List(path) => list(&sftp, &path, events, control, &operation).await,
             Command::Upload {
                 local,
@@ -1200,6 +1249,108 @@ async fn remote_hash(
     .await;
     let closed = sftp.close(handle).await.map(|_| ()).map_err(Error::from);
     after_close(result, closed, scope)
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AutoClipboardReply {
+    revision: i64,
+    applied: bool,
+    text: Option<String>,
+    error: Option<String>,
+}
+
+async fn auto_clipboard(
+    ssh: &client::Handle<HostVerifier>,
+    request: clipboard::sync::Request,
+    cancel: &CancellationToken,
+    stop: &CancellationToken,
+) -> Result<clipboard::sync::Reply> {
+    if cancel.is_cancelled() || stop.is_cancelled() {
+        return Err(Error::Cancelled);
+    }
+    let input = Zeroizing::new(serde_json::to_vec(&json!({
+        "since":request.since, "text":request.text.as_deref().map(|text|text.as_str()), "max_bytes":request.max_bytes,
+    })).map_err(|_| Error::Clipboard("Cannot encode automatic clipboard request".into()))?);
+    let mut channel = tokio::time::timeout(Duration::from_secs(5), ssh.channel_open_session())
+        .await
+        .map_err(|_| Error::Clipboard("SSH clipboard channel timed out".into()))??;
+    let operation = async {
+        channel.exec(true, AUTO_CLIPBOARD).await?;
+        channel.data(input.as_slice()).await?;
+        channel.eof().await?;
+        let mut output = Zeroizing::new(Vec::new());
+        let mut exit = None;
+        while let Some(message) = channel.wait().await {
+            match message {
+                ChannelMsg::Data { data } => {
+                    // JSON can escape every byte as six ASCII bytes. Both transport and text are bounded.
+                    if output.len().saturating_add(data.len())
+                        > request.max_bytes.saturating_mul(6) + 1024
+                    {
+                        return Err(Error::Clipboard(
+                            "Auto clipboard response exceeds the configured limit".into(),
+                        ));
+                    }
+                    output.extend_from_slice(&data);
+                }
+                ChannelMsg::ExitStatus { exit_status } => exit = Some(exit_status),
+                ChannelMsg::ExtendedData { .. } => {
+                    return Err(Error::Clipboard(
+                        "Mac auto clipboard helper failed; remote output withheld".into(),
+                    ));
+                }
+                ChannelMsg::Close => break,
+                _ => (),
+            }
+        }
+        if exit != Some(0) {
+            return Err(Error::Clipboard(
+                "Mac auto clipboard helper did not complete".into(),
+            ));
+        }
+        // Do not propagate parser errors: they could include untrusted clipboard text.
+        let parsed: AutoClipboardReply = serde_json::from_slice(&output)
+            .map_err(|_| Error::Clipboard("Invalid auto clipboard response".into()))?;
+        if let Some(error) = parsed.error {
+            return Err(Error::Clipboard(if error == "desktop_account" {
+                "Auto sync paused: SSH must use the account currently logged into the Mac desktop"
+                    .into()
+            } else {
+                "Auto clipboard snapshot unavailable; retrying with backoff".into()
+            }));
+        }
+        if parsed.revision < 0 {
+            return Err(Error::Clipboard("Invalid Mac clipboard revision".into()));
+        }
+        let text = parsed.text.map(Zeroizing::new);
+        if let Some(text) = &text {
+            clipboard::validate(text, true)?;
+            if text.len() > request.max_bytes {
+                return Err(Error::Clipboard(
+                    "Mac clipboard exceeds configured limit".into(),
+                ));
+            }
+        }
+        Ok(clipboard::sync::Reply {
+            revision: parsed.revision,
+            applied: parsed.applied,
+            text,
+        })
+    };
+    let result = tokio::select! {
+        _ = cancel.cancelled() => Err(Error::Cancelled),
+        _ = stop.cancelled() => Err(Error::Cancelled),
+        result = tokio::time::timeout(Duration::from_secs(5), operation) => result.unwrap_or_else(|_| Err(Error::Clipboard("Auto clipboard operation timed out".into()))),
+    };
+    let _ = tokio::time::timeout(Duration::from_secs(1), channel.close()).await;
+    result.map_err(|error| match error {
+        Error::Clipboard(_) | Error::Cancelled => error,
+        _ => Error::Clipboard(
+            "SSH clipboard channel unavailable; reconnect SSH securely if it remains unavailable"
+                .into(),
+        ),
+    })
 }
 
 async fn mac_clipboard(

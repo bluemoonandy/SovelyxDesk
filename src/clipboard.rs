@@ -1,4 +1,5 @@
 pub mod native;
+pub mod sync;
 
 use std::io::{Read, Write};
 

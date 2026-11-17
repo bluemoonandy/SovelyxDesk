@@ -1,6 +1,8 @@
 """Verify the shipped clipboard commands against real AppKit on an isolated CI Mac."""
 
+import json
 import os
+import shlex
 from pathlib import Path
 import re
 import subprocess
@@ -54,6 +56,30 @@ def main():
         encoded = sample.encode("utf-8")
         assert invoke(write, encoded) == b"", "A write must not echo clipboard contents"
         assert invoke(read) == encoded, "Native Mac clipboard content changed"
+    # The automatic helper is stricter than the manual helper: no other login session.
+    auto_source = (Path(__file__).resolve().parent.parent / "src/clipboard/auto.js").read_text(encoding="utf-8")
+    auto = "/usr/bin/osascript -l JavaScript -e " + shlex.quote(auto_source)
+    def exchange(since=None, text=None, limit=1048576):
+        return json.loads(invoke(auto, json.dumps({"since": since, "text": text, "max_bytes": limit}).encode("utf-8")))
+    baseline = exchange()
+    if baseline["error"] == "desktop_account":
+        print("PASS: auto sync rejects the CI SSH account without its own logged-in graphical desktop; positive auto helper round trip unavailable on this runner.")
+    else:
+        assert baseline["error"] is None and baseline["text"] is None
+        sample = "Auto fixture 中文🍎\n    indented();"
+        applied = exchange(baseline["revision"], sample)
+        assert applied["error"] is None and applied["applied"]
+        assert invoke(read) == sample.encode("utf-8")
+        invoke(write, "new remote 中文".encode("utf-8"))
+        rejected = exchange(applied["revision"], "old Windows text")
+        assert rejected["error"] is None and not rejected["applied"]
+        changed = exchange(applied["revision"])
+        assert changed["text"] == "new remote 中文"
+        assert exchange(changed["revision"])["text"] is None
+        for text, limit in [("", 1048576), ("too large", 2), ("bad\0text", 1048576)]:
+            assert exchange(changed["revision"], text, limit)["error"] == "helper_failed"
+        assert invoke(read) == "new remote 中文".encode("utf-8")
+        print("PASS: auto helper graphically logged-in account, Unicode, revision conflict, unchanged snapshots, empty/oversized/NUL rejection.")
     invoke(write, b"")
     print(
         "PASS: real macOS AppKit clipboard; Unicode, empty text, literal RTF/EPS, "

@@ -543,6 +543,7 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                     .files
                     .command(app, Command::List(state.files.directory.clone()))?;
             }
+            Event::AutoClipboard { .. } => (),
             Event::Clipboard(text) => {
                 app.set_files_busy(false);
                 let result = state.clipboard.receive(window_handle(app)?,&text).and_then(|_| {
