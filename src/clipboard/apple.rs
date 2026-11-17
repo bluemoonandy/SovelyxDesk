@@ -179,6 +179,7 @@ pub struct Framer {
     remaining: Option<usize>,
     discard: bool,
     started: Option<Instant>,
+    progress: Option<Instant>,
 }
 impl Framer {
     pub fn active(&self) -> bool {
@@ -186,12 +187,18 @@ impl Framer {
     }
     pub fn expired(&self, now: Instant) -> bool {
         self.started
-            .is_some_and(|start| now.saturating_duration_since(start) > Duration::from_secs(10))
+            .is_some_and(|start| now.saturating_duration_since(start) > Duration::from_secs(60))
+            || self
+                .progress
+                .is_some_and(|last| now.saturating_duration_since(last) > Duration::from_secs(10))
     }
     /// Consumes exactly one message, preserving a following opcode in the same record.
     /// Unsupported large pasteboards are drained without allocating their payload.
     pub fn feed(&mut self, input: &[u8]) -> Result<(usize, Option<Packet>)> {
         let mut used = 0;
+        if !input.is_empty() {
+            self.progress = Some(Instant::now());
+        }
         if self.header.len() < 16 {
             if self.header.is_empty() {
                 self.started = Some(Instant::now());
@@ -242,6 +249,7 @@ impl Framer {
         self.header.clear();
         self.remaining = None;
         self.started = None;
+        self.progress = None;
         self.discard = false;
         Ok((
             used,
@@ -649,6 +657,24 @@ mod tests {
         assert_eq!(used, 1);
         assert!(done.unwrap().text.is_err());
         assert!(f.body.capacity() < 1024);
+    }
+    #[test]
+    fn a_large_discard_in_progress_does_not_abort_the_video_control_session() {
+        let mut header = vec![0x1f, 0, 0, 0];
+        put(&mut header, 0);
+        put(&mut header, (MAX_ARCHIVE + 1) as u32);
+        put(&mut header, 100);
+        let mut f = Framer::default();
+        f.feed(&header).unwrap();
+        let now = Instant::now();
+        f.started = Some(now - Duration::from_secs(11));
+        f.progress = Some(now);
+        assert!(!f.expired(now));
+        f.progress = Some(now - Duration::from_secs(11));
+        assert!(f.expired(now));
+        f.progress = Some(now);
+        f.started = Some(now - Duration::from_secs(61));
+        assert!(f.expired(now));
     }
     #[test]
     fn disabled_and_wrong_epoch_never_send_or_fetch() {
