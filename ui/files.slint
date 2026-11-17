@@ -136,7 +136,7 @@ export component SshSharingOverlay inherits Rectangle {
                         }
                     }
                 }
-                if !root.connected && !root.key-pending : VerticalLayout {
+                if !root.connected && !root.key-pending && (!root.clipboard-view || !root.native-enabled) : VerticalLayout {
                     spacing: 14px;
                     Text { text: "On your Mac: System Settings > General > Sharing > Remote Login. Allow your Mac account."; color: GlassTheme.muted; wrap: word-wrap; font-size: 13px; }
                     HorizontalLayout {
