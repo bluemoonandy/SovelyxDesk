@@ -1,6 +1,6 @@
 # Native Apple 文件剪贴板诊断（Release 测试包）
 
-此包包含 Windows 浏览器 → Mac 的 HTML UTF-8 编码修复，以及默认关闭的文件协议诊断。文件／文件夹自动复制仍未通过 Mac M4 实机验收；本包不是已修复文件复制的正式发布。
+此包包含 Windows → Mac 新文件剪贴板声明修复、此前的 HTML UTF-8 编码修复，以及默认关闭的文件协议诊断。旧实现仅更新 Apple helper 的缓存，未声明新的文件项目；新实现对文件消息设置声明标志，私有剪贴板原生实验已复现两者差异。Windows → Mac Finder 粘贴仍需实机验证，Mac → Windows 文件导出尚未修复；本包不是双向文件复制已验收的正式发布。
 
 ## 使用
 
@@ -16,7 +16,7 @@ $env:MACCANVAS_NATIVE_FILE_DIAGNOSTICS = '1'
 连接后在原有 Clipboard 面板启用 Native Apple clipboard、两个同步方向以及 Sync files and folders。无需 SSH、Remote Login 或第二次认证。
 
 1. 新建无敏感内容的小文本文件，用 Windows 资源管理器复制，切到 Mac Finder，用编辑菜单查看能否粘贴。
-2. 在 Mac Finder 使用编辑菜单复制另一个小文件，再到 Windows 资源管理器查看能否粘贴。
+2. 反向文件导出仍未修复；如需补充诊断，可在 Mac Finder 使用编辑菜单复制另一个小文件，再到 Windows 资源管理器观察结果，不能以此包预期反向已通过。
 3. 保留本次 log.json，并记录两个方向的大概测试时间。初次先用单个小文件，不用文件夹、大文件或多文件。
 4. 可顺便验证 Windows 浏览器 → Mac 备忘录的中文 HTML 是否恢复正常；这一项与文件诊断分开判定。
 
