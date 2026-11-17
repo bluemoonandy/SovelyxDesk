@@ -94,6 +94,7 @@ pub(super) fn guard(app: &App, state: &mut State) {
         .as_ref()
         .is_some_and(|p| Some(p.id) == auto.profile);
     let run = auto.prefs.enabled
+        && (auto.prefs.to_mac || auto.prefs.to_windows)
         && auto.interactive
         && matches
         && app.get_connected()
@@ -112,6 +113,8 @@ pub(super) fn guard(app: &App, state: &mut State) {
         app.set_auto_clipboard_status(
             if !auto.prefs.enabled {
                 "Paused — automatic sharing is off"
+            } else if !auto.prefs.to_mac && !auto.prefs.to_windows {
+                "Paused — choose a synchronization direction"
             } else if !auto.interactive {
                 "Paused — Windows session is locked or inactive"
             } else {
