@@ -88,15 +88,15 @@ impl Sync {
         }
         self.sequence = sequence;
         self.changed_at = now;
+        // A fresh external copy is an intent, even when its bytes equal an older copy.
+        // Only applied() establishes the sequence of our own write for echo suppression.
+        self.digest = None;
         self.pending = text
             .filter(|text| self.prefs.enabled && self.prefs.to_mac && self.accepts(text))
-            .and_then(|text| {
-                let digest = hash(&text);
-                (Some(digest) != self.digest).then_some(Pending {
-                    sequence,
-                    text,
-                    digest,
-                })
+            .map(|text| Pending {
+                sequence,
+                digest: hash(&text),
+                text,
             });
     }
     pub fn accepts(&self, text: &str) -> bool {
@@ -335,6 +335,35 @@ mod tests {
         assert!(s.start(1600).is_none());
         s.prefs.to_mac = true;
         assert!(!s.start(1600).unwrap().read_text);
+    }
+    #[test]
+    fn explicitly_copying_identical_text_again_is_not_mistaken_for_an_echo() {
+        let mut s = ready();
+        s.observe(11, Some(Zeroizing::new("A".into())), 100);
+        let r = s.start(750).unwrap();
+        let mut done = reply(2, None);
+        done.applied = true;
+        s.complete(r.id, done, 11, 800);
+        s.observe(12, Some(Zeroizing::new("A".into())), 1000);
+        // Mac may have changed to B since the last snapshot: preserve the user's new A intent.
+        let r = s.start(1550).unwrap();
+        assert_eq!(r.text.unwrap().as_str(), "A");
+    }
+    #[test]
+    fn receive_only_mode_can_restore_identical_remote_text_after_a_local_copy() {
+        let mut s = ready();
+        s.prefs.to_mac = false;
+        let r = s.start(750).unwrap();
+        let text = s.complete(r.id, reply(2, Some("A")), 10, 800).unwrap();
+        s.applied(11, &text);
+        s.observe(12, None, 900);
+        let r = s.start(1550).unwrap();
+        assert_eq!(
+            s.complete(r.id, reply(3, Some("A")), 12, 1600)
+                .unwrap()
+                .as_str(),
+            "A"
+        );
     }
     #[test]
     fn a_failed_windows_apply_retries_the_remote_revision() {
