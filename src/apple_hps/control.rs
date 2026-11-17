@@ -174,6 +174,7 @@ pub(super) struct Channel {
     clipboard: apple::Transport,
     clipboard_frame: apple::Framer,
     clipboard_status: Vec<u8>,
+    native_pending_flush: bool,
 }
 
 impl Channel {
@@ -261,6 +262,7 @@ impl Channel {
                 clipboard: apple::Transport::default(),
                 clipboard_frame: apple::Framer::default(),
                 clipboard_status: Vec::new(),
+                native_pending_flush: false,
             },
             ServerInfo { size, name },
         ))
@@ -292,6 +294,16 @@ impl Channel {
             }
             for chunk in packet.chunks(32_768) {
                 self.send(chunk)?;
+            }
+            self.clipboard
+                .trace_transport(packet[0], "encrypted_queued", packet.len());
+            if self.output.is_empty() {
+                self.clipboard
+                    .trace_transport(packet[0], "tcp_written", packet.len());
+            } else {
+                self.native_pending_flush = true;
+                self.clipboard
+                    .trace_transport(packet[0], "tcp_pending", packet.len());
             }
             if let Some(epoch) = sent {
                 self.clipboard.sent(epoch);
@@ -329,6 +341,10 @@ impl Channel {
                 Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => break,
                 Err(error) => return Err(error.into()),
             }
+        }
+        if self.output.is_empty() && self.native_pending_flush {
+            self.native_pending_flush = false;
+            self.clipboard.trace_transport(0, "control_tcp_drained", 0);
         }
         Ok(())
     }

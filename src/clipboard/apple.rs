@@ -418,6 +418,15 @@ impl Transport {
             }
         }
     }
+    pub fn trace_transport(&mut self, opcode: u8, phase: &'static str, bytes: usize) {
+        self.event(Event::Trace {
+            opcode,
+            detail: phase,
+            value: bytes as u32,
+            packed: 0,
+            unpacked: 0,
+        });
+    }
     pub fn sent(&mut self, epoch: u64) {
         self.event(Event::Sent { epoch });
     }

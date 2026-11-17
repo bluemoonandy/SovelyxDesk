@@ -50,7 +50,7 @@ Fetch 5秒超时，只进入原生实验错误状态，不尝试 SSH 或额外�
 
 ## 诊断和证据收集
 
-审计事件 `clipboard.apple.requested/control/problem/apply_requested` 仅记录：操作、opcode、selector/status、请求标记、压缩/解压长度、错误原因、加密通道标记、既有连接/配置 UUID。没有剪贴板原文、摘要、密码、密钥、画面或普通按键内容。
+审计事件 `clipboard.apple.requested/control/problem/apply_requested` 仅记录：操作、opcode、selector/status、请求标记、压缩/解压长度、错误原因、加密通道标记、既有连接/配置 UUID。没有剪贴板原文、摘要、密码、密钥、画面或普通按键内容。`encrypted_queued` 表示已经现有 cipher 封装入队；`tcp_written` 表示该逻辑消息已交给 TCP，`tcp_pending`/`control_tcp_drained` 区分队列仍待写与后来排空。传输阶段的 value 为逻辑消息长度；排空事件 opcode=0 是汇总标记。TCP写入或 Sent 事件均不等于 Mac pasteboard 或目标应用已经接受，必须实际粘贴验证。
 
 对于无回应，按以下链路核查：enable selector1 → 状态2或初始Fetch → fetch标记 → 0x1F长度及实际echo → 严格解压/UTI结果 → UI本地序号是否变化 → 条件写是否成功。状态17/显示唤醒会重新开启监视。日志证据不足时继续调整协议兼容性，不把 SSH 当作终点。
 
