@@ -55,6 +55,21 @@ fn unlock(handle: HGLOBAL) -> Result<()> {
     }
 }
 
+// GlobalFree returns NULL on success. windows 0.62 wraps that NULL as Err,
+// unlike GlobalAlloc; clear/check last-error rather than treating Err as a failure.
+fn free(handle: HGLOBAL) -> Result<()> {
+    unsafe {
+        SetLastError(ERROR_SUCCESS);
+    }
+    match unsafe { GlobalFree(Some(handle)) } {
+        Err(_) if unsafe { GetLastError() } == ERROR_SUCCESS => Ok(()),
+        Err(error) => Err(Error::Clipboard(error.to_string())),
+        Ok(_) => Err(Error::Clipboard(
+            "Windows could not free an untransferred clipboard allocation".into(),
+        )),
+    }
+}
+
 pub fn sequence() -> u32 {
     unsafe { GetClipboardSequenceNumber() }
 }
@@ -123,8 +138,7 @@ fn write_checked(owner: isize, text: &str, expected: Option<u32>) -> Result<Opti
         .map_err(|error| Error::Clipboard(error.to_string()))?;
     let pointer = unsafe { GlobalLock(allocation) };
     if pointer.is_null() {
-        unsafe { GlobalFree(Some(allocation)) }
-            .map_err(|error| Error::Clipboard(error.to_string()))?;
+        free(allocation)?;
         return Err(Error::Clipboard(
             "Windows could not allocate clipboard text".into(),
         ));
@@ -149,8 +163,7 @@ fn write_checked(owner: isize, text: &str, expected: Option<u32>) -> Result<Opti
         Ok(Some(written))
     })();
     if !transferred {
-        unsafe { GlobalFree(Some(allocation)) }
-            .map_err(|error| Error::Clipboard(error.to_string()))?;
+        free(allocation)?;
     }
     result
 }
