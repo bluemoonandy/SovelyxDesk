@@ -106,6 +106,33 @@ pub(super) fn run(
                                 .event("input.keyboard.transport", Level::Info, record);
                     }
                 }
+                Ok(WriterCommand::NativeClipboard(command)) => {
+                    let epoch = match &command {
+                        crate::clipboard::apple::Command::Configure { epoch, .. }
+                        | crate::clipboard::apple::Command::Fetch { epoch, .. }
+                        | crate::clipboard::apple::Command::Send { epoch, .. } => *epoch,
+                    };
+                    if let Err(error) = client.native_clipboard(command) {
+                        if !matches!(error, Error::Clipboard(_)) {
+                            return Err(error);
+                        }
+                        request.audit.event(
+                            "clipboard.apple.rejected",
+                            Level::Warn,
+                            crate::audit::error_attributes(&error),
+                        )?;
+                        let mut queue = control.native_clipboard.lock().map_err(|_| {
+                            Error::Clipboard("Native clipboard queue unavailable".into())
+                        })?;
+                        if queue.len() == 16 {
+                            queue.pop_front();
+                        }
+                        queue.push_back(crate::clipboard::apple::Event::Problem {
+                            epoch,
+                            reason: "request_rejected",
+                        });
+                    }
+                }
                 Ok(WriterCommand::ClipboardEnabled(false)) | Ok(WriterCommand::Complete { .. }) => {
                 }
                 Ok(
@@ -126,6 +153,34 @@ pub(super) fn run(
             Err(_) if control.cancelled.load(Ordering::Acquire) => return Ok(()),
             Err(error) => return Err(error),
         };
+        while let Some(event) = client.take_native_clipboard() {
+            if let crate::clipboard::apple::Event::Trace {
+                opcode,
+                detail,
+                value,
+                packed,
+                unpacked,
+            } = &event
+            {
+                request.audit.event("clipboard.apple.control",Level::Info,json!({"clipboard.opcode":opcode,"clipboard.detail":detail,"clipboard.value":value,"clipboard.compressed_bytes":packed,"clipboard.uncompressed_bytes":unpacked,"network.encrypted":true}))?;
+                continue;
+            }
+            if let crate::clipboard::apple::Event::Problem { reason, .. } = &event {
+                request.audit.event(
+                    "clipboard.apple.problem",
+                    Level::Warn,
+                    json!({"clipboard.reason":reason,"network.encrypted":true}),
+                )?;
+            }
+            let mut queue = control
+                .native_clipboard
+                .lock()
+                .map_err(|_| Error::Clipboard("Native clipboard queue unavailable".into()))?;
+            if queue.len() == 16 {
+                queue.pop_front();
+            }
+            queue.push_back(event);
+        }
         if let Some((update, point_scale)) = client.cursor_status() {
             events
                 .send((

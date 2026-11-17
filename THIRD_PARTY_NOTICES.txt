@@ -11614,3 +11614,21 @@ Am Wolfsmantel 33
 
 www.iis.fraunhofer.de/amm
 amm-info@iis.fraunhofer.de
+
+Apple native pasteboard protocol references (P2-B2)
+
+The native clipboard codec is independently implemented Rust code, not a bundled
+copy of the Go or JavaScript implementations. Wire-format interoperability was
+cross-checked against the following public sources:
+
+- iShareScreen, 9ab40d3a3151524f954cff9d6239d891197c1705 (AGPL-3.0-or-later):
+  https://github.com/renegadelink/iShareScreen
+- Open Screen Sharing, copyright (C) 2026 nekohasekai,
+  1241a8337625869b912c898e72d9aa71a8301b27 (GPL-3.0-or-later):
+  https://github.com/nekohasekai/open-screen-sharing
+- noVNC-ARD, d699293635083c9e0c30c8f9480993865653772a (MPL-2.0):
+  https://github.com/peetinc/noVNC-ARD
+
+No Go/JavaScript source or additional runtime dependency from these references
+is redistributed. See reports/native-apple-clipboard-p2-b2.md for the protocol
+matrix, reference discrepancies, implementation boundaries and device-test status.

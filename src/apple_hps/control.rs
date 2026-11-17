@@ -16,6 +16,7 @@ use zeroize::Zeroizing;
 
 use crate::{
     auth::Credentials,
+    clipboard::apple,
     error::{Error, Result},
     geometry::Extent,
     input::Command,
@@ -170,6 +171,9 @@ pub(super) struct Channel {
     fallback: Decoder,
     cursor_cache: cursor::Cache,
     cursor: Option<cursor::Update>,
+    clipboard: apple::Transport,
+    clipboard_frame: apple::Framer,
+    clipboard_status: Vec<u8>,
 }
 
 impl Channel {
@@ -254,6 +258,9 @@ impl Channel {
                 fallback: Decoder::new(size),
                 cursor_cache: cursor::Cache::default(),
                 cursor: None,
+                clipboard: apple::Transport::default(),
+                clipboard_frame: apple::Framer::default(),
+                clipboard_status: Vec::new(),
             },
             ServerInfo { size, name },
         ))
@@ -269,6 +276,31 @@ impl Channel {
         }
         self.output.push_back(self.cipher.encrypt(data)?);
         self.flush()
+    }
+
+    pub fn native_clipboard(&mut self, command: apple::Command) -> Result<()> {
+        let sent = match &command {
+            apple::Command::Send { epoch, .. } => Some(*epoch),
+            _ => None,
+        };
+        if let Some(packet) = self.clipboard.command(command)? {
+            let records = packet.len().div_ceil(32_768);
+            if self.output.len() + records > 256 || self.pending_bytes() > 65_536 {
+                return Err(Error::Clipboard(
+                    "Native Apple clipboard: encrypted control is busy".into(),
+                ));
+            }
+            for chunk in packet.chunks(32_768) {
+                self.send(chunk)?;
+            }
+            if let Some(epoch) = sent {
+                self.clipboard.sent(epoch);
+            }
+        }
+        Ok(())
+    }
+    pub fn take_native_clipboard(&mut self) -> Option<apple::Event> {
+        self.clipboard.take()
     }
 
     pub fn pending_bytes(&self) -> usize {
@@ -334,6 +366,10 @@ impl Channel {
 
     pub fn poll(&mut self) -> Result<Vec<Notice>> {
         self.flush()?;
+        self.clipboard.tick(Instant::now());
+        if self.clipboard_frame.expired(Instant::now()) {
+            return Err(failed("native pasteboard framing timed out"));
+        }
         let mut notices = Vec::new();
         let mut buffer = [0; 16_384];
         for _ in 0..16 {
@@ -381,7 +417,58 @@ impl Channel {
         Ok(())
     }
 
-    fn message(&mut self, body: &[u8], notices: &mut Vec<Notice>) -> Result<()> {
+    fn message(&mut self, mut body: &[u8], notices: &mut Vec<Notice>) -> Result<()> {
+        if body.is_empty() {
+            return Err(failed("empty authenticated control message"));
+        }
+        while !body.is_empty() {
+            if self.clipboard_frame.active() || body[0] == 0x1f {
+                let (used, packet) = self
+                    .clipboard_frame
+                    .feed(body)
+                    .map_err(|_| failed("invalid native pasteboard framing"))?;
+                if used == 0 {
+                    return Err(failed("native pasteboard parser made no progress"));
+                }
+                body = &body[used..];
+                if let Some(packet) = packet {
+                    self.clipboard.packet(packet);
+                }
+            } else if !self.clipboard_status.is_empty() || body[0] == 0x14 {
+                if self.clipboard_status.len() < 4 {
+                    let used = (4 - self.clipboard_status.len()).min(body.len());
+                    self.clipboard_status.extend_from_slice(&body[..used]);
+                    body = &body[used..];
+                    if self.clipboard_status.len() < 4 {
+                        continue;
+                    }
+                }
+                let size = 4 + usize::from(u16::from_be_bytes([
+                    self.clipboard_status[2],
+                    self.clipboard_status[3],
+                ]));
+                let used = (size - self.clipboard_status.len()).min(body.len());
+                self.clipboard_status.extend_from_slice(&body[..used]);
+                body = &body[used..];
+                if self.clipboard_status.len() == size {
+                    if size >= 8 {
+                        let command = u16::from_be_bytes([
+                            self.clipboard_status[6],
+                            self.clipboard_status[7],
+                        ]);
+                        self.clipboard.status(command);
+                    }
+                    self.clipboard_status.clear();
+                }
+            } else {
+                let used = self.message_other(body, notices)?;
+                body = &body[used..];
+            }
+        }
+        Ok(())
+    }
+
+    fn message_other(&mut self, body: &[u8], notices: &mut Vec<Notice>) -> Result<usize> {
         let Some(&kind) = body.first() else {
             return Err(failed("empty authenticated control message"));
         };
@@ -418,6 +505,7 @@ impl Channel {
                                     u32::from(u16::from_be_bytes([data[6], data[7]])),
                                     u32::from(u16::from_be_bytes([data[8], data[9]])),
                                 )?;
+                                self.clipboard.session_changed();
                                 notices.push(Notice::Layout { scaled, backing });
                             } else if let Some(size) = offers::canvas(&data)? {
                                 notices.push(Notice::Canvas(size));
@@ -442,6 +530,7 @@ impl Channel {
                                 u32::from(u16::from_be_bytes([header[4], header[5]])),
                                 u32::from(u16::from_be_bytes([header[6], header[7]])),
                             )?;
+                            self.clipboard.session_changed();
                             notices.push(Notice::Layout {
                                 scaled: size,
                                 backing: size,
@@ -462,11 +551,13 @@ impl Channel {
                         }
                     }
                 }
+                return Ok(reader.position() as usize);
             }
-            1 | 2 | 3 | 0x14 | 0x1f => (),
+            2 => return Ok(1),
+            1 | 3 => (),
             _ => notices.push(Notice::Unsupported(i32::from(kind))),
         }
-        Ok(())
+        Ok(body.len())
     }
 }
 
@@ -505,4 +596,142 @@ pub(super) fn wait_canvas(
         "the Mac did not accept HEVC streaming; this requires a compatible Mac with an active desktop"
             .into(),
     ))
+}
+
+#[cfg(test)]
+mod native_clipboard_tests {
+    use super::*;
+    use crate::{clipboard::apple, telemetry::Counters};
+    use std::net::TcpListener;
+
+    fn read_record(stream: &mut TcpStream, records: &mut Records) -> Vec<u8> {
+        let len = word(stream).unwrap() as usize;
+        let mut data = vec![0; len];
+        stream.read_exact(&mut data).unwrap();
+        records.decrypt(&data).unwrap().to_vec()
+    }
+    #[test]
+    fn native_clipboard_uses_only_existing_cipher_and_reassembles_fragmented_records() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let wrap = [13; 16];
+        let worker = thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .unwrap();
+            let mut init = [0];
+            socket.read_exact(&mut init).unwrap();
+            assert_eq!(init, [0xc1]);
+            socket.write_all(&64u16.to_be_bytes()).unwrap();
+            socket.write_all(&48u16.to_be_bytes()).unwrap();
+            socket.write_all(&[0; 16]).unwrap();
+            socket.write_all(&0u32.to_be_bytes()).unwrap();
+            let mut viewer = [0; 66];
+            socket.read_exact(&mut viewer).unwrap();
+            assert_eq!(&viewer[..4], &[0x21, 0, 0, 62]);
+            let mut encryption = [0; 12];
+            socket.read_exact(&mut encryption).unwrap();
+            assert_eq!(&encryption[..4], &[0x12, 0, 0, 1]);
+            let mut header = [0; 4];
+            socket.read_exact(&mut header).unwrap();
+            let mut encodings =
+                vec![0; usize::from(u16::from_be_bytes([header[2], header[3]])) * 4];
+            socket.read_exact(&mut encodings).unwrap();
+            let aes = aes::Aes128::new((&wrap).into());
+            let mut rekey = [0; 36];
+            rekey[3] = 1;
+            rekey[4..20].fill(21);
+            rekey[20..].fill(31);
+            for block in rekey[4..].as_chunks_mut::<16>().0 {
+                aes.encrypt_block(block.into());
+            }
+            let mut reply = vec![0, 0, 0, 1];
+            reply.extend_from_slice(&[0; 8]);
+            reply.extend_from_slice(&1103i32.to_be_bytes());
+            reply.extend_from_slice(&rekey);
+            socket.write_all(&reply).unwrap();
+            let mut toggle = [0; 8];
+            socket.read_exact(&mut toggle).unwrap();
+            assert_eq!(toggle, [0x12, 0, 0, 2, 0, 1, 0, 0]);
+            let mut cipher = Records::new(&wrap, &rekey).unwrap();
+            // A raw 0x15 would fail this decrypt/integrity check. No second authentication.
+            assert_eq!(read_record(&mut socket, &mut cipher), apple::monitor(true));
+            let request = read_record(&mut socket, &mut cipher);
+            assert_eq!(request[0], 0x0b);
+            let echo = u32::from_be_bytes(request[4..8].try_into().unwrap());
+            let mut packet = apple::encode_text("Mac 中文🍎\n    code").unwrap();
+            packet[4..8].copy_from_slice(&echo.to_be_bytes());
+            // Include a trailing status in the same logical stream and fragment the header too.
+            packet.extend_from_slice(&[0x14, 0, 0, 4, 0, 1, 0, 12]);
+            for chunk in packet.chunks(7) {
+                socket.write_all(&cipher.encrypt(chunk).unwrap()).unwrap();
+            }
+            let sent = read_record(&mut socket, &mut cipher);
+            let mut framer = apple::Framer::default();
+            let result = framer.feed(&sent).unwrap().1.unwrap();
+            assert_eq!(
+                result.text.unwrap().unwrap().as_str(),
+                "Windows 中文🍎\n    code"
+            );
+            assert_eq!(read_record(&mut socket, &mut cipher), apple::monitor(false));
+        });
+        let stream = TcpStream::connect(address).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        let metered = Metered {
+            inner: stream,
+            counters: Counters::new(),
+        };
+        let (mut channel, _) = Channel::bootstrap(metered, &wrap).unwrap();
+        channel
+            .native_clipboard(apple::Command::Configure {
+                epoch: 9,
+                enabled: true,
+                receive: true,
+                send: true,
+            })
+            .unwrap();
+        channel
+            .native_clipboard(apple::Command::Fetch {
+                epoch: 9,
+                sequence: 77,
+            })
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let mut received = false;
+        while !received {
+            channel.poll().unwrap();
+            while let Some(event) = channel.take_native_clipboard() {
+                if let apple::Event::Snapshot {
+                    epoch,
+                    sequence,
+                    text: Some(text),
+                } = event
+                {
+                    assert_eq!((epoch, sequence), (9, 77));
+                    assert_eq!(text.as_str(), "Mac 中文🍎\n    code");
+                    received = true;
+                }
+            }
+            assert!(Instant::now() < deadline);
+            thread::sleep(Duration::from_millis(2));
+        }
+        channel
+            .native_clipboard(apple::Command::Send {
+                epoch: 9,
+                text: Zeroizing::new("Windows 中文🍎\n    code".into()),
+            })
+            .unwrap();
+        channel
+            .native_clipboard(apple::Command::Configure {
+                epoch: 10,
+                enabled: false,
+                receive: false,
+                send: false,
+            })
+            .unwrap();
+        worker.join().unwrap();
+    }
 }

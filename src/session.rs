@@ -1,4 +1,5 @@
 use std::{
+    collections::VecDeque,
     net::{Shutdown, TcpStream},
     sync::{
         Arc, Mutex,
@@ -70,6 +71,7 @@ struct Control {
     clipboard_utf8: AtomicBool,
     clipboard_pending: AtomicUsize,
     clipboard_text: Mutex<Option<Zeroizing<String>>>,
+    native_clipboard: Mutex<VecDeque<crate::clipboard::apple::Event>>,
 }
 
 impl Control {
@@ -83,6 +85,7 @@ impl Control {
             clipboard_utf8: AtomicBool::new(false),
             clipboard_pending: AtomicUsize::new(0),
             clipboard_text: Mutex::new(None),
+            native_clipboard: Mutex::new(VecDeque::new()),
         }
     }
 
@@ -117,6 +120,7 @@ enum WriterCommand {
     ClipboardServer(crate::clipboard::Packet),
     ClipboardLocal(Zeroizing<String>),
     ClipboardEnabled(bool),
+    NativeClipboard(crate::clipboard::apple::Command),
     Complete {
         size: crate::geometry::Extent,
         bytes: u64,
@@ -285,6 +289,43 @@ impl Session {
 
     pub fn is_closed(&self) -> bool {
         self.control.cancelled.load(Ordering::Acquire)
+    }
+
+    pub fn native_clipboard(&self, command: crate::clipboard::apple::Command) -> Result<()> {
+        if !self.uses_hevc() {
+            return Err(Error::Clipboard(
+                "Native Apple clipboard requires the encrypted HEVC connection".into(),
+            ));
+        }
+        let operation = match &command {
+            crate::clipboard::apple::Command::Configure { enabled, .. } => {
+                if *enabled {
+                    "enable"
+                } else {
+                    "disable"
+                }
+            }
+            crate::clipboard::apple::Command::Fetch { .. } => "fetch",
+            crate::clipboard::apple::Command::Send { text, .. } => {
+                crate::clipboard::validate(text, true)?;
+                "send"
+            }
+        };
+        self.audit.critical(
+            "clipboard.apple.requested",
+            Level::Info,
+            json!({"clipboard.operation":operation,"network.encrypted":true}),
+        )?;
+        self.post(WriterCommand::NativeClipboard(command))
+    }
+    pub fn take_native_clipboard(&self) -> Result<Vec<crate::clipboard::apple::Event>> {
+        Ok(self
+            .control
+            .native_clipboard
+            .lock()
+            .map_err(|_| Error::Clipboard("Native clipboard queue is unavailable".into()))?
+            .drain(..)
+            .collect())
     }
 
     pub fn share_clipboard(&self, enabled: bool) -> Result<()> {
@@ -615,6 +656,11 @@ fn write_loop(
             continue;
         }
         match incoming.recv_timeout(delay) {
+            Ok(WriterCommand::NativeClipboard(_)) => {
+                return Err(Error::Clipboard(
+                    "Native clipboard cannot use an unencrypted VNC writer".into(),
+                ));
+            }
             Ok(WriterCommand::ClipboardEnabled(enabled)) => clipboard.enable(writer, enabled)?,
             Ok(WriterCommand::ClipboardLocal(text)) => {
                 for notice in clipboard.local(writer, text)? {
