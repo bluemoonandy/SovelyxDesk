@@ -5,6 +5,13 @@ export struct FileRow { name: string, detail: string, directory: bool, regular: 
 
 export component SshSharingOverlay inherits Rectangle {
     in property <bool> clipboard-view: false;
+    in property <bool> native-available: false;
+    in-out property <bool> native-enabled: false;
+    in-out property <bool> native-receive: true;
+    in-out property <bool> native-send: false;
+    in property <bool> native-verified: false;
+    in property <string> native-status;
+    callback native-changed();
     in-out property <bool> shared;
     in property <string> mode;
     in property <bool> vnc-available: true;
@@ -83,8 +90,17 @@ export component SshSharingOverlay inherits Rectangle {
                     if root.vnc-available : Text { text: "Ctrl+V sends Windows text when pasting into your Mac. Incoming Mac text can replace your Windows clipboard while the viewer is active. Clipboard contents are never logged."; color: GlassTheme.muted; wrap: word-wrap; font-size: 13px; }
                     if root.vnc-available : Button { text: "Paste Windows text"; enabled: root.shared && !root.auto-enabled; clicked => { root.paste-text(); } }
                     if root.vnc-available : Text { text: "VNC clipboard traffic is not encrypted. Use a VPN. Files, images, and rich text are not shared."; color: GlassTheme.muted; wrap: word-wrap; font-size: 12px; }
-                    Text { text: "Encrypted SSH clipboard"; color: GlassTheme.ink; font-size: 16px; font-weight: 600; }
-                    CheckBox { text: "Auto Sync Clipboard"; checked <=> root.auto-enabled; toggled => { root.auto-changed(); } }
+                    if root.native-available : VerticalLayout {
+                        CheckBox { text: "Native Apple clipboard (experimental, no SSH)"; checked <=> root.native-enabled; toggled => { root.native-changed(); } }
+                        HorizontalLayout {
+                            CheckBox { text: "Mac → Windows"; checked <=> root.native-receive; enabled: root.native-enabled; toggled => { root.native-changed(); } }
+                            CheckBox { text: "Windows → Mac"; checked <=> root.native-send; enabled: root.native-enabled && root.native-verified; toggled => { root.native-changed(); } }
+                        }
+                        Text { text: "Uses the current encrypted HEVC connection. First receive new Mac text to unlock sending. Remote Login and a second authentication are not used."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }
+                        Text { text: root.native-status; color: GlassTheme.accent; wrap: word-wrap; font-size: 12px; }
+                    }
+                    Text { text: "Encrypted SSH clipboard (optional fallback)"; color: GlassTheme.ink; font-size: 16px; font-weight: 600; }
+                    CheckBox { text: "Auto Sync Clipboard"; enabled: !root.native-enabled; checked <=> root.auto-enabled; toggled => { root.auto-changed(); } }
                     Text { text: "Shares new plain-text copies, including potentially sensitive text, in the background. Default: off. SSH must match the Mac desktop account."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }
                     HorizontalLayout {
                         CheckBox { text: "Windows → Mac"; checked <=> root.auto-to-mac; toggled => { root.auto-changed(); } }
@@ -97,8 +113,8 @@ export component SshSharingOverlay inherits Rectangle {
                     }
                     Text { text: root.auto-status; color: GlassTheme.accent; wrap: word-wrap; font-size: 12px; }
                     HorizontalLayout {
-                        Button { text: "Copy Mac text"; enabled: root.connected && !root.busy; clicked => { root.copy-text(); } }
-                        Button { text: "Send Windows text"; enabled: root.connected && !root.busy; clicked => { root.send-text(); } }
+                        Button { text: "Copy Mac text"; enabled: root.connected && !root.busy && !root.native-enabled; clicked => { root.copy-text(); } }
+                        Button { text: "Send Windows text"; enabled: root.connected && !root.busy && !root.native-enabled; clicked => { root.send-text(); } }
                     }
                     if root.connected : Button { text: "Disconnect SSH"; enabled: !root.busy; clicked => { root.disconnect(); } }
                     Text { text: "Unicode clipboard uses this SSH account's logged-in Mac desktop. No images, rich text, or clipboard contents are logged."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }

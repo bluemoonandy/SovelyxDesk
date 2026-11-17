@@ -36,6 +36,10 @@ pub(super) struct Files {
 }
 
 impl Files {
+    pub(super) fn pause_auto_clipboard(&mut self) {
+        self.auto.clear();
+    }
+
     pub fn stop(&mut self, app: &App) {
         self.auto.clear();
         app.set_auto_clipboard_status("Paused — SSH disconnected".into());

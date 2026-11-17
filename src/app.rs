@@ -1,4 +1,5 @@
 mod files_ui;
+mod native_clipboard;
 
 use std::{
     cell::RefCell,
@@ -59,6 +60,7 @@ struct State {
     reconnect_attempt: u32,
     resume_foreground: bool,
     files: files_ui::Files,
+    native_clipboard: native_clipboard::Bridge,
     retired: Vec<Session>,
     audit: Scope,
     audit_reported: bool,
@@ -887,7 +889,9 @@ fn tick_clipboard(app: &App, state: &mut State) -> Result<()> {
         return Ok(());
     };
     if session.uses_hevc() {
-        app.set_clipboard_mode("HEVC uses the encrypted SSH clipboard.".into());
+        app.set_clipboard_mode(
+            "HEVC supports the experimental encrypted Apple clipboard; SSH is optional.".into(),
+        );
         return Ok(());
     }
     app.set_clipboard_mode(
@@ -1299,6 +1303,7 @@ pub fn run(
         reconnect_attempt: 0,
         resume_foreground: false,
         files: files_ui::Files::default(),
+        native_clipboard: native_clipboard::Bridge::default(),
         retired: Vec::new(),
         audit,
         audit_reported: false,
@@ -2144,6 +2149,7 @@ pub fn run(
         }
     });
     files_ui::wire(&app, state.clone());
+    native_clipboard::wire(&app, state.clone());
     let timer = slint::Timer::default();
     let weak = app.as_weak();
     let timer_state = state.clone();
@@ -2296,6 +2302,7 @@ pub fn run(
                 }
                 tick_reconnect(&app, &timer_state, &events)?;
                 tick_video_resume(&app, &timer_state)?;
+                native_clipboard::tick(&app, &mut timer_state.borrow_mut())?;
                 tick_clipboard(&app, &mut timer_state.borrow_mut())?;
                 files_ui::tick(&app,&mut timer_state.borrow_mut())?;
                 tick_video(&app, &timer_state)?;
