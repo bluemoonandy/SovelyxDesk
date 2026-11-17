@@ -92,6 +92,15 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
         app.set_native_clipboard_receive(true);
         app.set_native_clipboard_verified(false);
     }
+    if app.get_connected()
+        && state
+            .session
+            .as_ref()
+            .is_some_and(|session| !session.uses_hevc())
+    {
+        // A protocol switch must not leave the hidden native option blocking the existing SSH UI.
+        app.set_native_clipboard_enabled(false);
+    }
     let enabled = app.get_native_clipboard_enabled();
     let connected = app.get_connected() && state.session.as_ref().is_some_and(Session::uses_hevc);
     if !enabled && !state.native_clipboard.active {
