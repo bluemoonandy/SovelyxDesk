@@ -8,8 +8,8 @@ export component SshSharingOverlay inherits Rectangle {
     in property <bool> native-available: false;
     in-out property <bool> native-enabled: false;
     in-out property <bool> native-receive: true;
-    in-out property <bool> native-send: false;
-    in property <bool> native-verified: false;
+    in-out property <bool> native-send: true;
+    in-out property <bool> native-files: false;
     in property <string> native-status;
     callback native-changed();
     in-out property <bool> shared;
@@ -72,7 +72,7 @@ export component SshSharingOverlay inherits Rectangle {
                     VerticalLayout {
                         spacing: 2px;
                         Text { text: root.clipboard-view ? "Clipboard" : "Files"; color: GlassTheme.ink; font-size: 22px; font-weight: 700; }
-                        Text { text: root.host + "  -  SSH / SFTP"; color: GlassTheme.muted; font-size: 12px; }
+                        Text { text: root.host + (root.clipboard-view && root.native-enabled ? "  -  Apple encrypted session" : "  -  SSH / SFTP"); color: GlassTheme.muted; font-size: 12px; }
                     }
                     Button { text: "Done"; clicked => { root.close(); } }
                 }
@@ -94,9 +94,12 @@ export component SshSharingOverlay inherits Rectangle {
                         CheckBox { text: "Native Apple clipboard (experimental, no SSH)"; checked <=> root.native-enabled; toggled => { root.native-changed(); } }
                         HorizontalLayout {
                             CheckBox { text: "Mac → Windows"; checked <=> root.native-receive; enabled: root.native-enabled; toggled => { root.native-changed(); } }
-                            CheckBox { text: "Windows → Mac"; checked <=> root.native-send; enabled: root.native-enabled && root.native-verified; toggled => { root.native-changed(); } }
+                            CheckBox { text: "Windows → Mac"; checked <=> root.native-send; enabled: root.native-enabled; toggled => { root.native-changed(); } }
                         }
-                        Text { text: "Uses the current encrypted HEVC connection. First receive new Mac text to unlock sending. Remote Login and a second authentication are not used."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }
+                        Text { text: "Uses the current encrypted HEVC connection. New text, HTML/RTF and image copies sync in the selected directions. Remote Login and a second authentication are not used."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }
+                        Text { text: "Text/HTML/RTF: 1 MiB each. Images: up to 3840×2160 pixels; PNG transfer under 4 MiB. Single-page 8-bit TIFF is converted. File/folder sync is a separate opt-in below."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }
+                        CheckBox { text: "Sync files and folders (experimental, copy only)"; checked <=> root.native-files; enabled: root.native-enabled; toggled => { root.native-changed(); } }
+                        Text { text: "Up to 16 roots / 256 MiB per batch. Keep this app open until pasting finishes. Files are staged in Mac /tmp and a private Windows temporary folder. Mac /tmp copies remain until system cleanup; links are not supported. Turn off this option to cancel."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }
                         Text { text: root.native-status; color: GlassTheme.accent; wrap: word-wrap; font-size: 12px; }
                     }
                     Text { text: "Encrypted SSH clipboard (optional fallback)"; color: GlassTheme.ink; font-size: 16px; font-weight: 600; }
