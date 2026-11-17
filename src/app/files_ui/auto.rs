@@ -264,7 +264,9 @@ pub(super) fn wire(app: &App, state: Rc<RefCell<State>>) {
                     profile_id: id,
                     preferences: prefs.clone(),
                 });
-            if let Err(error) = state.persist() {
+            let saved = state.audit.critical("clipboard.auto.preferences_requested",Level::Info,json!({"profile.id":id,"clipboard.auto.enabled":prefs.enabled,"clipboard.to_mac":prefs.to_mac,"clipboard.to_windows":prefs.to_windows,"clipboard.max_bytes":prefs.max_bytes}))
+                .and_then(|_| state.settings.save_auto_clipboard(&state.path));
+            if let Err(error) = saved {
                 state.settings.clipboard_auto = old;
                 return Err(error);
             }

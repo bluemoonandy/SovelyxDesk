@@ -1,7 +1,7 @@
 use std::{
     collections::HashSet,
     fs,
-    io::Write,
+    io::{Read, Write},
     path::{Path, PathBuf},
 };
 
@@ -137,7 +137,8 @@ pub struct Settings {
     pub audio: crate::audio::Settings,
     #[serde(default)]
     pub clipboard_enabled: bool,
-    #[serde(default)]
+    // A sidecar preserves the strict settings schema understood by the stable executable.
+    #[serde(skip)]
     pub clipboard_auto: Vec<ClipboardPreference>,
     #[serde(default)]
     pub ssh_host_keys: Vec<SshHostKey>,
@@ -215,10 +216,58 @@ impl Settings {
         if data.len() > 256 * 1024 {
             return Err(Error::Configuration("Settings file is too large".into()));
         }
-        let settings: Self = serde_json::from_slice(&data)
+        let mut settings: Self = serde_json::from_slice(&data)
             .map_err(|error| Error::Configuration(error.to_string()))?;
         settings.validate()?;
+        let auto = (|| -> Result<Vec<ClipboardPreference>> {
+            let file = match fs::File::open(path.with_extension("clipboard.json")) {
+                Ok(file) => file,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+                Err(error) => return Err(error.into()),
+            };
+            let mut data = Vec::new();
+            file.take(64 * 1024 + 1).read_to_end(&mut data)?;
+            if data.len() > 64 * 1024 {
+                return Err(Error::Configuration(
+                    "Automatic clipboard preferences are too large".into(),
+                ));
+            }
+            serde_json::from_slice(&data)
+                .map_err(|_| Error::Configuration("Invalid automatic clipboard preferences".into()))
+        })();
+        match auto {
+            Ok(auto) => {
+                settings.clipboard_auto = auto;
+                if settings.validate().is_err() {
+                    settings.clipboard_auto.clear();
+                    eprintln!(
+                        "MacCanvas: invalid automatic clipboard preferences; automatic sharing is disabled"
+                    );
+                }
+            }
+            Err(_) => eprintln!(
+                "MacCanvas: automatic clipboard preferences unavailable; automatic sharing is disabled"
+            ),
+        }
         Ok(settings)
+    }
+
+    pub fn save_auto_clipboard(&self, path: &Path) -> Result<()> {
+        self.validate()?;
+        let directory = path
+            .parent()
+            .ok_or_else(|| Error::Configuration("Missing settings directory".into()))?;
+        fs::create_dir_all(directory)?;
+        let mut temporary = tempfile::NamedTempFile::new_in(directory)?;
+        let bytes = serde_json::to_vec_pretty(&self.clipboard_auto).map_err(|_| {
+            Error::Configuration("Cannot encode automatic clipboard preferences".into())
+        })?;
+        temporary.write_all(&bytes)?;
+        temporary.as_file().sync_all()?;
+        temporary
+            .persist(path.with_extension("clipboard.json"))
+            .map_err(|error| error.error)?;
+        Ok(())
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
@@ -240,6 +289,51 @@ impl Settings {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn auto_preferences_preserve_stable_settings_schema_and_fail_closed_independently() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.json");
+        let mut settings = Settings::default();
+        settings.save(&path).unwrap();
+        let stable = fs::read(&path).unwrap();
+        let first = Uuid::new_v4();
+        let second = Uuid::new_v4();
+        settings.clipboard_auto = vec![
+            ClipboardPreference {
+                profile_id: first,
+                preferences: crate::clipboard::sync::Preferences {
+                    enabled: true,
+                    to_mac: false,
+                    ..Default::default()
+                },
+            },
+            ClipboardPreference {
+                profile_id: second,
+                preferences: Default::default(),
+            },
+        ];
+        settings.save_auto_clipboard(&path).unwrap();
+        assert_eq!(fs::read(&path).unwrap(), stable);
+        assert!(
+            !serde_json::to_string(&settings)
+                .unwrap()
+                .contains("clipboard_auto")
+        );
+        let loaded = Settings::load(&path).unwrap();
+        assert_eq!(loaded.clipboard_auto.len(), 2);
+        assert!(loaded.clipboard_auto[0].preferences.enabled);
+        assert!(!loaded.clipboard_auto[0].preferences.to_mac);
+        assert!(!loaded.clipboard_auto[1].preferences.enabled);
+        fs::write(
+            path.with_extension("clipboard.json"),
+            b"invalid optional preferences",
+        )
+        .unwrap();
+        assert!(Settings::load(&path).unwrap().clipboard_auto.is_empty());
+        fs::remove_file(path.with_extension("clipboard.json")).unwrap();
+        assert!(Settings::load(&path).unwrap().clipboard_auto.is_empty());
+    }
 
     #[test]
     fn ssh_keys_are_validated_even_when_no_machines_are_saved() {
