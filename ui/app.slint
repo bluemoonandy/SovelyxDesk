@@ -285,15 +285,17 @@ export component App inherits Window {
         }
         HorizontalLayout {
             padding-left: 0px; padding-right: 0px; padding-top: 0px;
-            spacing: root.sidebar-open && !root.immersive ? 14px : 0px;
+            spacing: root.sidebar-open && !root.immersive && (root.connected || root.connecting) ? 14px : 0px;
             sidebar := Rectangle {
-                width: root.sidebar-open && !root.immersive ? 320px : 0px;
+                preferred-width: 320px;
+                min-width: root.connected || root.connecting ? (root.sidebar-open && !root.immersive ? 320px : 0px) : 0px;
+                max-width: root.connected || root.connecting ? (root.sidebar-open && !root.immersive ? 320px : 0px) : 100000px;
+                horizontal-stretch: root.connected || root.connecting ? 0 : 1;
                 border-radius: 20px;
                 clip: true;
                 background: transparent;
-                animate width { duration: root.motion-enabled ? 200ms : 0ms; easing: ease-in-out; }
                 GlassPanel {
-                    width: 320px;
+                    width: parent.width;
                     height: parent.height;
                     radius: sidebar.border-radius;
                     opacity: min(1, sidebar.width / 240px);
@@ -341,7 +343,7 @@ LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.ma
                                         }
                                         Text { text: machine.detail; color: root.muted; font-size: 11px; overflow: elide; }
                                         HorizontalLayout {
-                                            Text { text: root.selected == index && (root.connecting || root.connected) ? root.status : machine.login + " · " + (machine.saved ? machine.protection : "Password required"); color: root.accent; font-size: 11px; vertical-alignment: center; }
+                                            Text { text: root.selected == index && (root.connecting || root.connected) ? root.status : machine.login + " · " + (machine.saved ? machine.protection : "Password required"); overflow: elide; min-width: 0px; color: root.accent; font-size: 11px; vertical-alignment: center; }
                                             Button { text: "Details"; quiet: true; enabled: !root.connected && !root.connecting; clicked => { root.select-machine(index); } }
                                             Button {
                                                 text: "Connect";
@@ -377,6 +379,11 @@ LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.ma
                     }
                 }
             }
+            Rectangle {
+                min-width: 0px;
+                max-width: root.connected || root.connecting ? 100000px : 0px;
+                visible: root.connected || root.connecting;
+                horizontal-stretch: 1;
             VerticalLayout {
                 spacing: 10px;
                 if root.audit-error != "" : Rectangle {
@@ -455,6 +462,8 @@ LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.ma
                     color: root.muted; font-size: 11px; overflow: elide; height: 22px;
                 }
             }
+            }
+
         }
         if !root.immersive : GlassPanel {
             height: 48px; radius: 16px;
