@@ -87,7 +87,11 @@ fn encode_flavors(flavors: &[(&[u8], &[u8])]) -> Result<Zeroizing<Vec<u8>>> {
     if archive.len() > MAX_ARCHIVE {
         return Err(invalid("archive exceeds limit"));
     }
-    compress_archive(&archive)
+    let mut packet = compress_archive(&archive)?;
+    // New local copies must declare new pasteboard items. Without this bit the
+    // Mac helper only fills an existing promise cache, which can ACK an empty board.
+    packet[2] |= 1;
+    Ok(packet)
 }
 fn compress_archive(archive: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
     let mut compressor = Compress::new(Compression::fast(), true);
@@ -531,6 +535,7 @@ pub enum Event {
     },
     Sent {
         epoch: u64,
+        written: bool,
     },
     Problem {
         epoch: u64,
@@ -567,7 +572,7 @@ impl Event {
             | Self::RichSnapshot { epoch, .. }
             | Self::ImageSnapshot { epoch, .. }
             | Self::Snapshot { epoch, .. }
-            | Self::Sent { epoch }
+            | Self::Sent { epoch, .. }
             | Self::Problem { epoch, .. } => Some(*epoch),
             Self::Trace { .. } | Self::Inventory(_) => None,
         }
@@ -749,8 +754,8 @@ impl Transport {
             unpacked: 0,
         });
     }
-    pub fn sent(&mut self, epoch: u64) {
-        self.event(Event::Sent { epoch });
+    pub fn sent(&mut self, epoch: u64, written: bool) {
+        self.event(Event::Sent { epoch, written });
     }
     pub fn status(&mut self, command: u16) {
         if self.enabled || self.pending.is_some() {
@@ -1338,6 +1343,21 @@ mod tests {
         assert!(encode_image(&invalid).is_err());
     }
     #[test]
+    fn new_windows_content_declares_new_mac_pasteboard_items() {
+        for wire in [
+            encode_text("new copy").unwrap(),
+            encode_text(&"中".repeat(5388)).unwrap(),
+            encode_rich(&rich_fixture()).unwrap(),
+            encode_image(&png_fixture()).unwrap(),
+        ] {
+            assert_eq!(
+                wire[2] & 1,
+                1,
+                "new copies must declare items, not only fill cached promise data"
+            );
+        }
+    }
+    #[test]
     fn fixed_messages_match_documented_bytes() {
         assert_eq!(monitor(true), [0x15, 0, 0, 1, 0, 0, 0, 0]);
         assert_eq!(monitor(false), [0x15, 0, 0, 2, 0, 0, 0, 0]);
@@ -1351,7 +1371,7 @@ mod tests {
             "literal $(not-a-command) ' \\",
         ] {
             let p = encode_text(text).unwrap();
-            assert_eq!(&p[..8], &[0x1f, 0, 0, 0, 0, 0, 0, 0]);
+            assert_eq!(&p[..8], &[0x1f, 0, 1, 0, 0, 0, 0, 0]);
             assert!(p.ends_with(&[0, 0, 0xff, 0xff]));
             assert_eq!(decode(&p).text.unwrap().unwrap().as_str(), text);
         }
@@ -1581,6 +1601,32 @@ mod tests {
                 ..
             }
         )));
+    }
+    #[test]
+    fn plain_text_at_reported_size_survives_fragmented_wire_encoding() {
+        let text: String = (0..5388)
+            .map(|i| {
+                if i % 17 == 0 {
+                    '\n'
+                } else {
+                    char::from_u32(0x4e00 + (i * 197 % 20000) as u32).unwrap()
+                }
+            })
+            .collect();
+        assert_eq!(text.chars().count(), 5388);
+        let wire = encode_text(&text).unwrap();
+        for chunk_size in [7, 16384, 32768] {
+            let mut framer = Framer::default();
+            let mut packet = None;
+            for chunk in wire.chunks(chunk_size) {
+                let (used, decoded) = framer.feed(chunk).unwrap();
+                assert_eq!(used, chunk.len());
+                if decoded.is_some() {
+                    packet = decoded;
+                }
+            }
+            assert_eq!(packet.unwrap().text.unwrap().unwrap().as_str(), text);
+        }
     }
     #[test]
     fn pointer_visibility_is_not_a_session_change() {

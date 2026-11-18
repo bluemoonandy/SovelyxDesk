@@ -663,11 +663,12 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                 }
                 app.set_native_clipboard_status(format!("Native experiment: {reason}; inspect clipboard.apple logs (no SSH fallback)").into());
             }
-            NativeEvent::Sent { epoch } if epoch == state.native_clipboard.epoch => {
-                app.set_native_clipboard_status(
-                    "Windows clipboard queued on encrypted Apple control — verify by pasting on the Mac"
-                        .into(),
-                );
+            NativeEvent::Sent { epoch, written } if epoch == state.native_clipboard.epoch => {
+                app.set_native_clipboard_status(if written {
+                    "Windows content written to the encrypted Mac connection. Paste on the Mac to verify acceptance."
+                } else {
+                    "Windows content queued; waiting for the encrypted connection to finish writing."
+                }.into());
             }
             _ => (),
         }

@@ -175,6 +175,7 @@ pub(super) struct Channel {
     clipboard_frame: apple::Framer,
     clipboard_status: Vec<u8>,
     native_pending_flush: bool,
+    native_pending_sent: Option<u64>,
     file_frame: crate::clipboard::filecopy::wire::Framer,
     file_messages: VecDeque<crate::clipboard::filecopy::wire::Message>,
 }
@@ -265,6 +266,7 @@ impl Channel {
                 clipboard_frame: apple::Framer::default(),
                 clipboard_status: Vec::new(),
                 native_pending_flush: false,
+                native_pending_sent: None,
                 file_frame: Default::default(),
                 file_messages: VecDeque::new(),
             },
@@ -322,7 +324,11 @@ impl Channel {
                     .trace_transport(packet[0], "tcp_pending", packet.len());
             }
             if let Some(epoch) = sent {
-                self.clipboard.sent(epoch);
+                let written = self.output.is_empty();
+                self.clipboard.sent(epoch, written);
+                if !written {
+                    self.native_pending_sent = Some(epoch);
+                }
             }
         }
         Ok(())
@@ -380,6 +386,12 @@ impl Channel {
                 Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => break,
                 Err(error) => return Err(error.into()),
             }
+        }
+        if self.output.is_empty()
+            && let Some(epoch) = self.native_pending_sent.take()
+            && epoch == self.clipboard.epoch()
+        {
+            self.clipboard.sent(epoch, true);
         }
         if self.output.is_empty() && self.native_pending_flush {
             self.native_pending_flush = false;
@@ -771,6 +783,7 @@ mod native_clipboard_tests {
                 socket.write_all(&cipher.encrypt(chunk).unwrap()).unwrap();
             }
             let sent = read_record(&mut socket, &mut cipher);
+            assert_eq!(sent[2] & 1, 1, "new Windows content must declare Mac items");
             let mut framer = apple::Framer::default();
             let result = framer.feed(&sent).unwrap().1.unwrap();
             assert_eq!(
@@ -786,6 +799,7 @@ mod native_clipboard_tests {
                 socket.write_all(&cipher.encrypt(chunk).unwrap()).unwrap();
             }
             let sent = read_record(&mut socket, &mut cipher);
+            assert_eq!(sent[2] & 1, 1, "new Windows content must declare Mac items");
             let result = apple::Framer::default().feed(&sent).unwrap().1.unwrap();
             assert!(result.text.unwrap().is_none());
             assert_eq!(*result.image.unwrap(), *image);
@@ -798,6 +812,7 @@ mod native_clipboard_tests {
                 socket.write_all(&cipher.encrypt(chunk).unwrap()).unwrap();
             }
             let sent = read_record(&mut socket, &mut cipher);
+            assert_eq!(sent[2] & 1, 1, "new Windows content must declare Mac items");
             let result = apple::Framer::default().feed(&sent).unwrap().1.unwrap();
             assert_eq!(&**result.text.unwrap().as_ref().unwrap(), "中文🍎");
             assert_eq!(&**result.rich.unwrap().html.unwrap(), "<b>中文🍎</b>");
