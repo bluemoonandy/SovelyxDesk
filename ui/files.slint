@@ -92,6 +92,7 @@ export component SshSharingOverlay inherits Rectangle {
                     if root.vnc-available : Text { text: "VNC clipboard traffic is not encrypted. Use a VPN. Files, images, and rich text are not shared."; color: GlassTheme.muted; wrap: word-wrap; font-size: 12px; }
                     if root.native-available : VerticalLayout {
                         CheckBox { text: "Native Apple clipboard (experimental, no SSH)"; checked <=> root.native-enabled; toggled => { root.native-changed(); } }
+                        Text { text: "Status: " + root.native-status; accessible-label: self.text; color: GlassTheme.ink; wrap: word-wrap; font-size: 13px; font-weight: 500; }
                         HorizontalLayout {
                             CheckBox { text: "Mac → Windows"; checked <=> root.native-receive; enabled: root.native-enabled; toggled => { root.native-changed(); } }
                             CheckBox { text: "Windows → Mac"; checked <=> root.native-send; enabled: root.native-enabled; toggled => { root.native-changed(); } }
@@ -100,7 +101,7 @@ export component SshSharingOverlay inherits Rectangle {
                         Text { text: "Text/HTML/RTF: 1 MiB each. Images: up to 3840×2160 pixels; PNG transfer under 4 MiB. Single-page 8-bit TIFF is converted. File/folder sync is a separate opt-in below."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }
                         CheckBox { text: "Sync files and folders (experimental, copy only)"; checked <=> root.native-files; enabled: root.native-enabled; toggled => { root.native-changed(); } }
                         Text { text: "Up to 16 roots / 256 MiB per batch. Keep this app open until pasting finishes. Files are staged in Mac /tmp and a private Windows temporary folder. Mac /tmp copies remain until system cleanup; links are not supported. Turn off this option to cancel."; color: GlassTheme.muted; wrap: word-wrap; font-size: 11px; }
-                        Text { text: root.native-status; color: GlassTheme.accent; wrap: word-wrap; font-size: 12px; }
+
                     }
                     Text { text: "Encrypted SSH clipboard (optional fallback)"; color: GlassTheme.ink; font-size: 16px; font-weight: 600; }
                     CheckBox { text: "Auto Sync Clipboard"; enabled: !root.native-enabled; checked <=> root.auto-enabled; toggled => { root.auto-changed(); } }

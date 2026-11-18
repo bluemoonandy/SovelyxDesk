@@ -1,0 +1,69 @@
+import { Button, CheckBox, LineEdit, ScrollView } from "std-widgets.slint";
+import { GlassPanel, GlassTheme } from "glass.slint";
+
+export component NativeFilesOverlay inherits Rectangle {
+    in-out property <bool> enabled-sharing;
+    in-out property <bool> allow-files;
+    in-out property <bool> send;
+    in-out property <bool> receive;
+    in-out property <string> destination;
+    in-out property <string> source;
+    in property <string> status;
+    in property <string> result;
+    in property <string> target;
+    in property <bool> busy;
+    callback changed();
+    callback upload(bool);
+    callback download();
+    callback cancel();
+    callback close();
+    background: GlassTheme.dark ? #00000099 : #00000033;
+    TouchArea { clicked => { root.close(); } }
+    GlassPanel {
+        width: min(640px, parent.width - 32px); height: min(600px, parent.height - 32px);
+        x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+        radius: 18px;
+        VerticalLayout {
+            padding: 24px; spacing: 12px;
+            HorizontalLayout {
+                Text { text: "Files"; color: GlassTheme.ink; font-size: 22px; font-weight: 700; vertical-alignment: center; horizontal-stretch: 1; }
+                Button { text: "Done"; width: 76px; height: 36px; clicked => { root.close(); } }
+            }
+            Text { text: "Connected Mac: " + root.target + ". Uses the encrypted session; no SSH login is required."; color: GlassTheme.muted; font-size: 13px; wrap: word-wrap; }
+            ScrollView {
+                horizontal-scrollbar-policy: always-off;
+                content-width: self.visible-width; content-height: controls.preferred-height;
+                controls := VerticalLayout {
+                    padding: 4px; spacing: 12px;
+                    CheckBox { text: "Enable native Apple sharing (clipboard and files)"; checked <=> root.enabled-sharing; toggled => { root.changed(); } }
+                    CheckBox { text: "Allow file transfers in this session"; checked <=> root.allow-files; enabled: root.enabled-sharing; toggled => { root.changed(); } }
+                    HorizontalLayout {
+                        CheckBox { text: "Windows → Mac"; checked <=> root.send; enabled: root.enabled-sharing; toggled => { root.changed(); } }
+                        CheckBox { text: "Mac → Windows"; checked <=> root.receive; enabled: root.enabled-sharing; toggled => { root.changed(); } }
+                    }
+                    Text { text: "Send to Mac"; color: GlassTheme.ink; font-size: 16px; font-weight: 600; }
+                    LineEdit { text <=> root.destination; placeholder-text: "/Users/your-account/Downloads"; accessible-label: "Mac destination directory"; }
+                    Text { text: "Enter an existing absolute Mac folder. Each upload creates a new transfer folder inside it."; color: GlassTheme.muted; font-size: 12px; wrap: word-wrap; }
+                    HorizontalLayout {
+                        alignment: start; spacing: 12px;
+                        Button { text: "Choose file…"; width: 158px; height: 36px; primary: true; enabled: !root.busy && root.enabled-sharing && root.allow-files && root.send && root.destination != ""; clicked => { root.upload(false); } }
+                        Button { text: "Choose folder…"; width: 158px; height: 36px; enabled: !root.busy && root.enabled-sharing && root.allow-files && root.send && root.destination != ""; clicked => { root.upload(true); } }
+                    }
+                    Text { text: "Receive from Mac"; color: GlassTheme.ink; font-size: 16px; font-weight: 600; }
+                    LineEdit { text <=> root.source; placeholder-text: "/Users/your-account/Downloads/example.txt"; accessible-label: "Mac source file or folder"; }
+                    HorizontalLayout {
+                        alignment: start;
+                        Button { text: "Choose Windows destination…"; width: 230px; height: 36px; enabled: !root.busy && root.enabled-sharing && root.allow-files && root.receive && root.source != ""; clicked => { root.download(); } }
+                    }
+                    Text { text: "Downloads are saved in a new folder. Existing files are not replaced. Links are unsupported; each transfer is limited to 256 MiB."; color: GlassTheme.muted; font-size: 12px; wrap: word-wrap; }
+                    if root.result != "" : LineEdit { text: root.result; read-only: true; accessible-label: "Completed file transfer location"; }
+                }
+            }
+            Text { text: "Status: " + root.status; accessible-label: self.text; color: GlassTheme.ink; font-size: 13px; font-weight: 500; wrap: word-wrap; }
+            HorizontalLayout {
+                alignment: end;
+                Button { text: "Cancel transfer"; width: 140px; height: 36px; enabled: root.busy; clicked => { root.cancel(); } }
+            }
+        }
+    }
+}

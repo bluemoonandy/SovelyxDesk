@@ -50,13 +50,29 @@ pub fn upload(
     connection: &mut impl Connection,
     paths: &[PathBuf],
     root_name: &str,
+    progress: impl FnMut(u64, u64),
+) -> Result<Vec<String>> {
+    upload_to(connection, paths, root_name, "/tmp", progress)
+}
+pub fn upload_to(
+    connection: &mut impl Connection,
+    paths: &[PathBuf],
+    root_name: &str,
+    destination: &str,
     mut progress: impl FnMut(u64, u64),
 ) -> Result<Vec<String>> {
+    valid_remote_path(destination)?;
+    let destination = destination.trim_end_matches('/');
+    let destination = if destination.is_empty() {
+        "/"
+    } else {
+        destination
+    };
     let plan = disk::Plan::new(paths, root_name, || connection.cancelled())?;
     let session = connection.session();
     progress(0, plan.bytes);
     let result = (|| {
-        connection.send(start(START_RECEIVE, session, "/tmp")?)?;
+        connection.send(start(START_RECEIVE, session, destination)?)?;
         let mut info = vec![0; 52];
         info[8..16].copy_from_slice(&plan.bytes.to_be_bytes());
         let physical = plan
@@ -127,7 +143,13 @@ pub fn upload(
             .items
             .iter()
             .filter(|item| item.level == 1)
-            .map(|item| format!("/tmp/{root_name}/{}", item.name))
+            .map(|item| {
+                format!(
+                    "{}/{root_name}/{}",
+                    destination.trim_end_matches('/'),
+                    item.name
+                )
+            })
             .collect())
     })();
     if result.is_ok() {
@@ -261,15 +283,39 @@ pub fn probe_uploaded_paths(connection: &mut impl Connection, paths: &[String]) 
 pub fn download(
     connection: &mut impl Connection,
     paths: &[String],
+    progress: impl FnMut(u64, u64),
+) -> Result<StagedFiles> {
+    download_in(connection, paths, None, progress)
+}
+pub fn valid_remote_path(path: &str) -> Result<()> {
+    if !path.starts_with('/')
+        || path.len() > 4096
+        || path.chars().any(char::is_control)
+        || path.split('/').any(|part| matches!(part, "." | ".."))
+    {
+        return Err(failed("Enter an absolute Mac path without dot components"));
+    }
+    Ok(())
+}
+pub fn download_in(
+    connection: &mut impl Connection,
+    paths: &[String],
+    parent: Option<&std::path::Path>,
     mut progress: impl FnMut(u64, u64),
 ) -> Result<StagedFiles> {
+    for path in paths {
+        valid_remote_path(path)?;
+    }
     if paths.is_empty() || paths.len() > 16 {
         return Err(failed("select between 1 and 16 Mac roots"));
     }
-    let directory = tempfile::Builder::new()
-        .prefix("maccanvas-native-files-")
-        .tempdir()
-        .map_err(|_| failed("cannot create private staging directory"))?;
+    let mut builder = tempfile::Builder::new();
+    builder.prefix("maccanvas-native-files-");
+    let directory = match parent {
+        Some(parent) => builder.tempdir_in(parent),
+        None => builder.tempdir(),
+    }
+    .map_err(|_| failed("cannot create private staging directory"))?;
     disk::protect_staging(directory.path())?;
     let mut roots = Vec::new();
     let mut completed = 0u64;
@@ -521,6 +567,69 @@ mod tests {
         assert_eq!(fs::read(root.join("中文📁/code.bin")).unwrap(), content);
         assert!(root.join("中文📁/empty").is_dir());
         assert_eq!(chunks, 4);
+    }
+    #[test]
+    fn manual_upload_uses_the_selected_mac_directory_without_clipboard_metadata() {
+        let source = tempfile::tempdir().unwrap();
+        let file = source.path().join("fixture.txt");
+        fs::write(&file, b"selected destination").unwrap();
+        let mut connection = Fake::new(vec![]);
+        let paths = upload_to(
+            &mut connection,
+            &[file],
+            "transfer",
+            "/Users/fixture/Downloads/",
+            |_, _| {},
+        )
+        .unwrap();
+        assert!(connection.finished);
+        assert_eq!(paths, ["/Users/fixture/Downloads/transfer/fixture.txt"]);
+        assert_eq!(
+            connection.sent[0].body,
+            start(START_RECEIVE, 42, "/Users/fixture/Downloads")
+                .unwrap()
+                .body
+        );
+        assert!(connection.sent.iter().all(|m| m.command != START_SEND));
+    }
+    #[test]
+    fn manual_download_stages_in_the_selected_folder_and_never_replaces_existing_data() {
+        let destination = tempfile::tempdir().unwrap();
+        fs::write(destination.path().join("fixture.txt"), b"preserve").unwrap();
+        let mut connection = Fake::new(vec![
+            item("fixture.txt", 0, false, 5),
+            data(42, b"hello"),
+            end(42, 0),
+        ]);
+        let result = download_in(
+            &mut connection,
+            &["/Users/fixture/fixture.txt".into()],
+            Some(destination.path()),
+            |_, _| {},
+        )
+        .unwrap();
+        assert!(result.directory.path().starts_with(destination.path()));
+        assert_eq!(fs::read(&result.paths[0]).unwrap(), b"hello");
+        assert_eq!(
+            fs::read(destination.path().join("fixture.txt")).unwrap(),
+            b"preserve"
+        );
+        let folder = result.directory.path().to_owned();
+        drop(result);
+        assert!(!folder.exists()); // A revoked or incomplete UI receipt leaves no published files.
+    }
+    #[test]
+    fn manual_paths_are_validated_before_sending() {
+        for path in [
+            "relative",
+            "~/Downloads",
+            "/Users/fixture/../other",
+            "/tmp/evil\0path",
+        ] {
+            let mut connection = Fake::new(vec![]);
+            assert!(download_in(&mut connection, &[path.into()], None, |_, _| {}).is_err());
+            assert!(connection.sent.is_empty());
+        }
     }
     #[test]
     fn folder_download_publishes_only_a_complete_tree() {

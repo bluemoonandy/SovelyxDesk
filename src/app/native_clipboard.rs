@@ -262,6 +262,7 @@ fn post(state: &State, command: NativeCommand) -> Result<()> {
         .native_clipboard(command)
 }
 pub(super) fn wire(app: &App, state: Rc<RefCell<State>>) {
+    files::wire(app, state.clone());
     let weak = app.as_weak();
     app.on_native_clipboard_changed(move || {
         let Some(app) = weak.upgrade() else {

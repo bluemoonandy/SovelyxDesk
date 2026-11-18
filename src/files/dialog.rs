@@ -9,8 +9,8 @@ use windows::{
         },
         UI::Shell::{
             FOS_DONTADDTORECENT, FOS_FILEMUSTEXIST, FOS_FORCEFILESYSTEM, FOS_NOCHANGEDIR,
-            FOS_NOTESTFILECREATE, FOS_PATHMUSTEXIST, FileOpenDialog, FileSaveDialog, IFileDialog,
-            SIGDN_FILESYSPATH,
+            FOS_NOTESTFILECREATE, FOS_PATHMUSTEXIST, FOS_PICKFOLDERS, FileOpenDialog,
+            FileSaveDialog, IFileDialog, SIGDN_FILESYSPATH,
         },
     },
     core::HSTRING,
@@ -28,13 +28,17 @@ impl Drop for Apartment {
 }
 
 pub fn pick(owner: isize) -> Result<Option<PathBuf>> {
-    show(owner, None)
+    show(owner, None, false)
 }
 pub fn save(owner: isize, name: &str) -> Result<Option<PathBuf>> {
-    show(owner, Some(name))
+    show(owner, Some(name), false)
 }
 
-fn show(owner: isize, name: Option<&str>) -> Result<Option<PathBuf>> {
+pub fn folder(owner: isize) -> Result<Option<PathBuf>> {
+    show(owner, None, true)
+}
+
+fn show(owner: isize, name: Option<&str>, folder: bool) -> Result<Option<PathBuf>> {
     let failed = |error| Error::Transfer(format!("Windows file dialog: {error}"));
     unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }
         .ok()
@@ -49,14 +53,18 @@ fn show(owner: isize, name: Option<&str>) -> Result<Option<PathBuf>> {
         unsafe { CoCreateInstance(&class, None, CLSCTX_INPROC_SERVER) }.map_err(failed)?;
     let mut options =
         FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR | FOS_DONTADDTORECENT;
-    if name.is_some() {
+    if folder {
+        options |= FOS_PICKFOLDERS;
+    } else if name.is_some() {
         options |= FOS_NOTESTFILECREATE;
     } else {
         options |= FOS_FILEMUSTEXIST;
     }
     unsafe { dialog.SetOptions(options) }.map_err(failed)?;
     unsafe {
-        dialog.SetTitle(&HSTRING::from(if name.is_some() {
+        dialog.SetTitle(&HSTRING::from(if folder {
+            "Choose a local folder for native file transfer"
+        } else if name.is_some() {
             "Receive a new file - existing files are not replaced"
         } else {
             "Send a file to this Mac folder"

@@ -16,7 +16,7 @@ use serde_json::json;
 use slint::{ComponentHandle, ModelRc, VecModel};
 use tokio::sync::oneshot;
 
-use super::{State, window_handle};
+use super::{Session, State, window_handle};
 use crate::{App, FileRow};
 
 #[derive(Default)]
@@ -197,6 +197,12 @@ pub(super) fn wire(app: &App, state: Rc<RefCell<State>>) {
         };
         let result: Result<()> = (|| {
             let mut state = open.borrow_mut();
+            if state.session.as_ref().is_some_and(Session::uses_hevc) {
+                app.set_clipboard_open(false);
+                app.set_files_open(false);
+                app.set_native_files_open(true);
+                return Ok(());
+            }
             prepare_ssh(&app, &mut state)?;
             app.set_clipboard_open(false);
             app.set_files_open(true);

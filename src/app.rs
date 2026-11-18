@@ -633,6 +633,7 @@ fn close_stream(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
     app.set_clipboard_shared(state.borrow().settings.clipboard_enabled);
     app.set_connecting(false);
     app.set_clipboard_open(false);
+    app.set_native_files_open(false);
     app.set_audio_open(false);
     app.set_audio_status("Audio is available with HEVC.".into());
     app.set_frame_image(slint::Image::default());
@@ -1780,6 +1781,7 @@ pub fn run(
                     state.send(command)?;
                 }
                 app.set_clipboard_open(false);
+                app.set_native_files_open(false);
                 app.invoke_focus_canvas();
                 Ok(())
             })();

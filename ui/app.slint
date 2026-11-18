@@ -2,6 +2,7 @@ import { LineEdit, ComboBox, ScrollView, Palette } from "std-widgets.slint";
 import { GlassTheme, GlassPanel, Button, CheckBox, Slider } from "glass.slint";
 import { AboutOverlay } from "about.slint";
 import { ClipboardOverlay } from "clipboard.slint";
+import { NativeFilesOverlay } from "native-files.slint";
 import { AudioOverlay } from "audio.slint";
 import { FilesOverlay, FileRow } from "files.slint";
 
@@ -104,6 +105,14 @@ export component App inherits Window {
     in-out property <string> auto-clipboard-limit: "1048576";
     in property <string> auto-clipboard-status: "Paused — automatic sharing is off";
     callback auto-clipboard-changed();
+    in-out property <bool> native-files-open: false;
+    in-out property <string> native-file-destination;
+    in-out property <string> native-file-source;
+    in property <string> native-file-result;
+    in property <bool> native-file-busy: false;
+    callback native-file-upload(bool);
+    callback native-file-download();
+    callback native-file-cancel();
     in-out property <bool> native-clipboard-enabled: false;
     in-out property <bool> native-clipboard-receive: true;
     in-out property <bool> native-clipboard-send: true;
@@ -140,7 +149,7 @@ export component App inherits Window {
     in property <string> files-error;
     in property <string> files-progress-label;
     in property <float> files-progress;
-    out property <bool> modal-open: editor-open || settings-open || quality-open || help-open || about-open || clipboard-open || files-open || audio-open || update-installing;
+    out property <bool> modal-open: native-files-open || editor-open || settings-open || quality-open || help-open || about-open || clipboard-open || files-open || audio-open || update-installing;
     out property <bool> canvas-focused: remote-focus.has-focus;
     in property <bool> update-checking: false;
     in property <bool> update-available: false;
@@ -847,6 +856,18 @@ export component App inherits Window {
         cancel => { root.files-cancel(); }
         copy-text => { root.files-copy-text(); }
         send-text => { root.files-send-text(); }
+    }
+
+    if root.native-files-open : NativeFilesOverlay {
+        enabled-sharing <=> root.native-clipboard-enabled; allow-files <=> root.native-clipboard-files;
+        send <=> root.native-clipboard-send; receive <=> root.native-clipboard-receive;
+        destination <=> root.native-file-destination; source <=> root.native-file-source;
+        status: root.native-clipboard-status; result: root.native-file-result; busy: root.native-file-busy; target: root.host;
+        changed => { root.native-clipboard-changed(); }
+        upload(folder) => { root.native-file-upload(folder); }
+        download => { root.native-file-download(); }
+        cancel => { root.native-file-cancel(); }
+        close => { root.native-files-open = false; if root.connected { root.focus-canvas(); } }
     }
 
     if root.files-open : FilesOverlay {
