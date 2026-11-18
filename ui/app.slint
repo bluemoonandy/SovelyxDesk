@@ -518,11 +518,13 @@ export component App inherits Window {
         GlassPanel {
             x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
             width: min(580px, parent.width - 48px); height: min(740px, parent.height - 48px);
+            background: root.panel; raised: true;
             VerticalLayout {
                 padding: 20px; spacing: 12px;
                 HorizontalLayout {
                     Text { text: root.selected >= 0 ? "Edit Mac connection" : "Add a Mac"; color: root.ink; font-size: 22px; font-weight: 600; }
-                    Button { text: "Cancel"; accessible-label: "Close connection editor"; clicked => { root.editor-open = false; root.password = ""; } }
+                    Rectangle { background: transparent; horizontal-stretch: 1; }
+                    Button { width: 88px; text: "Cancel"; accessible-label: "Close connection editor"; clicked => { root.editor-open = false; root.password = ""; } }
                 }
                 if root.error-text != "" : Text { text: root.error-text; color: root.ink; wrap: word-wrap; }
                 ScrollView {
@@ -533,11 +535,18 @@ export component App inherits Window {
                                 Caption { text: "BASIC INFORMATION"; color: root.muted; }
                                 Caption { text: "Device name"; }
                                 LineEdit { height: 36px; accessible-label: "Machine name"; text <=> root.machine-name; placeholder-text: "Mac mini"; enabled: !root.connected && !root.connecting; }
-                                Caption { text: "Host or IP address"; }
-                                LineEdit { height: 36px; accessible-label: "Mac address"; text <=> root.host; edited => {root.use-saved = false; root.password = ""; root.credential-approved = false;} placeholder-text: "192.168.1.50"; enabled: !root.connected && !root.connecting; }
                                 HorizontalLayout {
-                                    Caption { text: "Port"; }
-                                    LineEdit { height: 36px; accessible-label: "VNC port"; width: 88px; text <=> root.port; edited => {root.use-saved = false; root.password = ""; root.credential-approved = false;} input-type: InputType.number; enabled: !root.connected && !root.connecting; }
+                                    spacing: 12px;
+                                    VerticalLayout {
+                                        spacing: 6px; horizontal-stretch: 1;
+                                        Caption { text: "Host or IP address"; }
+                                        LineEdit { height: 36px; accessible-label: "Mac address"; text <=> root.host; edited => {root.use-saved = false; root.password = ""; root.credential-approved = false;} placeholder-text: "192.168.1.50"; enabled: !root.connected && !root.connecting; }
+                                    }
+                                    VerticalLayout {
+                                        width: 104px; spacing: 6px;
+                                        Caption { text: "Port"; }
+                                        LineEdit { height: 36px; accessible-label: "VNC port"; text <=> root.port; edited => {root.use-saved = false; root.password = ""; root.credential-approved = false;} input-type: InputType.number; enabled: !root.connected && !root.connecting; }
+                                    }
                                 }
                                 Caption { text: "Login method"; }
                                 ComboBox {
@@ -622,7 +631,7 @@ export component App inherits Window {
             GlassPanel {
                 x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
                 width: min(580px, parent.width - 48px); height: min(660px, parent.height - 48px);
-                raised: true;
+                background: root.panel; raised: true;
                 VerticalLayout {
                     padding: 24px; spacing: 16px;
                     HorizontalLayout {
@@ -638,7 +647,7 @@ export component App inherits Window {
                             Caption { text: "CONNECTION"; color: root.muted; }
                             Text { text: "Authentication, password protection and automatic reconnection are configured per Mac. Choose Edit on a device card."; color: root.muted; font-size: 13px; wrap: word-wrap; }
                             Caption { text: "DISPLAY & QUALITY"; color: root.muted; }
-                            HorizontalLayout { alignment: start; Button { text: "Picture & connection"; clicked => { root.settings-open = false; root.quality-open = true; } } CheckBox { text: "Show FPS"; checked <=> root.show-fps; toggled => { root.save-preferences(); } } }
+                            HorizontalLayout { alignment: start; Button { text: "Picture & connection"; clicked => { root.settings-open = false; root.quality-open = true; } } CheckBox { width: 160px; text: "Show FPS"; checked <=> root.show-fps; toggled => { root.save-preferences(); } } }
                             Caption { text: "KEYBOARD & SHORTCUTS"; color: root.muted; }
                             CheckBox { text: "Ctrl shortcuts act as Command"; checked <=> root.ctrl-as-command; toggled => { root.save-preferences(); } }
                             Caption { text: "CLIPBOARD"; color: root.muted; }

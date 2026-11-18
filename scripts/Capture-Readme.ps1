@@ -161,7 +161,11 @@ try {
     Assert-InWindow (Find-Control 'Connect to Mac') 'Save & Connect'
     Set-Control 'Machine name' 'Test Mac'
     Set-Control 'Mac address' '127.0.0.1'
+    Set-Control 'Mac password' 'fixture'
+    Set-Control 'Machine name' 'Renamed test Mac'
+    Set-Control 'Mac password' ''
     Capture-OwnedWindow (Join-Path $images "new-mac-account$suffix.png")
+    Set-Control 'Mac password' 'fixture'
     Set-Control 'Login method' 'VNC password'
     $usernameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac username')
     if ($null -ne $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $usernameCondition)) { throw 'VNC password form exposed a Mac username.' }
