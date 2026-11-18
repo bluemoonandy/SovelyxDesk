@@ -1226,7 +1226,8 @@ fn tick_updates(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
                         app.set_update_available(false);
                         app.set_update_banner(false);
                         app.set_update_status(
-                            format!("You're up to date ({}).", maccanvas::VERSION).into(),
+                            format!("No newer published version found ({}).", maccanvas::VERSION)
+                                .into(),
                         );
                     }
                     Err(error) => {

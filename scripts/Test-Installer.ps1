@@ -30,7 +30,7 @@ function Set-Fixture([string]$Version, [byte]$Marker) {
     $script:binary[300] = $Marker
     $script:hash = Get-MacCanvasHash $script:binary
     $script:checksums = [Text.Encoding]::UTF8.GetBytes("$script:hash  MacCanvas-windows-x64.exe`n$('a' * 64)  MacCanvas-audio-windows-x64.exe`n")
-    $base = "https://github.com/false00/maccanvas/releases/download/$Version"
+    $base = "https://github.com/bluemoonandy/maccanvas/releases/download/$Version"
     $script:release = [pscustomobject]@{
         tag_name = $Version; draft = $false; prerelease = $false
         assets = @(
@@ -43,6 +43,7 @@ function Set-Fixture([string]$Version, [byte]$Marker) {
 function Receive-MacCanvasBytes($Client, [uri]$Uri, [long]$Maximum) {
     Assert-MacCanvasUrl $Uri
     if ($Uri.DnsSafeHost -eq 'api.github.com') {
+        Assert-Test ($Uri.AbsolutePath.StartsWith('/repos/bluemoonandy/maccanvas/releases/')) 'installer metadata stays on the fork'
         return ,[Text.Encoding]::UTF8.GetBytes(($script:release | ConvertTo-Json -Depth 8))
     }
     if ($Uri.AbsolutePath.EndsWith('/SHA256SUMS.txt')) { return ,$script:checksums }
@@ -73,6 +74,9 @@ try {
     Assert-Test $true 'accept HTTPS GitHub asset host'
     Assert-Throws { Get-MacCanvasChecksum (('a' * 64) + '  MacCanvas-windows-x64.exe' + "`n" + ('b' * 64) + '  MacCanvas-windows-x64.exe') 'MacCanvas-windows-x64.exe' } 'reject duplicate checksums'
     Set-Fixture 'v0.1.0' 1
+    $foreign = ($script:release | ConvertTo-Json -Depth 8 | ConvertFrom-Json)
+    $foreign.assets[0].browser_download_url = 'https://github.com/false00/maccanvas/releases/download/v0.1.0/MacCanvas-windows-x64.exe'
+    Assert-Throws { Get-MacCanvasAsset $foreign 'MacCanvas-windows-x64.exe' 104857600 } 'installer rejects upstream viewer assets'
     Assert-MacCanvasExecutable $script:binary
     Assert-Test $true 'accept x64 PE32+ fixture without executing it'
     $script:binary[132] = 0

@@ -139,16 +139,42 @@ fn valid_hash(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
+fn parse_catalog(bytes: &[u8], current: &str) -> Result<Option<Release>> {
+    if bytes.len() as u64 > MAX_METADATA {
+        return Err(failed("Update metadata is too large"));
+    }
+    let entries: Vec<serde_json::Value> = serde_json::from_slice(bytes).map_err(failed)?;
+    if entries.len() > 20 {
+        return Err(failed("Update catalog has too many entries"));
+    }
+    let mut newest: Option<Release> = None;
+    for entry in entries {
+        if entry.get("draft").and_then(|v| v.as_bool()) == Some(true)
+            || entry.get("prerelease").and_then(|v| v.as_bool()) == Some(true)
+        {
+            continue;
+        }
+        if let Some(release) = parse_release(&serde_json::to_vec(&entry).map_err(failed)?, current)?
+            && newest
+                .as_ref()
+                .is_none_or(|previous| release.version > previous.version)
+        {
+            newest = Some(release);
+        }
+    }
+    Ok(newest)
+}
+
 pub fn check() -> Result<Option<Release>> {
     let mut bytes = Vec::new();
     http::download(
-        &format!("https://api.github.com/repos/{REPOSITORY}/releases/latest"),
+        &format!("https://api.github.com/repos/{REPOSITORY}/releases?per_page=20"),
         MAX_METADATA,
         Duration::from_secs(20),
         &mut bytes,
         &mut |_| {},
     )?;
-    parse_release(&bytes, VERSION)
+    parse_catalog(&bytes, VERSION)
 }
 
 pub fn verify_executable(bytes: &[u8], release: &Release) -> Result<()> {
@@ -668,6 +694,38 @@ mod tests {
             "assets": [{ "name": ASSET, "size": release.size, "browser_download_url": release.url, "digest": format!("sha256:{}", release.sha256) }]
         })
     }
+    #[test]
+    fn fork_catalog_handles_no_releases_and_ignores_unpublished_builds() {
+        assert!(parse_catalog(b"[]", "0.5.7").unwrap().is_none());
+        let (_, release) = fixture();
+        let mut preview = metadata(&release);
+        preview["prerelease"] = true.into();
+        let mut draft = metadata(&release);
+        draft["draft"] = true.into();
+        let catalog = serde_json::to_vec(&vec![preview, draft]).unwrap();
+        assert!(parse_catalog(&catalog, "0.5.7").unwrap().is_none());
+        assert!(parse_catalog(b"{}", "0.5.7").is_err());
+    }
+
+    #[test]
+    fn fork_catalog_reuses_source_hash_and_version_validation() {
+        let (_, release) = fixture();
+        let mut next = metadata(&release);
+        let entries = serde_json::to_vec(&vec![next.clone()]).unwrap();
+        assert_eq!(
+            parse_catalog(&entries, "0.5.7").unwrap().unwrap().version,
+            release.version
+        );
+        assert!(parse_catalog(&entries, "9.0.0").unwrap().is_none());
+        next["assets"][0]["browser_download_url"] =
+            "https://github.com/false00/maccanvas/app.exe".into();
+        assert!(parse_catalog(&serde_json::to_vec(&vec![next]).unwrap(), "0.5.7").is_err());
+        assert_eq!(
+            crate::REPOSITORY,
+            format!("https://github.com/{REPOSITORY}")
+        );
+    }
+
     #[test]
     fn compares_stable_semantic_versions_without_downgrading() {
         let (_, release) = fixture();
