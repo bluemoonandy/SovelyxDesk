@@ -318,6 +318,17 @@ impl CredentialStore for WindowsVault {
 }
 
 impl crate::login::Vault for WindowsVault {
+    fn read_legacy_account(
+        &self,
+        profile: Uuid,
+    ) -> std::result::Result<(String, Zeroizing<String>), crate::login::Failure> {
+        let c = CredentialStore::load(self, profile).map_err(|_| crate::login::Failure::Storage)?;
+        Ok((
+            c.username().to_owned(),
+            Zeroizing::new(c.password().to_owned()),
+        ))
+    }
+
     fn read(&self, target: &str) -> std::result::Result<Zeroizing<String>, crate::login::Failure> {
         let credentials = self
             .load_named(target.encode_utf16().chain(Some(0)).collect())

@@ -76,6 +76,22 @@ jobs:
           Copy-Item target\x86_64-pc-windows-msvc\debug\maccanvas.exe diagnostic-dist\MacCanvas-diagnostics-debug-windows-x64.exe
           $hash = (Get-FileHash diagnostic-dist\MacCanvas-diagnostics-debug-windows-x64.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  MacCanvas-diagnostics-debug-windows-x64.exe" | Set-Content diagnostic-dist\SHA256SUMS.txt
+      - name: Verify login UI themes and scale factors
+        shell: pwsh
+        run: |
+          $exe = 'target\x86_64-pc-windows-msvc\debug\maccanvas.exe'
+          .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light
+          .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme dark
+          foreach ($scale in @('1.25', '1.5', '2')) {
+            .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -ScaleFactor $scale
+          }
+      - name: Export login UI screenshots
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: MacCanvas-login-ui-${{ github.sha }}
+          path: docs/images/connections-*.png
+          if-no-files-found: error
+          retention-days: 14
       - name: Export Windows x64 diagnostic debug executable
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

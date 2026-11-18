@@ -59,6 +59,7 @@ pub(super) fn persist(app: &App, state: &mut State, profile: &Profile) -> Result
         binding: binding(app, profile),
         protection: mode(app),
         auto_reconnect: app.get_auto_reconnect(),
+        streaming: Some(state.settings.streaming),
     });
     updated
         .save(&state.path.with_file_name("connections-v1.json"))

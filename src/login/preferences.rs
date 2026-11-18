@@ -10,6 +10,8 @@ pub struct Device {
     pub protection: Protection,
     #[serde(default = "enabled")]
     pub auto_reconnect: bool,
+    #[serde(default)]
+    pub streaming: Option<crate::streaming::StreamSettings>,
 }
 fn enabled() -> bool {
     true
@@ -42,6 +44,9 @@ impl Preferences {
         }
         let mut ids = HashSet::new();
         for device in &parsed.devices {
+            if device.streaming.is_some_and(|s| s.validate().is_err()) {
+                return Err("Invalid saved display preferences");
+            }
             let binding = &device.binding;
             if !ids.insert(binding.device)
                 || binding.port == 0
@@ -132,6 +137,7 @@ mod tests {
             binding: b,
             protection: Protection::Quick,
             auto_reconnect: true,
+            streaming: None,
         };
         assert!(
             Preferences::parse(

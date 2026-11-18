@@ -320,6 +320,12 @@ fn select(app: &App, state: &Rc<RefCell<State>>, index: Option<usize>) -> Result
             .transpose()?
     };
     if let Some(profile) = profile {
+        let streaming = login_ui::entry(&state.borrow(), &profile).and_then(|d| d.streaming);
+        if let Some(streaming) = streaming {
+            state.borrow_mut().settings.streaming = streaming;
+            stream_form(app, streaming);
+            stream_summary(app, streaming);
+        }
         app.set_machine_name(profile.name.clone().into());
         app.set_host(profile.host.into());
         app.set_port(profile.port.to_string().into());
@@ -744,6 +750,19 @@ fn apply_streaming(
         } else {
             None
         };
+        if let Some(id) = state.connection_profile.as_ref().map(|p| p.id)
+            && let Some(entry) = state
+                .login
+                .devices
+                .iter_mut()
+                .find(|d| d.binding.device == id)
+        {
+            entry.streaming = Some(settings);
+            state
+                .login
+                .save(&state.path.with_file_name("connections-v1.json"))
+                .map_err(Error::Configuration)?;
+        }
         let previous = state.settings.streaming;
         state.settings.streaming = settings;
         if let Err(error) = state.persist() {
@@ -1278,7 +1297,7 @@ pub fn run(
     app.set_motion_enabled(theme::motion_enabled()?);
     app.set_glass_enabled(theme::glass_enabled()?);
     app.set_ctrl_as_command(settings.ctrl_as_command);
-    app.set_sidebar_open(settings.sidebar_open || settings.profiles.is_empty());
+    app.set_sidebar_open(true);
     app.set_show_fps(settings.show_fps);
     app.set_clipboard_shared(settings.clipboard_enabled);
     app.set_audio_muted(settings.audio.muted);
@@ -1541,7 +1560,7 @@ pub fn run(
             }
             state.persist()?;
 
-            if !app.get_use_saved()
+            if (!app.get_use_saved() || login_ui::entry(&state, &profile).is_some())
                 && (login_ui::mode(&app) != maccanvas::login::Protection::Never
                     || state.login_error.is_none())
             {
@@ -2255,6 +2274,7 @@ pub fn run(
                     continue;
                 }
                 match event {
+                    Event::Stage(stage) => app.set_status(stage.into()),
                     Event::Connected {
                         profile,
                         server_name,
@@ -2298,6 +2318,7 @@ pub fn run(
                         );
                         app.set_has_saved(profile.has_saved_credentials);
                         app.set_use_saved(profile.has_saved_credentials);
+                        login_ui::select(&app,&timer_state.borrow(),&profile);
                         model(&app, &timer_state.borrow());
                         if let Err(error) = saved {
                             notify(&app, error);

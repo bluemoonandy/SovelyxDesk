@@ -69,6 +69,9 @@ pub trait Vault {
     fn read(&self, target: &str) -> Result<Password, Failure>;
     fn write(&self, target: &str, password: &str) -> Result<(), Failure>;
     fn delete(&self, target: &str) -> Result<(), Failure>;
+    fn read_legacy_account(&self, _: Uuid) -> Result<(String, Password), Failure> {
+        Err(Failure::Storage)
+    }
 }
 
 pub trait Consent {
@@ -125,7 +128,11 @@ pub fn migrate_legacy(
     if !explicitly_approved || protection == Protection::Never {
         return Err(Failure::ExplicitApprovalRequired);
     }
-    let password = load_legacy(binding.device, vault, consent)?;
+    consent.verify()?;
+    let (username, password) = vault.read_legacy_account(binding.device)?;
+    if username != binding.username {
+        return Err(Failure::ExplicitApprovalRequired);
+    }
     save(binding, protection, true, &password, vault)
     // Preserve the original record so the stable executable can still use it.
 }

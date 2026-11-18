@@ -45,6 +45,7 @@ pub(super) fn run(
     if control.cancelled.load(Ordering::Acquire) {
         return Ok(());
     }
+    let _ = events.send((request.generation, Event::Stage("Connecting to Mac…")));
     let stream = protocol::connect(&request.profile)?;
     request.audit.critical(
         "network.connection.established",
@@ -75,6 +76,10 @@ pub(super) fn run(
         inner: stream,
         counters,
     };
+    let _ = events.send((
+        request.generation,
+        Event::Stage("Authenticating and establishing remote desktop…"),
+    ));
     let mut client = apple_hps::Client::open(
         stream,
         &credentials,
@@ -83,6 +88,10 @@ pub(super) fn run(
         request.audio,
         request.window != 0,
     )?;
+    let _ = events.send((
+        request.generation,
+        Event::Stage("Receiving the first picture…"),
+    ));
     let mut profile = Some(request.profile);
     let mut credentials = Some(credentials);
     let mut keyboard_trace = crate::input::diagnostics::Trace::default();

@@ -8,6 +8,11 @@ struct Store {
     calls: RefCell<Vec<&'static str>>,
 }
 impl Vault for Store {
+    fn read_legacy_account(&self, id: Uuid) -> Result<(String, Password), Failure> {
+        self.read(&format!("MacCanvas/profile/{id}"))
+            .map(|password| ("andy".into(), password))
+    }
+
     fn read(&self, target: &str) -> Result<Password, Failure> {
         self.calls.borrow_mut().push("read");
         self.records
@@ -170,4 +175,21 @@ fn quick_save_requires_user_authorization() {
         Err(Failure::ExplicitApprovalRequired)
     );
     assert!(store.calls.borrow().is_empty());
+}
+
+#[test]
+fn unlocked_legacy_password_cannot_be_assigned_to_a_different_account() {
+    let store = Store::default();
+    let mut b = binding();
+    store
+        .records
+        .borrow_mut()
+        .insert(format!("MacCanvas/profile/{}", b.device), "fixture".into());
+    b.username = "other-account".into();
+    let approval = Approval(true, RefCell::new(0));
+    assert_eq!(
+        migrate_legacy(&b, Protection::Quick, true, &store, &approval),
+        Err(Failure::ExplicitApprovalRequired)
+    );
+    assert_eq!(store.records.borrow().len(), 1);
 }

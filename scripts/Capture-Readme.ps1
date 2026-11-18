@@ -2,7 +2,8 @@
 [CmdletBinding()]
 param(
     [string]$Executable = '',
-    [ValidateSet('auto', 'light', 'dark')][string]$PreviewTheme = 'auto'
+    [ValidateSet('auto', 'light', 'dark')][string]$PreviewTheme = 'auto',
+    [ValidateSet('1', '1.25', '1.5', '2')][string]$ScaleFactor = '1'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,6 +58,7 @@ $start = [Diagnostics.ProcessStartInfo]::new()
 $start.FileName = (Resolve-Path -LiteralPath $Executable).Path
 $start.Arguments = "--data-dir `"$temporary`""
 if ($PreviewTheme -ne 'auto') { $start.Arguments += " --preview-theme $PreviewTheme" }
+$start.EnvironmentVariables['SLINT_SCALE_FACTOR'] = $ScaleFactor
 $start.UseShellExecute = $false
 $start.CreateNoWindow = $true
 $start.RedirectStandardError = $true
@@ -96,7 +98,7 @@ try {
     Start-Sleep -Seconds 1
     $images = Join-Path $root 'docs\images'
     $null = [IO.Directory]::CreateDirectory($images)
-    $suffix = if ($PreviewTheme -eq 'auto') { '' } else { "-$PreviewTheme" }
+    $suffix = "-$PreviewTheme-$ScaleFactor"
     Capture-OwnedWindow (Join-Path $images "connections$suffix.png")
     $window = [Windows.Automation.AutomationElement]::FromHandle($handle)
     $buttonCondition = [Windows.Automation.AndCondition]::new(
@@ -111,12 +113,12 @@ try {
     if ($null -ne $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $passwordCondition)) {
         throw 'Saved-login details exposed a password control.'
     }
-    $helloCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Saved login is locked')
+    $helloCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Windows Hello protected')
     if ($null -eq $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $helloCondition)) {
-        throw 'Mandatory Windows Hello protection is not visible.'
+        throw 'Legacy Windows Hello protection is not visible.'
     }
     if ($PreviewTheme -eq 'auto') { Capture-OwnedWindow (Join-Path $images 'saved-login.png') }
-    $allCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Show saved Macs')
+    $allCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Close connection editor')
     $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $allCondition).
         GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
     Start-Sleep -Milliseconds 150

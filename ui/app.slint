@@ -341,7 +341,7 @@ LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.ma
                                         }
                                         Text { text: machine.detail; color: root.muted; font-size: 11px; overflow: elide; }
                                         HorizontalLayout {
-                                            Text { text: machine.login + " · " + (machine.saved ? machine.protection : "Password required"); color: root.accent; font-size: 11px; vertical-alignment: center; }
+                                            Text { text: root.selected == index && (root.connecting || root.connected) ? root.status : machine.login + " · " + (machine.saved ? machine.protection : "Password required"); color: root.accent; font-size: 11px; vertical-alignment: center; }
                                             Button { text: "Details"; quiet: true; enabled: !root.connected && !root.connecting; clicked => { root.select-machine(index); } }
                                             Button {
                                                 text: "Connect";
@@ -493,7 +493,7 @@ LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.ma
                 padding: 20px; spacing: 12px;
                 HorizontalLayout {
                     Text { text: root.selected >= 0 ? "Edit Mac connection" : "Add a Mac"; color: root.ink; font-size: 22px; font-weight: 600; }
-                    Button { text: "Close"; clicked => { root.editor-open = false; root.password = ""; } }
+                    Button { text: "Close"; accessible-label: "Close connection editor"; clicked => { root.editor-open = false; root.password = ""; } }
                 }
                 if root.error-text != "" : Text { text: root.error-text; color: root.ink; wrap: word-wrap; }
                 ScrollView { VerticalLayout { spacing: 8px;

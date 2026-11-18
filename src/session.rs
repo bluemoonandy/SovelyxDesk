@@ -32,6 +32,7 @@ fn reconnect_after_connection(hevc: bool, cancelled: bool, outcome: &Result<()>)
 pub type Frames = Arc<Mutex<Option<Arc<Framebuffer>>>>;
 
 pub enum Event {
+    Stage(&'static str),
     Connected {
         profile: Profile,
         server_name: String,
@@ -154,7 +155,7 @@ impl Session {
             "server.address": request.profile.host, "server.port": request.profile.port,
             "network.transport": "tcp", "network.protocol.name": "rfb",
             "rfb.authentication": request.profile.authentication,
-            "credential.source": if matches!(request.credentials, CredentialSource::Saved) { "saved" } else { "manual" },
+            "credential.source": if matches!(request.credentials, CredentialSource::Saved | CredentialSource::BoundSaved(_, _)) { "saved" } else { "manual" },
             "rfb.streaming": request.streaming,
         }))?;
         let audit = request.audit.clone();
@@ -392,6 +393,7 @@ fn run(
     if control.cancelled.load(Ordering::Acquire) {
         return Ok(());
     }
+    let _ = events.send((generation, Event::Stage("Connecting to Mac…")));
     let stream = protocol::connect(&request.profile)?;
     request.audit.critical("network.connection.established", Level::Info, json!({
         "server.socket.address": stream.peer_addr()?.ip().to_string(), "server.socket.port": stream.peer_addr()?.port(),
@@ -414,6 +416,10 @@ fn run(
         Level::Info,
         json!({"network.protocol.name":"rfb"}),
     )?;
+    let _ = events.send((
+        generation,
+        Event::Stage("Authenticating and establishing remote desktop…"),
+    ));
     let info = protocol::handshake_with_settings(
         &mut stream,
         request.profile.authentication,
