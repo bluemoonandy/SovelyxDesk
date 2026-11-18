@@ -2410,8 +2410,12 @@ pub fn run(
                     }
                     Event::Error(message) => {app.set_sidebar_open(true);app.set_status("Connection failed".into());notify(&app,message);},
                     Event::Disconnected { reconnect } => {
+                        let failed = app.get_status() == "Connection failed";
                         if let Err(error) = connection_ended(&app, &timer_state, reconnect) {
                             notify(&app, error);
+                        }
+                        if failed && !app.get_connecting() {
+                            app.set_status("Connection failed".into());
                         }
                     }
                 }

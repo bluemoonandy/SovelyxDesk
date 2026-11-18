@@ -367,7 +367,23 @@ export component App inherits Window {
                                             spacing: 10px;
                                             Image { source: @image-url("../assets/logo-mark.svg"); width: 28px; height: 28px; }
                                             Text { text: machine.name; color: root.ink; font-size: 16px; font-weight: 600; overflow: elide; min-width: 0px; vertical-alignment: center; horizontal-stretch: 1; }
-                                            Button { text: "···"; accessible-label: "Details"; quiet: true; width: 36px; enabled: !root.connected && !root.connecting; clicked => { root.select-machine(machine.id); } }
+                                            Button {
+                                                text: "···"; accessible-label: "More actions for " + machine.name; quiet: true; width: 36px; enabled: !root.connected && !root.connecting;
+                                                clicked => { device-menu.show(); }
+                                                device-menu := PopupWindow {
+                                                    x: parent.width - self.width; y: parent.height + 4px;
+                                                    width: 190px; height: 144px;
+                                                    GlassPanel {
+                                                        radius: 12px;
+                                                        VerticalLayout {
+                                                            padding: 8px; spacing: 4px;
+                                                            Button { text: "Edit Mac"; quiet: true; clicked => { device-menu.close(); root.select-machine(machine.id); } }
+                                                            Button { text: "Update Password"; quiet: true; clicked => { device-menu.close(); root.select-machine(machine.id); root.use-saved = false; root.password = ""; } }
+                                                            Button { text: "Remove Mac…"; quiet: true; clicked => { device-menu.close(); root.select-machine(machine.id); root.confirm-delete = true; } }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                         Text { text: machine.detail; color: root.muted; font-size: 13px; overflow: elide; }
                                         Text { text: machine.login + " · " + machine.protection; color: root.muted; font-size: 12px; overflow: elide; }
@@ -376,7 +392,7 @@ export component App inherits Window {
                                         HorizontalLayout {
                                             alignment: start; spacing: 8px;
                                             Button { text: root.selected == index && root.connecting ? "Connecting…" : "Connect"; width: 120px; primary: true; enabled: !root.connected && !root.connecting; clicked => { root.quick-connect(machine.id); } }
-                                            Button { text: "Edit"; quiet: true; enabled: !root.connected && !root.connecting; clicked => { root.select-machine(machine.id); } }
+                                            Button { text: "Edit"; accessible-label: "Details"; quiet: true; enabled: !root.connected && !root.connecting; clicked => { root.select-machine(machine.id); } }
                                         }
                                     }
                                 }
@@ -498,7 +514,6 @@ export component App inherits Window {
         FocusScope {
             init => { self.focus(); }
             key-pressed(event) => { if event.text == Key.Escape && !root.connecting { root.editor-open = false; root.password = ""; return accept; } return reject; }
-        }
         GlassPanel {
             x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
             width: min(580px, parent.width - 48px); height: min(740px, parent.height - 48px);
@@ -596,6 +611,7 @@ export component App inherits Window {
                 }
             }
         }
+    }
     }
     if root.settings-open : Rectangle {
         background: #00000055;

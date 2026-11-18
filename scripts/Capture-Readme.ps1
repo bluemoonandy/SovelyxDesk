@@ -7,7 +7,8 @@ param(
     [string]$OutputDirectory = '',
     [ValidateSet(0,1,2,6)][int]$DeviceCount = 2,
     [int]$WindowWidth = 1240,
-    [int]$WindowHeight = 820
+    [int]$WindowHeight = 820,
+    [int]$SessionPort = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -219,6 +220,34 @@ try {
         throw 'Search selected the wrong saved Mac.'
     }
     Capture-OwnedWindow (Join-Path $images "edit-mac$suffix.png")
+    if ($SessionPort -gt 0) {
+        Set-Control 'Mac address' '127.0.0.1'
+        Set-Control 'VNC port' "$SessionPort"
+        Set-Control 'Login method' 'VNC password'
+        Set-Control 'Credential protection' 'Manual'
+        Set-Control 'Mac password' 'fixture'
+        Invoke-Control 'Connect to Mac'
+        Capture-OwnedWindow (Join-Path $images "connecting$suffix.png")
+        $deadline = [DateTime]::UtcNow.AddSeconds(15)
+        do {
+            $failureCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Connection failed')
+            $failure = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $failureCondition)
+            if ($null -eq $failure) { Start-Sleep -Milliseconds 100 }
+        } while ($null -eq $failure -and [DateTime]::UtcNow -lt $deadline)
+        if ($null -eq $failure) { throw 'Expected loopback connection failure was not shown.' }
+        Capture-OwnedWindow (Join-Path $images "connection-failed$suffix.png")
+        Set-Control 'Mac password' 'fixture'
+        Invoke-Control 'Connect to Mac'
+        $null = Find-Control 'Disconnect'
+        Start-Sleep -Seconds 1
+        Capture-OwnedWindow (Join-Path $images "connected$suffix.png")
+        Invoke-Control 'Full screen'
+        Capture-OwnedWindow (Join-Path $images "fullscreen$suffix.png")
+        Invoke-Control 'Exit full screen'
+        Invoke-Control 'Disconnect'
+        $null = Find-Control 'Search saved Macs'
+        Write-Output 'Loopback failure/retry, remote desktop, fullscreen and disconnect: PASS'
+    }
     Write-Output 'Synthetic screenshot capture and saved-password non-disclosure checks: PASS'
  } catch {
     if ($handle -ne [IntPtr]::Zero -and -not $process.HasExited) {

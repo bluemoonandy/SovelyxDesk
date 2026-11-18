@@ -71,6 +71,9 @@ jobs:
             .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -DeviceCount 6 -WindowWidth $size[0] -WindowHeight $size[1] -OutputDirectory "$env:RUNNER_TEMP\login-ui"
           }
           .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -DeviceCount 6 -WindowWidth 3840 -WindowHeight 2160 -ScaleFactor 2 -OutputDirectory "$env:RUNNER_TEMP\login-ui"
+      - name: Verify loopback connection states and full screen
+        shell: pwsh
+        run: python scripts/test_device_session_ui.py --executable target/x86_64-pc-windows-msvc/debug/maccanvas.exe --output "$env:RUNNER_TEMP/login-ui"
       - name: Export login UI screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
