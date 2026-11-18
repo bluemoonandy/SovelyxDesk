@@ -269,7 +269,7 @@ try {
         $rows = $window.FindAll([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
         # MacBook's button already exists before filtering. Wait for the old cards
         # to leave the tree so its queued Invoke cannot target a replaced row.
-        $cards = @($window.FindAll([Windows.Automation.TreeScope]::Descendants, $groupCondition) | Where-Object { $_.Current.Name.StartsWith('Mac: ') })
+        $cards = @($window.FindAll([Windows.Automation.TreeScope]::Descendants, $groupCondition) | Where-Object { ([string]$_.Current.Name).StartsWith('Mac: ') })
         $filtered = $rows.Count -eq 1 -and $cards.Count -eq 1 -and $cards[0].Current.Name -ceq 'Mac: MacBook Pro'
         if (-not $filtered) { Start-Sleep -Milliseconds 50 }
     } while (-not $filtered -and [DateTime]::UtcNow -lt $deadline)
