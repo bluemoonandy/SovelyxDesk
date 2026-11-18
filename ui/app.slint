@@ -98,6 +98,18 @@ export component App inherits Window {
     in-out property <bool> about-open: false;
     in-out property <bool> clipboard-open: false;
     in-out property <bool> clipboard-shared: false;
+    in-out property <bool> auto-clipboard-enabled: false;
+    in-out property <bool> auto-clipboard-to-mac: true;
+    in-out property <bool> auto-clipboard-to-windows: true;
+    in-out property <string> auto-clipboard-limit: "1048576";
+    in property <string> auto-clipboard-status: "Paused — automatic sharing is off";
+    callback auto-clipboard-changed();
+    in-out property <bool> native-clipboard-enabled: false;
+    in-out property <bool> native-clipboard-receive: true;
+    in-out property <bool> native-clipboard-send: true;
+    in-out property <bool> native-clipboard-files: false;
+    in property <string> native-clipboard-status: "Experimental Apple clipboard — disabled";
+    callback native-clipboard-changed();
     in property <string> clipboard-mode: "Standard VNC: Latin-1 compatibility mode.";
     in-out property <bool> files-open: false;
     in property <string> files-host;
@@ -813,6 +825,13 @@ export component App inherits Window {
     }
 
     if root.clipboard-open : ClipboardOverlay {
+        native-available: root.connected && root.hevc-active;
+        native-enabled <=> root.native-clipboard-enabled; native-receive <=> root.native-clipboard-receive;
+        native-send <=> root.native-clipboard-send; native-files <=> root.native-clipboard-files;
+        native-status: root.native-clipboard-status; native-changed => { root.native-clipboard-changed(); }
+        auto-enabled <=> root.auto-clipboard-enabled; auto-to-mac <=> root.auto-clipboard-to-mac;
+        auto-to-windows <=> root.auto-clipboard-to-windows; auto-limit <=> root.auto-clipboard-limit;
+        auto-status: root.auto-clipboard-status; auto-changed => { root.auto-clipboard-changed(); }
         shared <=> root.clipboard-shared; mode: root.clipboard-mode; vnc-available: !root.hevc-active;
         host: root.files-host; port <=> root.files-port; username <=> root.files-username; password <=> root.files-password;
         has-saved: root.files-has-saved; use-saved <=> root.files-use-saved; connected: root.files-connected;

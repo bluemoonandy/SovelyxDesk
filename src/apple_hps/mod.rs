@@ -453,6 +453,22 @@ impl Client {
             .map(|cursor| (cursor, self.backing.width as f32 / self.scaled.width as f32))
     }
 
+    pub fn native_clipboard(&mut self, command: crate::clipboard::apple::Command) -> Result<()> {
+        self.channel.native_clipboard(command)
+    }
+    pub fn native_file_capability(&self) -> u32 {
+        self.channel.native_file_capability()
+    }
+    pub fn native_file_send(&mut self, packet: &[u8]) -> Result<bool> {
+        self.channel.native_file_send(packet)
+    }
+    pub fn take_native_file(&mut self) -> Option<crate::clipboard::filecopy::wire::Message> {
+        self.channel.take_native_file()
+    }
+    pub fn take_native_clipboard(&mut self) -> Option<crate::clipboard::apple::Event> {
+        self.channel.take_native_clipboard()
+    }
+
     pub fn input(&mut self, command: Command) -> Result<()> {
         match command {
             Command::Audio(settings) => {

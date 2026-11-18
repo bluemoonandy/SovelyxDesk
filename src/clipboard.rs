@@ -1,4 +1,9 @@
+pub mod apple;
+pub mod filecopy;
+pub mod image;
 pub mod native;
+pub mod rich;
+pub mod sync;
 
 use std::io::{Read, Write};
 

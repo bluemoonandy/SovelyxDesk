@@ -59,6 +59,7 @@ fn serve_owned_gui_fixture() {
 struct Evidence {
     files: Mutex<BTreeMap<String, Vec<u8>>>,
     clipboard: Mutex<Vec<u8>>,
+    clipboard_revision: AtomicUsize,
     clipboard_failure: AtomicUsize,
     commands: Mutex<Vec<String>>,
     authentications: AtomicUsize,
@@ -270,6 +271,48 @@ impl server::Handler for Ssh {
                 channel.exit_status(1).await.unwrap();
                 channel.eof().await.unwrap();
                 channel.close().await.unwrap();
+                return;
+            }
+            if command.contains("Conditional write:") {
+                let mut input = Vec::new();
+                while let Some(message) = channel.wait().await {
+                    match message {
+                        ChannelMsg::Data { data } => input.extend_from_slice(&data),
+                        ChannelMsg::Eof => break,
+                        _ => (),
+                    }
+                }
+                let input: serde_json::Value = serde_json::from_slice(&input).unwrap();
+                let delay = data.delay_ms.load(Ordering::Relaxed);
+                tokio::time::sleep(Duration::from_millis(delay as u64)).await;
+                let output = {
+                    let mut clipboard = data.clipboard.lock().unwrap();
+                    let mut revision = data.clipboard_revision.load(Ordering::SeqCst);
+                    let mut applied = false;
+                    let mut text = None;
+                    if let Some(value) = input["text"].as_str() {
+                        if input["since"].as_u64() == Some(revision as u64) {
+                            *clipboard = value.as_bytes().to_vec();
+                            revision += 1;
+                            data.clipboard_revision.store(revision, Ordering::SeqCst);
+                            applied = true;
+                        }
+                    } else if input["read_text"] == true
+                        && !input["since"].is_null()
+                        && input["since"].as_u64() != Some(revision as u64)
+                    {
+                        text = Some(String::from_utf8(clipboard.clone()).unwrap());
+                    }
+                    serde_json::to_vec(
+                        &json!({"revision":revision,"applied":applied,"text":text,"error":null}),
+                    )
+                    .unwrap()
+                };
+                // Cancellation can close a channel before this deliberately delayed fixture replies.
+                let _ = channel.data(output.as_slice()).await;
+                let _ = channel.exit_status(0).await;
+                let _ = channel.eof().await;
+                let _ = channel.close().await;
                 return;
             }
             if command.contains("fileHandleWithStandardOutput") {
@@ -850,4 +893,106 @@ fn cancelled_or_corrupted_uploads_never_create_the_final_file_and_remove_their_t
     );
     client.finish().unwrap();
     audit.shutdown().unwrap();
+}
+
+#[test]
+fn auto_clipboard_reuses_verified_ssh_checks_revisions_and_keeps_contents_out_of_audit() {
+    use maccanvas::clipboard::sync::{Reply, Request as SyncRequest};
+    use tokio_util::sync::CancellationToken;
+    let directory = tempfile::tempdir().unwrap();
+    let mut audit = Audit::start(directory.path().join("audit")).unwrap();
+    let fixture = Fixture::new();
+    let client = fixture.client(&audit, None, false);
+    connected(&client, &fixture);
+    let exchange = |id, since, text: Option<&str>| -> Reply {
+        client
+            .command(Command::AutoClipboard {
+                request: SyncRequest {
+                    id,
+                    sequence: id as u32,
+                    since,
+                    read_text: true,
+                    text: text.map(|t| Zeroizing::new(t.into())),
+                    max_bytes: 1024 * 1024,
+                },
+                cancel: CancellationToken::new(),
+            })
+            .unwrap();
+        let mut output = None;
+        wait(&client, |event| match event {
+            Event::AutoClipboard { id: got, result } => {
+                assert_eq!(got, id);
+                output = Some(result.unwrap());
+                true
+            }
+            Event::Failed(error) => panic!("SSH failed: {error}"),
+            _ => false,
+        });
+        output.unwrap()
+    };
+    let baseline = exchange(1, None, None);
+    assert!(baseline.text.is_none());
+    let text = "AUTO_PRIVATE_TEXT 中文🍎\n    source();";
+    let written = exchange(2, Some(baseline.revision), Some(text));
+    assert!(written.applied);
+    assert_eq!(
+        fixture.evidence.clipboard.lock().unwrap().as_slice(),
+        text.as_bytes()
+    );
+    assert!(exchange(3, Some(written.revision), None).text.is_none());
+    *fixture.evidence.clipboard.lock().unwrap() = CLIPBOARD.as_bytes().to_vec();
+    fixture
+        .evidence
+        .clipboard_revision
+        .fetch_add(1, Ordering::SeqCst);
+    let stale = exchange(4, Some(written.revision), Some("STALE_PRIVATE_TEXT"));
+    assert!(!stale.applied);
+    assert_eq!(
+        fixture.evidence.clipboard.lock().unwrap().as_slice(),
+        CLIPBOARD.as_bytes()
+    );
+    let read = exchange(5, Some(written.revision), None);
+    assert_eq!(read.text.unwrap().as_str(), CLIPBOARD);
+    assert_eq!(fixture.evidence.authentications.load(Ordering::Relaxed), 1);
+    // Disable/disconnect cancels queued work before execution; it must not write or emit a stale result.
+    let cancel = CancellationToken::new();
+    cancel.cancel();
+    client
+        .command(Command::AutoClipboard {
+            request: SyncRequest {
+                id: 6,
+                sequence: 6,
+                since: Some(stale.revision),
+                read_text: true,
+                text: Some(Zeroizing::new("CANCELLED_PRIVATE_TEXT".into())),
+                max_bytes: 1024 * 1024,
+            },
+            cancel,
+        })
+        .unwrap();
+    // Existing manual operations remain available on that same session.
+    client.command(Command::CopyClipboard).unwrap();
+    wait(&client, |e| match e {
+        Event::Clipboard(text) => {
+            assert_eq!(text.as_str(), CLIPBOARD);
+            true
+        }
+        Event::AutoClipboard { .. } => panic!("cancelled work must not escape its generation"),
+        _ => false,
+    });
+    client.close();
+    client.finish().unwrap();
+    audit.shutdown().unwrap();
+    let log = std::fs::read_to_string(audit.audit().path()).unwrap();
+    assert!(log.contains("ssh.clipboard.auto.requested"));
+    assert!(log.contains("ssh.clipboard.auto.completed"));
+    for secret in [
+        PASSWORD,
+        CLIPBOARD,
+        text,
+        "STALE_PRIVATE_TEXT",
+        "CANCELLED_PRIVATE_TEXT",
+    ] {
+        assert!(!log.contains(secret));
+    }
 }

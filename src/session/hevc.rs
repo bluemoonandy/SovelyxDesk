@@ -92,6 +92,9 @@ pub(super) fn run(
         request.generation,
         Event::Stage("Receiving the first picture…"),
     ));
+    control
+        .file_capability
+        .store(client.native_file_capability(), Ordering::Release);
     let mut profile = Some(request.profile);
     let mut credentials = Some(credentials);
     let mut keyboard_trace = crate::input::diagnostics::Trace::default();
@@ -117,6 +120,75 @@ pub(super) fn run(
                                 .event("input.keyboard.transport", Level::Info, record);
                     }
                 }
+                Ok(WriterCommand::NativeFile {
+                    epoch,
+                    session,
+                    packet,
+                    receipt,
+                }) => {
+                    let authorized = control.accepts_native(epoch)
+                        && control.file_enabled.load(Ordering::Acquire)
+                        && control.file_route.lock().ok().is_some_and(|slot| {
+                            slot.as_ref().is_some_and(|route| {
+                                !route.cancelled.load(Ordering::Acquire)
+                                    && route.id.load(Ordering::Acquire) == session
+                            })
+                        });
+                    let result = if !authorized {
+                        super::native_files::Receipt::Rejected
+                    } else {
+                        match client.native_file_send(&packet) {
+                            Ok(true) => super::native_files::Receipt::Accepted,
+                            Ok(false) => super::native_files::Receipt::Busy,
+                            Err(_) => super::native_files::Receipt::Rejected,
+                        }
+                    };
+                    let _ = receipt.try_send(result);
+                    break; // One file chunk per video poll; file workers never monopolize the input loop.
+                }
+                Ok(WriterCommand::NativeFileCancel(session)) => {
+                    if let Ok(packet) = crate::clipboard::filecopy::wire::Message::new(
+                        crate::clipboard::filecopy::wire::STOP,
+                        session,
+                        vec![],
+                    )
+                    .encode()
+                    {
+                        let _ = client.native_file_send(&packet);
+                    }
+                }
+                Ok(WriterCommand::NativeClipboard(command)) => {
+                    let epoch = match &command {
+                        crate::clipboard::apple::Command::Configure { epoch, .. }
+                        | crate::clipboard::apple::Command::Fetch { epoch, .. }
+                        | crate::clipboard::apple::Command::SendFiles { epoch, .. }
+                        | crate::clipboard::apple::Command::SendRich { epoch, .. }
+                        | crate::clipboard::apple::Command::SendImage { epoch, .. }
+                        | crate::clipboard::apple::Command::Send { epoch, .. } => *epoch,
+                    };
+                    if (matches!(&command, crate::clipboard::apple::Command::SendFiles { .. })
+                        && !control.file_enabled.load(Ordering::Acquire))
+                        || control.native_epoch.load(Ordering::Acquire) != epoch
+                        || (!matches!(&command, crate::clipboard::apple::Command::Configure { .. })
+                            && !control.accepts_native(epoch))
+                    {
+                        continue;
+                    }
+                    if let Err(error) = client.native_clipboard(command) {
+                        if !matches!(error, Error::Clipboard(_)) {
+                            return Err(error);
+                        }
+                        request.audit.event(
+                            "clipboard.apple.rejected",
+                            Level::Warn,
+                            crate::audit::error_attributes(&error),
+                        )?;
+                        control.push_native(crate::clipboard::apple::Event::Problem {
+                            epoch,
+                            reason: "request_rejected",
+                        })?;
+                    }
+                }
                 Ok(WriterCommand::ClipboardEnabled(false)) | Ok(WriterCommand::Complete { .. }) => {
                 }
                 Ok(
@@ -137,6 +209,49 @@ pub(super) fn run(
             Err(_) if control.cancelled.load(Ordering::Acquire) => return Ok(()),
             Err(error) => return Err(error),
         };
+        while let Some(message) = client.take_native_file() {
+            control.dispatch_file(message);
+        }
+        while let Some(event) = client.take_native_clipboard() {
+            if matches!(
+                &event,
+                crate::clipboard::apple::Event::SessionChanged { .. }
+            ) {
+                control
+                    .file_capability
+                    .store(client.native_file_capability(), Ordering::Release);
+                control.file_enabled.store(false, Ordering::Release);
+                control.revoke_files();
+            }
+
+            if let crate::clipboard::apple::Event::Inventory(inventory) = &event {
+                request.audit.event(
+                    "clipboard.apple.formats",
+                    Level::Info,
+                    json!({"clipboard.formats": inventory, "network.encrypted": true}),
+                )?;
+                continue;
+            }
+            if let crate::clipboard::apple::Event::Trace {
+                opcode,
+                detail,
+                value,
+                packed,
+                unpacked,
+            } = &event
+            {
+                request.audit.event("clipboard.apple.control",Level::Info,json!({"clipboard.opcode":opcode,"clipboard.detail":detail,"clipboard.value":value,"clipboard.compressed_bytes":packed,"clipboard.uncompressed_bytes":unpacked,"network.encrypted":true}))?;
+                continue;
+            }
+            if let crate::clipboard::apple::Event::Problem { reason, .. } = &event {
+                request.audit.event(
+                    "clipboard.apple.problem",
+                    Level::Warn,
+                    json!({"clipboard.reason":reason,"network.encrypted":true}),
+                )?;
+            }
+            control.push_native(event)?;
+        }
         if let Some((update, point_scale)) = client.cursor_status() {
             events
                 .send((
