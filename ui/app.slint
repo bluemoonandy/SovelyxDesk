@@ -5,7 +5,7 @@ import { ClipboardOverlay } from "clipboard.slint";
 import { AudioOverlay } from "audio.slint";
 import { FilesOverlay, FileRow } from "files.slint";
 
-export struct Machine { name: string, detail: string, saved: bool }
+export struct Machine { name: string, detail: string, saved: bool, login: string, protection: string }
 export struct TrafficBar { download: float, upload: float }
 export struct CodecGuide { name: string, detail: string, estimate: string }
 
@@ -71,7 +71,12 @@ export component App inherits Window {
     in property <bool> motion-enabled: true;
     in property <bool> glass-enabled: true;
     in-out property <bool> sidebar-open: true;
-    in-out property <bool> editor-open: true;
+    in-out property <bool> editor-open: false;
+    in-out property <int> credential-mode: 2;
+    in-out property <bool> credential-approved: false;
+    in-out property <bool> auto-reconnect: true;
+    in-out property <bool> delete-credentials: false;
+    in-out property <bool> settings-open: false;
     in-out property <bool> show-fps: true;
     in-out property <string> machine-filter;
     in property <[Machine]> machines;
@@ -121,7 +126,7 @@ export component App inherits Window {
     in property <string> files-error;
     in property <string> files-progress-label;
     in property <float> files-progress;
-    out property <bool> modal-open: quality-open || help-open || about-open || clipboard-open || files-open || audio-open || update-installing;
+    out property <bool> modal-open: editor-open || settings-open || quality-open || help-open || about-open || clipboard-open || files-open || audio-open || update-installing;
     out property <bool> canvas-focused: remote-focus.has-focus;
     in property <bool> update-checking: false;
     in property <bool> update-available: false;
@@ -297,27 +302,33 @@ export component App inherits Window {
                         VerticalLayout {
                             padding: 18px; spacing: 10px;
                             HorizontalLayout {
-                                Caption { text: root.editor-open ? (root.selected >= 0 ? "MAC DETAILS" : "NEW CONNECTION") : "YOUR MACS"; color: root.muted; }
+                                Caption { text: "YOUR MACS"; color: root.muted; }
                                 Button {
-                                    text: root.editor-open ? "All Macs" : "New";
-                                    accessible-label: root.editor-open ? "Show saved Macs" : "New connection";
+                                    text: "New";
+                                    accessible-label: "New connection";
                                     enabled: !root.connecting;
                                     clicked => {
                                         root.confirm-delete = false;
-                                        if root.editor-open { root.editor-open = false; }
-                                        else if !root.connected { root.new-machine(); }
+                                        if !root.connected { root.new-machine(); }
                                     }
                                 }
                             }
-                            if !root.editor-open : VerticalLayout {
+                            VerticalLayout {
                                 spacing: 10px;
-                                LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.machine-filter; placeholder-text: "Search by name or address"; }
+                                if root.error-text != "" : VerticalLayout {
+    Text { text: root.error-text; color: root.ink; wrap: word-wrap; }
+    HorizontalLayout {
+        Button { text: "Update login"; enabled: root.selected >= 0 && !root.connected && !root.connecting; clicked => { root.editor-open = true; root.use-saved = false; root.password = ""; } }
+        Button { text: "Dismiss"; clicked => { root.error-text = ""; } }
+    }
+}
+LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.machine-filter; placeholder-text: "Search by name or address"; }
                                 if root.machines.length == 0 : Text {
                                     text: root.machine-filter == "" ? "Your Macs, one click away.\nAdd your first Mac to get started." : "No Macs match this search.";
                                     color: root.muted; wrap: word-wrap;
                                 }
                                 for machine[index] in root.machines : GlassPanel {
-                                    height: 116px;
+                                    height: 130px;
                                     radius: 14px;
                                     background: root.selected == index ? root.selection : (root.dark-theme ? #2c2c2e99 : #f2f2f7b3);
                                     border-color: root.selected == index ? root.accent : GlassTheme.edge;
@@ -330,10 +341,10 @@ export component App inherits Window {
                                         }
                                         Text { text: machine.detail; color: root.muted; font-size: 11px; overflow: elide; }
                                         HorizontalLayout {
-                                            Text { text: machine.saved ? "Hello protected" : "Manual sign-in"; color: root.accent; font-size: 11px; vertical-alignment: center; }
+                                            Text { text: machine.login + " · " + (machine.saved ? machine.protection : "Password required"); color: root.accent; font-size: 11px; vertical-alignment: center; }
                                             Button { text: "Details"; quiet: true; enabled: !root.connected && !root.connecting; clicked => { root.select-machine(index); } }
                                             Button {
-                                                text: machine.saved ? "Connect" : "Open";
+                                                text: "Connect";
                                                 primary: true; enabled: !root.connected && !root.connecting;
                                                 clicked => { root.quick-connect(index); }
                                             }
@@ -346,75 +357,10 @@ export component App inherits Window {
                                     clicked => { root.new-machine(); }
                                 }
                             }
-                            if root.editor-open : VerticalLayout {
-                                spacing: 8px;
-                                if root.connected : Text { text: "Disconnect before changing this Mac's details."; color: root.muted; wrap: word-wrap; }
-                                Caption { text: "Name"; }
-                                LineEdit { accessible-label: "Machine name"; text <=> root.machine-name; placeholder-text: "Mac mini"; enabled: !root.connected && !root.connecting; }
-                                Caption { text: "Host or IP address"; }
-                                LineEdit { accessible-label: "Mac address"; text <=> root.host; placeholder-text: "192.168.1.50"; enabled: !root.has-saved && !root.connected && !root.connecting; }
-                                HorizontalLayout {
-                                    Caption { text: "Port"; }
-                                    LineEdit { accessible-label: "VNC port"; width: 88px; text <=> root.port; input-type: InputType.number; enabled: !root.has-saved && !root.connected && !root.connecting; }
-                                }
-                                Caption { text: "Login method"; }
-                                ComboBox {
-                                    accessible-label: "Login method"; model: ["Mac account", "VNC password"];
-                                    current-index <=> root.auth-mode; enabled: !root.has-saved && !root.connected && !root.connecting;
-                                }
-                                if root.has-saved && root.use-saved : GlassPanel {
-                                    height: 140px; radius: 14px; background: root.selection;
-                                    VerticalLayout {
-                                        padding: 12px; spacing: 6px;
-                                        Caption { text: "Saved login is locked"; color: root.accent; }
-                                        Text { text: "Windows Hello is required every time. Saved passwords cannot be displayed."; color: root.ink; font-size: 12px; wrap: word-wrap; }
-                                        Button {
-                                            text: "Enter different credentials";
-                                            enabled: !root.connected && !root.connecting;
-                                            clicked => { root.use-saved = false; }
-                                        }
-                                    }
-                                }
-                                if !root.use-saved : VerticalLayout {
-                                    spacing: 8px;
-                                    if root.auth-mode == 0 : VerticalLayout {
-                                        spacing: 6px;
-                                        Caption { text: "Mac username"; }
-                                        LineEdit { accessible-label: "Mac username"; text <=> root.username; placeholder-text: "Your macOS account"; enabled: !root.connected && !root.connecting; }
-                                    }
-                                    Caption { text: "Password"; }
-                                    LineEdit { accessible-label: "Mac password"; text <=> root.password; input-type: InputType.password; placeholder-text: "Enter a password"; enabled: !root.connected && !root.connecting; }
-                                    CheckBox {
-                                        text: root.has-saved ? "Replace saved login after connecting" : "Save login in Credential Manager";
-                                        checked <=> root.remember-password; enabled: !root.connected && !root.connecting;
-                                    }
-                                    if root.has-saved : Button {
-                                        text: "Use Hello-protected saved login";
-                                        enabled: !root.connected && !root.connecting;
-                                        clicked => { root.use-saved = true; }
-                                    }
-                                }
-                                Button {
-                                    text: root.connecting ? "Connecting..." : (root.use-saved ? "Unlock & connect" : "Connect to Mac");
-                                    accessible-label: "Connect to Mac"; primary: true;
-                                    enabled: !root.connected && !root.connecting && root.host != "" && (root.use-saved || root.password != "");
-                                    clicked => { root.connect-requested(); }
-                                }
-                                HorizontalLayout {
-                                    Button { text: "Save details"; accessible-label: "Save machine"; enabled: !root.connected && !root.connecting; clicked => { root.save-machine(); } }
-                                    Button { text: "Remove"; enabled: root.selected >= 0 && !root.connected && !root.connecting; clicked => { root.confirm-delete = !root.confirm-delete; } }
-                                }
-                                if root.confirm-delete : VerticalLayout {
-                                    Text { text: "Remove this Mac and its saved login?"; color: root.ink; wrap: word-wrap; }
-                                    HorizontalLayout {
-                                        Button { text: "Keep Mac"; clicked => { root.confirm-delete = false; } }
-                                        Button { text: "Remove Mac"; clicked => { root.delete-machine(); root.confirm-delete = false; } }
-                                    }
-                                }
-                            }
+
                             Rectangle { height: 1px; background: root.outline; }
-                            CheckBox { text: "Ctrl shortcuts act as Command"; checked <=> root.ctrl-as-command; toggled => { root.save-preferences(); } }
-                            Text { text: "Saved logins always require Windows Hello. Theme follows Windows automatically."; color: root.muted; font-size: 11px; wrap: word-wrap; }
+                            Button { text: "Settings"; clicked => { root.settings-open = true; root.release-input(); } }
+                            Text { text: "Credential protection is selected per Mac. Theme follows Windows automatically."; color: root.muted; font-size: 11px; wrap: word-wrap; }
                             Text { text: "Use a VPN for remote access. Standard Mac VNC traffic is not encrypted."; color: root.muted; font-size: 11px; wrap: word-wrap; }
                             Rectangle { height: 1px; background: root.outline; }
                             HorizontalLayout {
@@ -438,15 +384,7 @@ export component App inherits Window {
                     border-radius: 8px; min-height: 60px;
                     Text { x: 12px; y: 8px; width: parent.width - 24px; height: parent.height - 16px; text: root.audit-error; color: root.ink; wrap: word-wrap; font-size: 12px; }
                 }
-                if root.error-text != "" : Rectangle {
-                    background: root.dark-theme ? #ff453a19 : #ff3b3010;
-                    border-radius: 8px; min-height: 54px;
-                    HorizontalLayout {
-                        padding: 12px; spacing: 8px;
-                        Text { text: root.error-text; color: root.dark-theme ? #ff6961 : #b42318; wrap: word-wrap; }
-                        Button { text: "Dismiss"; clicked => { root.error-text = ""; } }
-                    }
-                }
+
                 canvas := Rectangle {
                     accessible-role: groupbox; accessible-label: "Remote desktop";
                     vertical-stretch: 1; horizontal-stretch: 1;
@@ -544,6 +482,116 @@ export component App inherits Window {
             }
         }
     }
+    }
+
+    if root.editor-open : Rectangle {
+        background: #00000055;
+        GlassPanel {
+            x: (parent.width - self.width) / 2; y: 24px;
+            width: min(580px, parent.width - 48px); height: parent.height - 48px;
+            VerticalLayout {
+                padding: 20px; spacing: 12px;
+                HorizontalLayout {
+                    Text { text: root.selected >= 0 ? "Edit Mac connection" : "Add a Mac"; color: root.ink; font-size: 22px; font-weight: 600; }
+                    Button { text: "Close"; clicked => { root.editor-open = false; root.password = ""; } }
+                }
+                if root.error-text != "" : Text { text: root.error-text; color: root.ink; wrap: word-wrap; }
+                ScrollView { VerticalLayout { spacing: 8px;
+                                if root.connected : Text { text: "Disconnect before changing this Mac's details."; color: root.muted; wrap: word-wrap; }
+                                Caption { text: "Name"; }
+                                LineEdit { accessible-label: "Machine name"; text <=> root.machine-name; placeholder-text: "Mac mini"; enabled: !root.connected && !root.connecting; }
+                                Caption { text: "Host or IP address"; }
+                                LineEdit { accessible-label: "Mac address"; text <=> root.host; placeholder-text: "192.168.1.50"; enabled: !root.has-saved && !root.connected && !root.connecting; }
+                                HorizontalLayout {
+                                    Caption { text: "Port"; }
+                                    LineEdit { accessible-label: "VNC port"; width: 88px; text <=> root.port; input-type: InputType.number; enabled: !root.has-saved && !root.connected && !root.connecting; }
+                                }
+                                Caption { text: "Login method"; }
+                                ComboBox {
+                                    accessible-label: "Login method"; model: ["Mac account", "VNC password"];
+                                    current-index <=> root.auth-mode; enabled: !root.has-saved && !root.connected && !root.connecting;
+                                }
+                                Caption { text: "Credential protection"; }
+                                ComboBox {
+                                    model: ["Save password · Quick connect", "Save password · Windows Hello", "Do not save password"];
+                                    current-index <=> root.credential-mode;
+                                    enabled: !root.connected && !root.connecting;
+                                    selected => { root.use-saved = false; root.password = ""; root.credential-approved = false; }
+                                }
+                                Text {
+                                    text: root.credential-mode == 0 ? "For a trusted PC. Programs running as your Windows user may access these credentials. Quick mode adds no separate hardware protection." : (root.credential-mode == 1 ? "Windows Hello authorizes every saved-password read. You can enter the password manually if Hello is unavailable." : "Device details are saved; the password is not persisted.");
+                                    color: root.muted; font-size: 12px; wrap: word-wrap;
+                                }
+                                CheckBox { text: "Automatically reconnect after an interrupted session"; checked <=> root.auto-reconnect; }
+                                if root.has-saved && root.use-saved : GlassPanel {
+                                    height: 140px; radius: 14px; background: root.selection;
+                                    VerticalLayout {
+                                        padding: 12px; spacing: 6px;
+                                        Caption { text: root.credential-mode == 0 ? "Saved for quick connection" : "Windows Hello protected"; color: root.accent; }
+                                        Text { text: "Saved passwords remain hidden. Hello mode requires approval; if unavailable, enter the password manually."; color: root.ink; font-size: 12px; wrap: word-wrap; }
+                                        Button {
+                                            text: "Enter different credentials";
+                                            enabled: !root.connected && !root.connecting;
+                                            clicked => { root.use-saved = false; }
+                                        }
+                                    }
+                                }
+                                if !root.use-saved : VerticalLayout {
+                                    spacing: 8px;
+                                    if root.auth-mode == 0 : VerticalLayout {
+                                        spacing: 6px;
+                                        Caption { text: "Mac username"; }
+                                        LineEdit { accessible-label: "Mac username"; text <=> root.username; placeholder-text: "Your macOS account"; enabled: !root.connected && !root.connecting; }
+                                    }
+                                    Caption { text: "Password"; }
+                                    LineEdit { accessible-label: "Mac password"; text <=> root.password; input-type: InputType.password; placeholder-text: "Enter a password"; enabled: !root.connected && !root.connecting; }
+                                    CheckBox {
+                                        text: "I authorize saving this password with the selected protection";
+                                        visible: root.credential-mode != 2;
+                                        checked <=> root.credential-approved;
+                                    }
+                                    if root.has-saved : Button {
+                                        text: "Use existing saved login";
+                                        enabled: !root.connected && !root.connecting;
+                                        clicked => { root.use-saved = true; root.credential-approved = false; }
+                                    }
+                                }
+                                Button {
+                                    text: root.connecting ? "Connecting..." : "Connect";
+                                    accessible-label: "Connect to Mac"; primary: true;
+                                    enabled: !root.connected && !root.connecting && root.host != "" && (root.use-saved || root.password != "");
+                                    clicked => { root.connect-requested(); }
+                                }
+                                HorizontalLayout {
+                                    Button { text: "Save details"; accessible-label: "Save machine"; enabled: !root.connected && !root.connecting; clicked => { root.save-machine(); } }
+                                    Button { text: "Remove"; enabled: root.selected >= 0 && !root.connected && !root.connecting; clicked => { root.confirm-delete = !root.confirm-delete; } }
+                                }
+                                if root.confirm-delete : VerticalLayout {
+                                    CheckBox { text: "Also delete saved credentials"; checked <=> root.delete-credentials; }
+                                    Text { text: "Remove this saved Mac?"; color: root.ink; wrap: word-wrap; }
+                                    HorizontalLayout {
+                                        Button { text: "Keep Mac"; clicked => { root.confirm-delete = false; } }
+                                        Button { text: "Remove Mac"; clicked => { root.delete-machine(); root.confirm-delete = false; } }
+                                    }
+                                }
+
+                } }
+            }
+        }
+    }
+    if root.settings-open : Rectangle {
+        background: #00000055;
+        GlassPanel {
+            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+            width: min(520px, parent.width - 48px); height: 220px;
+            VerticalLayout {
+                padding: 24px; spacing: 16px;
+                Text { text: "Settings · Keyboard & shortcuts"; color: root.ink; font-size: 20px; }
+                CheckBox { text: "Ctrl shortcuts act as Command"; checked <=> root.ctrl-as-command; toggled => { root.save-preferences(); } }
+                Text { text: "Theme follows Windows. Connection security is configured per Mac."; color: root.muted; wrap: word-wrap; }
+                Button { text: "Close"; clicked => { root.settings-open = false; } }
+            }
+        }
     }
     if root.quality-open || root.help-open : Rectangle {
         background: root.dark-theme ? #00000099 : #00000033;

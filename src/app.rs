@@ -1,4 +1,5 @@
 mod files_ui;
+mod login_ui;
 
 use std::{
     cell::RefCell,
@@ -49,6 +50,8 @@ fn reconnect_delay(attempt: u32) -> Duration {
 
 struct State {
     settings: Settings,
+    login: maccanvas::login::preferences::Preferences,
+    login_error: Option<String>,
     path: PathBuf,
     restart_data_directory: Option<PathBuf>,
     selected: Option<usize>,
@@ -217,6 +220,19 @@ fn model(app: &App, state: &State) {
             name: profile.name.clone().into(),
             detail: format!("{}:{}", profile.host, profile.port).into(),
             saved: profile.has_saved_credentials,
+            login: if profile.authentication == AuthMode::MacLogin {
+                "Mac account"
+            } else {
+                "VNC password"
+            }
+            .into(),
+            protection: login_ui::entry(state, profile)
+                .map_or("Windows Hello", |d| match d.protection {
+                    maccanvas::login::Protection::Quick => "Quick connect",
+                    maccanvas::login::Protection::Hello => "Windows Hello",
+                    maccanvas::login::Protection::Never => "Password required",
+                })
+                .into(),
         })
         .collect();
     app.set_machines(ModelRc::from(Rc::new(VecModel::from(rows))));
@@ -304,7 +320,7 @@ fn select(app: &App, state: &Rc<RefCell<State>>, index: Option<usize>) -> Result
             .transpose()?
     };
     if let Some(profile) = profile {
-        app.set_machine_name(profile.name.into());
+        app.set_machine_name(profile.name.clone().into());
         app.set_host(profile.host.into());
         app.set_port(profile.port.to_string().into());
         app.set_auth_mode(if profile.authentication == AuthMode::MacLogin {
@@ -322,12 +338,23 @@ fn select(app: &App, state: &Rc<RefCell<State>>, index: Option<usize>) -> Result
         app.set_has_saved(false);
         app.set_use_saved(false);
     }
-    app.set_username("".into());
+    if let Some(index) = index {
+        let state = state.borrow();
+        if let Some(profile) = state.settings.profiles.get(index) {
+            login_ui::select(app, &state, profile);
+        }
+    } else {
+        app.set_username("".into());
+        app.set_credential_mode(2);
+        app.set_auto_reconnect(true);
+    }
     app.set_password("".into());
+    app.set_credential_approved(false);
     app.set_remember_password(false);
     app.set_editor_open(true);
     app.set_sidebar_open(true);
     app.set_confirm_delete(false);
+    app.set_delete_credentials(false);
     app.set_error_text("".into());
     model(app, &state.borrow());
     Ok(())
@@ -758,6 +785,9 @@ fn connection_ended(app: &App, state: &Rc<RefCell<State>>, retryable: bool) -> R
         if retryable
             && telemetry::recovery::automatic_retry_allowed(attempt)
             && (app.get_connected() || state.reconnect_attempt != 0)
+            && state.connection_profile.as_ref().is_none_or(|profile| {
+                login_ui::entry(&state, profile).is_none_or(|entry| entry.auto_reconnect)
+            })
             && state.session.as_ref().is_some_and(Session::uses_hevc)
             && state.audit.audit().failure().is_none()
         {
@@ -1234,6 +1264,12 @@ pub fn run(
     };
     let path = directory.join("settings.json");
     let settings = Settings::load(&path)?;
+    let (login, login_error) = match maccanvas::login::preferences::Preferences::load(
+        &directory.join("connections-v1.json"),
+    ) {
+        Ok(login) => (login, None),
+        Err(error) => (Default::default(), Some(error)),
+    };
     let app = App::new().map_err(|error| Error::Display(error.to_string()))?;
     app.set_dark_theme(match preview_theme {
         Some(dark) => dark,
@@ -1289,6 +1325,8 @@ pub fn run(
     let (events, receiver) = mpsc::channel::<(u64, Event)>();
     let state = Rc::new(RefCell::new(State {
         settings,
+        login,
+        login_error,
         path,
         restart_data_directory,
         selected: None,
@@ -1475,6 +1513,7 @@ pub fn run(
         }
     });
     model(&app, &state.borrow());
+    app.set_editor_open(false);
     let frame_state = state.clone();
     let frame_app = app.as_weak();
     app.on_video_frame_ready(move || {
@@ -1493,27 +1532,31 @@ pub fn run(
         let result = (|| -> Result<()> {
             let mut state = connection_state.borrow_mut();
             let profile = profile_from_form(&app, &state)?;
-            let source = if app.get_use_saved() {
-                CredentialSource::Saved
+            let source = login_ui::source(&app, &state, &profile)?;
+            if let Some(index) = state.selected {
+                state.settings.profiles[index] = profile.clone();
             } else {
-                let credentials = Credentials::new(
-                    app.get_username().to_string(),
-                    app.get_password().to_string(),
-                );
-                credentials.validate(profile.authentication)?;
-                CredentialSource::Manual(credentials)
-            };
+                state.settings.profiles.push(profile.clone());
+                state.selected = Some(state.settings.profiles.len() - 1);
+            }
+            state.persist()?;
+
+            if !app.get_use_saved()
+                && (login_ui::mode(&app) != maccanvas::login::Protection::Never
+                    || state.login_error.is_none())
+            {
+                login_ui::persist(&app, &mut state, &profile)?;
+            }
             start_connection(
                 &app,
                 &mut state,
                 profile,
                 source,
-                app.get_remember_password() && !app.get_use_saved(),
+                login_ui::mode(&app) != maccanvas::login::Protection::Never && !app.get_use_saved(),
                 &connection_events,
             )
         })();
         app.set_password("".into());
-        app.set_username("".into());
         match result {
             Ok(()) => {
                 app.set_error_text("".into());
@@ -1715,7 +1758,10 @@ pub fn run(
         let Some(app) = weak.upgrade() else { return };
         let index = row_index(&app, &quick_state.borrow(), index);
         match index.and_then(|index| select(&app, &quick_state, Some(index))) {
-            Ok(()) if app.get_has_saved() => app.invoke_connect_requested(),
+            Ok(()) if app.get_use_saved() => {
+                app.set_editor_open(false);
+                app.invoke_connect_requested();
+            }
             Ok(()) => (),
             Err(error) => notify(&app, error),
         }
@@ -1765,6 +1811,14 @@ pub fn run(
         let result = (|| -> Result<()> {
             let mut state = save_state.borrow_mut();
             let profile = profile_from_form(&app, &state)?;
+            if !app.get_use_saved() && app.get_password().is_empty() {
+                if profile.has_saved_credentials {
+                    return Err(Error::Credential(
+                        "Connect with the new password to change a saved login".into(),
+                    ));
+                }
+                login_ui::persist(&app, &mut state, &profile)?;
+            }
             if let Some(index) = state.selected {
                 state.settings.profiles[index] = profile;
             } else {
@@ -1776,7 +1830,10 @@ pub fn run(
         match result {
             Ok(()) => {
                 model(&app, &save_state.borrow());
-                app.set_status("Machine saved; no password was written to a file".into());
+                app.set_status(
+                    "Device details saved. Connect once to verify and save a new password.".into(),
+                );
+                app.set_editor_open(false);
             }
             Err(error) => notify(&app, error),
         }
@@ -1791,10 +1848,44 @@ pub fn run(
                 .selected
                 .ok_or_else(|| Error::Configuration("Select a machine first".into()))?;
             let id = state.settings.profiles[index].id;
-            (AuditedVault {
-                scope: &state.audit,
-            })
-            .delete(id)?;
+            if state.login_error.is_some() {
+                return Err(Error::Configuration(
+                    "Repair connection preferences before deleting this device".into(),
+                ));
+            }
+            if app.get_delete_credentials() {
+                let vault = AuditedVault {
+                    scope: &state.audit,
+                };
+                vault.delete(id)?;
+                if let Some(entry) = state.login.devices.iter().find(|d| d.binding.device == id) {
+                    for mode in [
+                        maccanvas::login::Protection::Quick,
+                        maccanvas::login::Protection::Hello,
+                    ] {
+                        if let Some(target) = entry.binding.target(mode) {
+                            state.audit.critical(
+                                "credential.delete.requested",
+                                Level::Info,
+                                json!({"profile.id":id}),
+                            )?;
+                            maccanvas::login::Vault::delete(
+                                &maccanvas::credentials::WindowsVault,
+                                &target,
+                            )
+                            .map_err(|_| {
+                                Error::Credential("Could not remove the saved login".into())
+                            })?;
+                        }
+                    }
+                }
+            }
+            let mut updated = state.login.clone();
+            updated.devices.retain(|d| d.binding.device != id);
+            updated
+                .save(&state.path.with_file_name("connections-v1.json"))
+                .map_err(Error::Configuration)?;
+            state.login = updated;
             state.settings.profiles.remove(index);
             state.selected = None;
             state
@@ -2172,7 +2263,7 @@ pub fn run(
                         let saved = {
                             let mut state = timer_state.borrow_mut();
                             if credentials_saved {
-                                state.connection_credentials = Some(CredentialSource::Saved);
+                                state.connection_credentials = state.connection_credentials.as_ref().map(CredentialSource::saved);
                             }
                             if state.reconnect_attempt != 0 {
                                 let _ = state.audit.event("session.reconnect.completed",Level::Info,json!({
@@ -2197,6 +2288,8 @@ pub fn run(
                         };
                         app.set_connecting(false);
                         app.set_connected(true);
+                        app.set_editor_open(false);
+                        app.set_sidebar_open(false);
                         let hevc = timer_state.borrow().session.as_ref().is_some_and(Session::uses_hevc);
                         app.set_hevc_active(hevc);
                         app.set_clipboard_shared(!hevc && timer_state.borrow().settings.clipboard_enabled);
@@ -2259,7 +2352,7 @@ pub fn run(
                         };
                         app.set_audio_status(description.into());
                     }
-                    Event::Error(message) => notify(&app, message),
+                    Event::Error(message) => {app.set_sidebar_open(true);app.set_status("Connection failed".into());notify(&app,message);},
                     Event::Disconnected { reconnect } => {
                         if let Err(error) = connection_ended(&app, &timer_state, reconnect) {
                             notify(&app, error);
