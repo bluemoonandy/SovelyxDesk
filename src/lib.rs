@@ -20,6 +20,7 @@ pub mod framebuffer;
 pub mod geometry;
 pub mod input;
 pub mod links;
+pub mod login;
 pub mod profiles;
 pub mod protocol;
 pub mod render;

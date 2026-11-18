@@ -13,7 +13,7 @@ use serde_json::json;
 use crate::{
     apple_hps,
     audit::Level,
-    credentials::{self, AuditedConsent, AuditedVault, CredentialStore},
+    credentials::{self, AuditedConsent, AuditedVault},
     error::{Error, Result},
     protocol,
     telemetry::{Counters, Metered},
@@ -29,6 +29,8 @@ pub(super) fn run(
     control: &Arc<Control>,
     counters: Arc<Counters>,
 ) -> Result<()> {
+    request.credentials.validate_for(&request.profile)?;
+    let credential_policy = request.credentials.saved();
     let credentials = credentials::resolve(
         request.profile.id,
         request.credentials,
@@ -143,11 +145,13 @@ pub(super) fn run(
                 if request.remember
                     && let Some(credentials) = &credentials
                 {
-                    match (AuditedVault {
-                        scope: &request.audit,
-                    })
-                    .save(connected.id, credentials)
-                    {
+                    match credential_policy.save(
+                        connected.id,
+                        credentials,
+                        &AuditedVault {
+                            scope: &request.audit,
+                        },
+                    ) {
                         Ok(()) => {
                             connected.has_saved_credentials = true;
                             credentials_saved = true;

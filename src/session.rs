@@ -11,7 +11,7 @@ use std::{
 
 use crate::{
     audit::{self, Level, Scope},
-    credentials::{self, AuditedConsent, AuditedVault, CredentialSource, CredentialStore},
+    credentials::{self, AuditedConsent, AuditedVault, CredentialSource},
     error::{Error, Result},
     framebuffer::Framebuffer,
     input::Command,
@@ -376,6 +376,8 @@ fn run(
         return hevc::run(request, incoming, events, frames, control, counters);
     }
     let generation = request.generation;
+    request.credentials.validate_for(&request.profile)?;
+    let credential_policy = request.credentials.saved();
     let credentials = credentials::resolve(
         request.profile.id,
         request.credentials,
@@ -427,11 +429,13 @@ fn run(
     let mut profile = request.profile;
     let mut credentials_saved = false;
     if request.remember {
-        match (AuditedVault {
-            scope: &request.audit,
-        })
-        .save(profile.id, &credentials)
-        {
+        match credential_policy.save(
+            profile.id,
+            &credentials,
+            &AuditedVault {
+                scope: &request.audit,
+            },
+        ) {
             Ok(()) => {
                 profile.has_saved_credentials = true;
                 credentials_saved = true;

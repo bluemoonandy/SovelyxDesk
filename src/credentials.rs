@@ -32,6 +32,25 @@ pub trait CredentialStore {
     fn load(&self, profile: Uuid) -> Result<Credentials>;
     fn save(&self, profile: Uuid, credentials: &Credentials) -> Result<()>;
     fn delete(&self, profile: Uuid) -> Result<()>;
+    fn load_bound(
+        &self,
+        _: &crate::login::Binding,
+        _: crate::login::Protection,
+    ) -> Result<Credentials> {
+        Err(Error::Credential(
+            "Enter the password to configure this login".into(),
+        ))
+    }
+    fn save_bound(
+        &self,
+        _: &crate::login::Binding,
+        _: crate::login::Protection,
+        _: &Credentials,
+    ) -> Result<()> {
+        Err(Error::Credential(
+            "This credential store does not support connection policies".into(),
+        ))
+    }
 }
 
 pub trait ConsentVerifier {
@@ -42,6 +61,51 @@ pub trait ConsentVerifier {
 pub enum CredentialSource {
     Manual(Credentials),
     Saved,
+    BoundSaved(crate::login::Binding, crate::login::Protection),
+    BoundManual(Credentials, crate::login::Binding, crate::login::Protection),
+}
+
+impl CredentialSource {
+    pub fn validate_for(&self, profile: &crate::profiles::Profile) -> Result<()> {
+        if let Self::BoundSaved(binding, _) | Self::BoundManual(_, binding, _) = self {
+            let auth = if profile.authentication == crate::profiles::AuthMode::MacLogin {
+                crate::login::Authentication::MacAccount
+            } else {
+                crate::login::Authentication::VncPassword
+            };
+            if binding.device != profile.id
+                || !binding.host.eq_ignore_ascii_case(&profile.host)
+                || binding.port != profile.port
+                || binding.authentication != auth
+            {
+                return Err(Error::Credential(
+                    "Saved login does not match this device".into(),
+                ));
+            }
+        }
+        Ok(())
+    }
+    pub fn saved(&self) -> Self {
+        match self {
+            Self::BoundManual(_, binding, mode) | Self::BoundSaved(binding, mode) => {
+                Self::BoundSaved(binding.clone(), *mode)
+            }
+            _ => Self::Saved,
+        }
+    }
+    pub fn save(
+        &self,
+        profile: Uuid,
+        credentials: &Credentials,
+        store: &impl CredentialStore,
+    ) -> Result<()> {
+        match self {
+            Self::BoundManual(_, binding, mode) | Self::BoundSaved(binding, mode) => {
+                store.save_bound(binding, *mode, credentials)
+            }
+            _ => store.save(profile, credentials),
+        }
+    }
 }
 
 pub fn resolve(
@@ -56,7 +120,19 @@ pub fn resolve(
             store.load(profile)
         }
 
-        CredentialSource::Manual(credentials) => Ok(credentials),
+        CredentialSource::Manual(credentials)
+        | CredentialSource::BoundManual(credentials, _, _) => Ok(credentials),
+        CredentialSource::BoundSaved(binding, mode) => {
+            if binding.device != profile || mode == crate::login::Protection::Never {
+                return Err(Error::Credential(
+                    "Enter the password for this device".into(),
+                ));
+            }
+            if mode == crate::login::Protection::Hello {
+                consent.verify()?;
+            }
+            store.load_bound(&binding, mode)
+        }
     }
 }
 
@@ -97,6 +173,40 @@ fn outcome<T>(scope: &Scope, name: &'static str, result: Result<T>) -> Result<T>
 }
 
 impl CredentialStore for AuditedVault<'_> {
+    fn load_bound(
+        &self,
+        binding: &crate::login::Binding,
+        mode: crate::login::Protection,
+    ) -> Result<Credentials> {
+        self.scope.critical(
+            "credential.read.requested",
+            Level::Info,
+            json!({"profile.id":binding.device}),
+        )?;
+        outcome(
+            self.scope,
+            "credential.read.completed",
+            WindowsVault.load_bound(binding, mode),
+        )
+    }
+    fn save_bound(
+        &self,
+        binding: &crate::login::Binding,
+        mode: crate::login::Protection,
+        credentials: &Credentials,
+    ) -> Result<()> {
+        self.scope.critical(
+            "credential.save.requested",
+            Level::Info,
+            json!({"profile.id":binding.device}),
+        )?;
+        outcome(
+            self.scope,
+            "credential.save.completed",
+            WindowsVault.save_bound(binding, mode, credentials),
+        )
+    }
+
     fn load(&self, profile: Uuid) -> Result<Credentials> {
         self.scope.critical(
             "credential.read.requested",
@@ -165,8 +275,80 @@ impl Drop for CredentialAllocation {
 }
 
 impl CredentialStore for WindowsVault {
+    fn load_bound(
+        &self,
+        binding: &crate::login::Binding,
+        mode: crate::login::Protection,
+    ) -> Result<Credentials> {
+        let target = binding
+            .target(mode)
+            .ok_or_else(|| Error::Credential("Enter a password".into()))?;
+        let stored = self.load_named(target.encode_utf16().chain(Some(0)).collect())?;
+        Ok(Credentials::new(
+            binding.username.clone(),
+            stored.password().to_owned(),
+        ))
+    }
+    fn save_bound(
+        &self,
+        binding: &crate::login::Binding,
+        mode: crate::login::Protection,
+        credentials: &Credentials,
+    ) -> Result<()> {
+        if credentials.username() != binding.username {
+            return Err(Error::Credential(
+                "Login account does not match the selected device".into(),
+            ));
+        }
+        let target = binding
+            .target(mode)
+            .ok_or_else(|| Error::Credential("Password saving is disabled".into()))?;
+        self.save_named(target.encode_utf16().chain(Some(0)).collect(), credentials)
+    }
+
     fn load(&self, profile: Uuid) -> Result<Credentials> {
-        let name = target(profile);
+        self.load_named(target(profile))
+    }
+    fn save(&self, profile: Uuid, credentials: &Credentials) -> Result<()> {
+        self.save_named(target(profile), credentials)
+    }
+    fn delete(&self, profile: Uuid) -> Result<()> {
+        self.delete_named(target(profile))
+    }
+}
+
+impl crate::login::Vault for WindowsVault {
+    fn read(&self, target: &str) -> std::result::Result<Zeroizing<String>, crate::login::Failure> {
+        let credentials = self
+            .load_named(target.encode_utf16().chain(Some(0)).collect())
+            .map_err(|_| crate::login::Failure::Storage)?;
+        Ok(Zeroizing::new(credentials.password().to_owned()))
+    }
+    fn write(
+        &self,
+        target: &str,
+        password: &str,
+    ) -> std::result::Result<(), crate::login::Failure> {
+        self.save_named(
+            target.encode_utf16().chain(Some(0)).collect(),
+            &Credentials::new(String::new(), password.to_owned()),
+        )
+        .map_err(|_| crate::login::Failure::Storage)
+    }
+    fn delete(&self, target: &str) -> std::result::Result<(), crate::login::Failure> {
+        self.delete_named(target.encode_utf16().chain(Some(0)).collect())
+            .map_err(|_| crate::login::Failure::Storage)
+    }
+}
+
+impl crate::login::Consent for AuditedConsent<'_> {
+    fn verify(&self) -> std::result::Result<(), crate::login::Failure> {
+        ConsentVerifier::verify(self).map_err(|_| crate::login::Failure::ConsentRequired)
+    }
+}
+
+impl WindowsVault {
+    fn load_named(&self, name: Vec<u16>) -> Result<Credentials> {
         let mut pointer = ptr::null_mut();
         unsafe { CredReadW(PCWSTR(name.as_ptr()), CRED_TYPE_GENERIC, None, &mut pointer) }
             .map_err(|error| {
@@ -210,11 +392,10 @@ impl CredentialStore for WindowsVault {
         Ok(Credentials::new(username, password_string))
     }
 
-    fn save(&self, profile: Uuid, credentials: &Credentials) -> Result<()> {
+    fn save_named(&self, mut name: Vec<u16>, credentials: &Credentials) -> Result<()> {
         if credentials.password().is_empty() || credentials.password().len() > 256 {
             return Err(Error::Credential("Password has an invalid size".into()));
         }
-        let mut name = target(profile);
         let mut username: Vec<u16> = credentials
             .username()
             .encode_utf16()
@@ -236,8 +417,7 @@ impl CredentialStore for WindowsVault {
         result
     }
 
-    fn delete(&self, profile: Uuid) -> Result<()> {
-        let name = target(profile);
+    fn delete_named(&self, name: Vec<u16>) -> Result<()> {
         match unsafe { CredDeleteW(PCWSTR(name.as_ptr()), CRED_TYPE_GENERIC, None) } {
             Ok(()) => Ok(()),
             Err(error) if error.code() == ERROR_NOT_FOUND.to_hresult() => Ok(()),
@@ -307,6 +487,15 @@ mod tests {
 
     struct Store<'a>(&'a RefCell<Vec<&'static str>>);
     impl CredentialStore for Store<'_> {
+        fn load_bound(
+            &self,
+            binding: &crate::login::Binding,
+            _: crate::login::Protection,
+        ) -> Result<Credentials> {
+            self.0.borrow_mut().push("read_bound");
+            Ok(Credentials::new(binding.username.clone(), "fixture".into()))
+        }
+
         fn load(&self, _: Uuid) -> Result<Credentials> {
             self.0.borrow_mut().push("read");
             Ok(Credentials::new("fixture".into(), "fixture".into()))
@@ -328,6 +517,59 @@ mod tests {
                 Err(Error::Consent("cancelled fixture".into()))
             }
         }
+    }
+
+    #[test]
+    fn bound_sources_enforce_policy_before_vault_access() {
+        use crate::login::{Authentication, Binding, Protection};
+        let calls = RefCell::new(Vec::new());
+        let id = Uuid::new_v4();
+        let binding = Binding {
+            device: id,
+            host: "mac.local".into(),
+            port: 5900,
+            authentication: Authentication::MacAccount,
+            username: "fixture".into(),
+        };
+        resolve(
+            id,
+            CredentialSource::BoundSaved(binding.clone(), Protection::Quick),
+            &Consent(&calls, false),
+            &Store(&calls),
+        )
+        .unwrap();
+        assert_eq!(*calls.borrow(), ["read_bound"]);
+        calls.borrow_mut().clear();
+        assert!(
+            resolve(
+                id,
+                CredentialSource::BoundSaved(binding.clone(), Protection::Hello),
+                &Consent(&calls, false),
+                &Store(&calls)
+            )
+            .is_err()
+        );
+        assert_eq!(*calls.borrow(), ["hello"]);
+        calls.borrow_mut().clear();
+        assert!(
+            resolve(
+                Uuid::new_v4(),
+                CredentialSource::BoundSaved(binding.clone(), Protection::Quick),
+                &Consent(&calls, true),
+                &Store(&calls)
+            )
+            .is_err()
+        );
+        assert!(
+            resolve(
+                id,
+                CredentialSource::BoundSaved(binding, Protection::Never),
+                &Consent(&calls, true),
+                &Store(&calls)
+            )
+            .is_err()
+        );
+        assert!(calls.borrow().is_empty());
     }
 
     #[test]
