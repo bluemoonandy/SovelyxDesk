@@ -521,6 +521,7 @@ LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.ma
                                     current-index <=> root.auth-mode; enabled: !root.connected && !root.connecting;
                                     selected => {root.use-saved = false;root.password = "";root.credential-approved = false;}
                                 }
+                                if root.auth-mode == 1 : Text {text: "VNC password uses standard VNC video. Apple HEVC requires Mac account authentication.";color: root.muted;font-size: 12px;wrap: word-wrap;}
                                 Caption { text: "Credential protection"; }
                                 ComboBox {
                                     model: ["Save password · Quick connect", "Save password · Windows Hello", "Do not save password"];

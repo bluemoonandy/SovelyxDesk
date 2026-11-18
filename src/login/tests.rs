@@ -193,3 +193,32 @@ fn unlocked_legacy_password_cannot_be_assigned_to_a_different_account() {
     );
     assert_eq!(store.records.borrow().len(), 1);
 }
+
+#[test]
+fn vnc_password_selects_standard_video_without_changing_authentication_or_fps() {
+    use crate::streaming::{Encoding, StreamSettings};
+    for encoding in [Encoding::Hevc30, Encoding::Hevc60] {
+        let settings = StreamSettings {
+            encoding,
+            ..StreamSettings::default()
+        };
+        assert_eq!(
+            Authentication::MacAccount.compatible_streaming(settings),
+            settings
+        );
+        let vnc = Authentication::VncPassword.compatible_streaming(settings);
+        assert_eq!(vnc.encoding, Encoding::Zrle);
+        assert_eq!(vnc.max_fps, settings.max_fps);
+        assert_eq!(vnc.hevc_bitrate_bps, settings.hevc_bitrate_bps);
+        vnc.validate_authentication(crate::profiles::AuthMode::VncPassword)
+            .unwrap();
+    }
+    let standard = StreamSettings {
+        encoding: Encoding::Tight,
+        ..StreamSettings::default()
+    };
+    assert_eq!(
+        Authentication::VncPassword.compatible_streaming(standard),
+        standard
+    );
+}

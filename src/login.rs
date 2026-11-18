@@ -23,6 +23,18 @@ pub enum Authentication {
     VncPassword,
 }
 
+impl Authentication {
+    pub fn compatible_streaming(
+        self,
+        mut settings: crate::streaming::StreamSettings,
+    ) -> crate::streaming::StreamSettings {
+        if self == Self::VncPassword && settings.encoding.is_hevc() {
+            settings.encoding = crate::streaming::Encoding::Zrle;
+        }
+        settings
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Binding {

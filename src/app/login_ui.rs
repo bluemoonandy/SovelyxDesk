@@ -51,7 +51,7 @@ pub(super) fn select(app: &App, state: &State, profile: &Profile) {
         app.set_use_saved(has_saved(state, profile));
         app.set_auto_reconnect(d.auto_reconnect);
     } else {
-        app.set_credential_mode(1);
+        app.set_credential_mode(if profile.has_saved_credentials { 1 } else { 2 });
         app.set_auto_reconnect(true);
     }
 }

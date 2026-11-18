@@ -1562,6 +1562,14 @@ pub fn run(
         let result = (|| -> Result<()> {
             let mut state = connection_state.borrow_mut();
             let profile = profile_from_form(&app, &state)?;
+            let streaming = login_ui::binding(&app, &profile)
+                .authentication
+                .compatible_streaming(state.settings.streaming);
+            if streaming != state.settings.streaming {
+                state.settings.streaming = streaming;
+                stream_form(&app, streaming);
+                stream_summary(&app, streaming);
+            }
             let source = login_ui::source(&app, &state, &profile)?;
             if let Some(index) = state.selected {
                 state.settings.profiles[index] = profile.clone();
