@@ -98,6 +98,10 @@ jobs:
           }
           cargo build --release --locked
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo build --release --example update_probe --locked
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\scripts\Test-SelfUpdate.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $version = (Get-Content Cargo.toml -Raw | Select-String '(?m)^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
           .\scripts\Package-Release.ps1 -Version "v$version"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
