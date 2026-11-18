@@ -6,12 +6,14 @@ param(
     [ValidateSet('1', '1.25', '1.5', '2')][string]$ScaleFactor = '1',
     [string]$OutputDirectory = '',
     [ValidateSet(0,1,2,6)][int]$DeviceCount = 2,
-    [int]$WindowWidth = 1240,
-    [int]$WindowHeight = 820,
+    [int]$WindowWidth = 0,
+    [int]$WindowHeight = 0,
     [int]$SessionPort = 0
 )
 
 $ErrorActionPreference = 'Stop'
+if ($WindowWidth -eq 0) { $WindowWidth = [int](1240 * [double]$ScaleFactor) }
+if ($WindowHeight -eq 0) { $WindowHeight = [int](820 * [double]$ScaleFactor) }
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 Add-Type -AssemblyName System.Drawing
