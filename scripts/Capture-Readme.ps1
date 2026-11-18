@@ -3,7 +3,8 @@
 param(
     [string]$Executable = '',
     [ValidateSet('auto', 'light', 'dark')][string]$PreviewTheme = 'auto',
-    [ValidateSet('1', '1.25', '1.5', '2')][string]$ScaleFactor = '1'
+    [ValidateSet('1', '1.25', '1.5', '2')][string]$ScaleFactor = '1',
+    [string]$OutputDirectory = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -96,7 +97,7 @@ try {
     }
     if ($handle -eq [IntPtr]::Zero) { throw 'Fixture did not create its window.' }
     Start-Sleep -Seconds 1
-    $images = Join-Path $root 'docs\images'
+    $images = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $root 'docs\images' }
     $null = [IO.Directory]::CreateDirectory($images)
     $suffix = "-$PreviewTheme-$ScaleFactor"
     Capture-OwnedWindow (Join-Path $images "connections$suffix.png")

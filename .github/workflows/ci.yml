@@ -80,19 +80,17 @@ jobs:
         shell: pwsh
         run: |
           $exe = 'target\x86_64-pc-windows-msvc\debug\maccanvas.exe'
-          .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light
-          .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme dark
+          .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -OutputDirectory "$env:RUNNER_TEMP\login-ui"
+          .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme dark -OutputDirectory "$env:RUNNER_TEMP\login-ui"
           foreach ($scale in @('1.25', '1.5', '2')) {
-            .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -ScaleFactor $scale
+            .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -ScaleFactor $scale -OutputDirectory "$env:RUNNER_TEMP\login-ui"
           }
       - name: Export login UI screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: MacCanvas-login-ui-${{ github.sha }}
-          path: |
-            docs/images/connections-*.png
-            docs/images/failure-*.png
+          path: ${{ runner.temp }}/login-ui/*.png
           if-no-files-found: error
           retention-days: 14
       - name: Export Windows x64 diagnostic debug executable
@@ -105,6 +103,10 @@ jobs:
       - name: Build and package Windows x64 executables
         shell: pwsh
         run: |
+          $sourceChanges = @(git status --porcelain)
+          if ($LASTEXITCODE -ne 0 -or $sourceChanges.Count -ne 0) {
+            throw "Release source worktree must be clean before compilation: $sourceChanges"
+          }
           cargo build --release --locked
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $version = (Get-Content Cargo.toml -Raw | Select-String '(?m)^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
