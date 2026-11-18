@@ -50,8 +50,8 @@ component TrafficPlot inherits Rectangle {
 export component App inherits Window {
     title: "MacCanvas";
     icon: @image-url("../assets/logo.svg");
-    preferred-width: 1240px;
-    preferred-height: 820px;
+    preferred-width: 1000px;
+    preferred-height: 680px;
     min-width: 760px;
     min-height: 560px;
     default-font-family: "Segoe UI";
@@ -81,6 +81,7 @@ export component App inherits Window {
     in-out property <string> machine-filter;
     in property <[Machine]> machines;
     in property <int> machine-count;
+    private property <length> single-card-height: root.selected == 0 && (root.connected || root.connecting || root.status == "Connection failed") ? 176px : 148px;
     in property <int> selected: -1;
     in property <bool> connected: false;
     in property <bool> connecting: false;
@@ -305,19 +306,21 @@ export component App inherits Window {
                     visible: sidebar.width > 1px;
                     manager := Rectangle {
                         x: (parent.width - self.width) / 2;
-                        width: min(1200px, parent.width - (root.connected ? 24px : 48px));
+                        width: min(root.machine-count == 1 ? 460px : (root.machine-count == 2 ? 776px : 1172px), parent.width - (root.connected ? 24px : 48px));
                         height: parent.height;
                         background: transparent;
                         VerticalLayout {
-                            padding-top: 24px; padding-bottom: 24px; spacing: 16px;
-                            HorizontalLayout {
+                            y: !root.connected && root.machine-count > 0 && root.machine-count <= 3 ? max(24px, (parent.height - (root.machine-count == 1 ? 250px : (manager.width >= 1032px || (root.machine-count == 2 && manager.width >= 688px) ? 250px : 440px))) * 0.42) : 24px;
+                            height: parent.height - self.y - 24px;
+                            spacing: 16px;
+                            if root.machine-count > 0 : HorizontalLayout {
                                 VerticalLayout {
                                     spacing: 4px;
-                                    Text { text: "My Macs"; color: root.ink; font-size: 24px; font-weight: 600; }
-                                    Text { text: root.machine-count + (root.machine-count == 1 ? " saved Mac" : " saved Macs"); color: root.muted; font-size: 12px; }
+                                    Text { text: root.machine-count == 1 ? "Your Mac" : "My Macs"; color: root.ink; font-size: 24px; font-weight: 600; }
+                                    if root.machine-count > 1 : Text { text: root.machine-count + " saved Macs"; color: root.muted; font-size: 12px; }
                                 }
                                 Rectangle { background: transparent; horizontal-stretch: 1; }
-                                if root.machine-count > 0 : Button {
+                                if root.machine-count > 1 : Button {
                                     text: "+ Add Mac"; accessible-label: "New connection";
                                     enabled: !root.connected && !root.connecting;
                                     clicked => { root.new-machine(); }
@@ -332,7 +335,7 @@ export component App inherits Window {
                                     Button { text: "Dismiss"; quiet: true; clicked => { root.error-text = ""; } }
                                 }
                             }
-                            if root.machine-count > 0 : HorizontalLayout {
+                            if root.machine-count >= 4 : HorizontalLayout {
                                 alignment: start; spacing: 8px;
                                 LineEdit { accessible-label: "Search saved Macs"; width: min(320px, manager.width - 80px); height: 36px; text <=> root.machine-filter; placeholder-text: "Search by name or address"; }
                                 if root.machine-filter != "" : Button { text: "Clear"; accessible-label: "Clear search"; quiet: true; clicked => { root.machine-filter = ""; } }
@@ -350,25 +353,36 @@ export component App inherits Window {
                                 Text { text: "Try another name or address. Your saved Macs are still here."; color: root.muted; wrap: word-wrap; }
                             }
                             if root.machines.length > 0 : grid := ScrollView {
-                                private property <int> columns: self.visible-width >= 1008px ? 3 : (self.visible-width >= 720px ? 2 : 1);
-                                private property <length> card-width: min(420px, (self.visible-width - (self.columns - 1) * 16px) / self.columns);
+                                private property <int> columns: min(root.machines.length, manager.width >= 1032px ? 3 : (manager.width >= 688px ? 2 : 1));
+                                private property <length> card-width: root.machine-count == 1 ? min(460px, self.visible-width) : min(380px, (self.visible-width - (self.columns - 1) * 16px) / self.columns);
+                                private property <length> grid-width: self.columns * self.card-width + (self.columns - 1) * 16px;
+                                vertical-stretch: root.machine-count <= 3 ? 0 : 1;
+                                max-height: root.machine-count == 1 ? root.single-card-height + 8px : (root.machine-count <= 3 ? ceil(root.machines.length / self.columns) * 172px : 100000px);
+                                min-height: root.machine-count == 1 ? root.single-card-height + 8px : (root.machine-count <= 3 ? min(ceil(root.machines.length / self.columns) * 172px, manager.height - 180px) : 0px);
                                 horizontal-scrollbar-policy: always-off;
+                                vertical-scrollbar-policy: root.machine-count <= 3 ? always-off : as-needed;
                                 content-width: self.visible-width;
-                                content-height: ceil(root.machines.length / self.columns) * 220px;
+                                content-height: root.machine-count == 1 ? root.single-card-height + 4px : ceil(root.machines.length / self.columns) * 172px - 12px;
                                 for machine[index] in root.machines : GlassPanel {
-                                    x: mod(index, grid.columns) * (grid.card-width + 16px);
-                                    y: floor(index / grid.columns) * 220px;
-                                    width: grid.card-width; height: 204px; radius: 14px;
+                                    x: (grid.visible-width - grid.grid-width) / 2 + mod(index, grid.columns) * (grid.card-width + 16px);
+                                    y: 2px + floor(index / grid.columns) * 172px;
+                                    width: grid.card-width; height: root.machine-count == 1 ? root.single-card-height : 156px; radius: 14px;
                                     accessible-role: groupbox; accessible-label: "Mac: " + machine.name;
-                                    background: root.selected == index ? root.selection : root.panel;
-                                    border-color: root.selected == index ? root.accent : GlassTheme.edge;
+                                    background: root.selected == index ? root.selection : (card-hover.has-hover ? (root.dark-theme ? #242426 : #fafcff) : root.panel);
+                                    border-color: root.selected == index || card-connect.focused || card-menu.focused ? root.accent : (card-hover.has-hover ? root.muted : GlassTheme.edge);
+                                    animate background, border-color { duration: root.motion-enabled ? 120ms : 0ms; }
+                                    card-hover := TouchArea { }
                                     VerticalLayout {
-                                        padding: 16px; spacing: 8px;
+                                        padding: 18px; spacing: 10px; alignment: start;
                                         HorizontalLayout {
-                                            spacing: 10px;
-                                            Image { source: @image-url("../assets/logo-mark.svg"); width: 28px; height: 28px; }
-                                            Text { text: machine.name; color: root.ink; font-size: 16px; font-weight: 600; overflow: elide; min-width: 0px; vertical-alignment: center; horizontal-stretch: 1; }
-                                            Button {
+                                            spacing: 12px;
+                                            Image { source: @image-url("../assets/logo-mark.svg"); width: 32px; height: 32px; }
+                                            VerticalLayout {
+                                                spacing: 4px; horizontal-stretch: 1;
+                                                Text { text: machine.name; color: root.ink; font-size: 17px; font-weight: 600; overflow: elide; min-width: 0px; }
+                                                Text { text: machine.detail; color: root.muted; font-size: 12px; overflow: elide; min-width: 0px; }
+                                            }
+                                            card-menu := Button {
                                                 text: "···"; accessible-label: "More actions for " + machine.name; quiet: true; width: 36px; enabled: !root.connected && !root.connecting;
                                                 clicked => { device-menu.show(); }
                                                 device-menu := PopupWindow {
@@ -386,18 +400,20 @@ export component App inherits Window {
                                                 }
                                             }
                                         }
-                                        Text { text: machine.detail; color: root.muted; font-size: 13px; overflow: elide; }
-                                        Text { text: machine.login + " · " + machine.protection; color: root.muted; font-size: 12px; overflow: elide; }
-                                        Text { text: root.selected == index && root.connected ? "Connected" : (root.selected == index && root.connecting ? root.status : (root.selected == index && root.status == "Connection failed" ? "Connection failed" : (machine.saved ? "Saved · credentials ready" : "Authentication required"))); color: root.selected == index && (root.connected || root.connecting) ? root.accent : root.muted; font-size: 12px; overflow: elide; }
-                                        Rectangle { background: transparent; vertical-stretch: 1; }
+                                        Text { text: machine.login + " · " + machine.protection + (!machine.saved && machine.protection != "Manual" ? " · Password required" : ""); color: root.muted; font-size: 12px; overflow: elide; }
+                                        if root.selected == index && (root.connected || root.connecting || root.status == "Connection failed") : Text { text: root.selected == index && root.connected ? "Connected" : (root.selected == index && root.connecting ? root.status : (root.selected == index && root.status == "Connection failed" ? "Connection failed" : "Password required")); color: root.selected == index && (root.connected || root.connecting) ? root.accent : root.muted; font-size: 12px; overflow: elide; }
                                         HorizontalLayout {
                                             alignment: start; spacing: 8px;
-                                            Button { text: root.selected == index && root.connecting ? "Connecting…" : "Connect"; width: 120px; primary: true; enabled: !root.connected && !root.connecting; clicked => { root.quick-connect(machine.id); } }
-                                            Button { text: "Edit"; accessible-label: "Details"; quiet: true; enabled: !root.connected && !root.connecting; clicked => { root.select-machine(machine.id); } }
+                                            card-connect := Button { text: root.selected == index && root.connecting ? "Connecting…" : "Connect"; width: root.machine-count == 1 ? root.single-card-height : 120px; primary: true; enabled: !root.connected && !root.connecting; clicked => { root.quick-connect(machine.id); } }
                                         }
                                     }
                                 }
                             }
+                            if root.machine-count == 1 : HorizontalLayout {
+                                alignment: center;
+                                Button { text: "+ Add another Mac"; accessible-label: "New connection"; quiet: true; enabled: !root.connected && !root.connecting; clicked => { root.new-machine(); } }
+                            }
+                            if root.machine-count > 0 && root.machine-count <= 3 : Rectangle { background: transparent; vertical-stretch: 1; }
                         }
                     }
                 }

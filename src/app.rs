@@ -1,5 +1,6 @@
 mod files_ui;
 mod login_ui;
+mod window_preferences;
 
 use std::{
     cell::RefCell,
@@ -254,7 +255,11 @@ fn model(app: &App, state: &State) {
 }
 
 fn filtered_indices(app: &App, state: &State) -> Vec<usize> {
-    let query = app.get_machine_filter().trim().to_lowercase();
+    let query = if state.settings.profiles.len() < 4 {
+        String::new()
+    } else {
+        app.get_machine_filter().trim().to_lowercase()
+    };
     state
         .settings
         .profiles
@@ -1309,6 +1314,25 @@ pub fn run(
         Err(error) => (Default::default(), Some(error)),
     };
     let app = App::new().map_err(|error| Error::Display(error.to_string()))?;
+    let placement_path = directory.join("ui-window-v1.json");
+    let placement = Rc::new(RefCell::new(window_preferences::Placement::load(
+        &placement_path,
+    )));
+    placement.borrow().restore(app.window());
+    let placement_timer = slint::Timer::default();
+    let placement_app = app.as_weak();
+    let observed_placement = placement.clone();
+    placement_timer.start(
+        slint::TimerMode::Repeated,
+        Duration::from_millis(250),
+        move || {
+            if let Some(app) = placement_app.upgrade() {
+                observed_placement
+                    .borrow_mut()
+                    .observe(app.window(), app.get_immersive());
+            }
+        },
+    );
     app.set_dark_theme(match preview_theme {
         Some(dark) => dark,
         None => theme::system_dark()?,
@@ -1759,10 +1783,17 @@ pub fn run(
         }
     });
     let close_state = state.clone();
+    let placement_app = app.as_weak();
+    let closing_placement = placement.clone();
     app.window().on_close_requested(move || {
         if close_state.borrow().updater.installing || close_state.borrow().audio_install.is_some() {
             slint::CloseRequestResponse::KeepWindowShown
         } else {
+            if let Some(app) = placement_app.upgrade() {
+                closing_placement
+                    .borrow_mut()
+                    .observe(app.window(), app.get_immersive());
+            }
             slint::CloseRequestResponse::HideWindow
         }
     });
@@ -2527,6 +2558,13 @@ pub fn run(
     );
     app.run()
         .map_err(|error| Error::Display(error.to_string()))?;
+    if let Err(error) = placement.borrow().save(&placement_path) {
+        state.borrow().audit.event(
+            "ui.window_placement.failed",
+            Level::Warn,
+            json!({"error.message": error.to_string()}),
+        )?;
+    }
     let save_audio = state.borrow_mut().audio_persist_at.take().is_some();
     if save_audio {
         state.borrow().persist()?;

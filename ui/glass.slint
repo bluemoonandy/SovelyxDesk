@@ -33,6 +33,7 @@ export component Button inherits Rectangle {
     in property <bool> quiet: false;
     in property <bool> enabled: true;
     callback clicked();
+    out property <bool> focused: keyboard.has-focus;
     property <bool> key-down: false;
     property <bool> pressed: pointer.pressed || key-down;
     property <color> foreground: root.primary ? #ffffff : GlassTheme.ink;
