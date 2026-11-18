@@ -2,7 +2,7 @@ name: Windows x64 tests and Release
 
 on:
   push:
-    branches: [main, fix/hevc-frame-size, codex/p2-ui-device-management]
+    branches: [main, fix/hevc-frame-size]
   pull_request:
   workflow_dispatch:
 
@@ -64,7 +64,7 @@ jobs:
         shell: pwsh
         run: |
           $exe = 'target\x86_64-pc-windows-msvc\debug\maccanvas.exe'
-          foreach ($count in @(0, 1, 6)) {
+          foreach ($count in @(0, 1, 3, 6)) {
             .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -DeviceCount $count -WindowWidth 1280 -WindowHeight 720 -OutputDirectory "$env:RUNNER_TEMP\login-ui"
           }
           foreach ($size in @(@(1440,900), @(1920,1080), @(2560,1440))) {
@@ -83,6 +83,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Build and package Windows x64 executables
+        if: github.ref_name != 'codex/p2-ui-device-management'
         shell: pwsh
         run: |
           $sourceChanges = @(git status --porcelain)
@@ -95,6 +96,7 @@ jobs:
           .\scripts\Package-Release.ps1 -Version "v$version"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Export verified Windows x64 package
+        if: github.ref_name != 'codex/p2-ui-device-management'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: MacCanvas-Release-windows-x64-${{ github.sha }}

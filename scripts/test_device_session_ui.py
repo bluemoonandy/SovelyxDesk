@@ -93,7 +93,7 @@ if __name__ == "__main__":
         subprocess.run([
             "pwsh", "-NoProfile", "-File", str(Path(__file__).with_name("Capture-Readme.ps1")),
             "-Executable", args.executable, "-OutputDirectory", args.output,
-            "-PreviewTheme", "light", "-SessionPort", str(fixture.port),
+            "-PreviewTheme", "light", "-DeviceCount", "6", "-SessionPort", str(fixture.port),
         ], check=True, timeout=120)
         if fixture.error:
             raise fixture.error

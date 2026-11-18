@@ -5,7 +5,7 @@ param(
     [ValidateSet('auto', 'light', 'dark')][string]$PreviewTheme = 'auto',
     [ValidateSet('1', '1.25', '1.5', '2')][string]$ScaleFactor = '1',
     [string]$OutputDirectory = '',
-    [ValidateSet(0,1,2,6)][int]$DeviceCount = 2,
+    [ValidateSet(0,1,2,3,6)][int]$DeviceCount = 2,
     [int]$WindowWidth = 0,
     [int]$WindowHeight = 0,
     [int]$SessionPort = 0
@@ -63,8 +63,8 @@ $settings = @{
 }
 if ($DeviceCount -eq 0) { $settings.profiles = @() }
 elseif ($DeviceCount -eq 1) { $settings.profiles = @($settings.profiles[0]) }
-elseif ($DeviceCount -eq 6) {
-    $settings.profiles += @(1..4 | ForEach-Object { @{ id = [guid]::NewGuid().ToString(); name = "Office Mac $_"; host = "mac-$_.example.test"; port = 5900; authentication = 'vnc_password'; has_saved_credentials = $false } })
+elseif ($DeviceCount -ge 3) {
+    $settings.profiles += @(1..($DeviceCount - 2) | ForEach-Object { @{ id = [guid]::NewGuid().ToString(); name = "Office Mac $_"; host = "mac-$_.example.test"; port = 5900; authentication = 'vnc_password'; has_saved_credentials = $false } })
 }
 [IO.File]::WriteAllText((Join-Path $temporary 'settings.json'), ($settings | ConvertTo-Json -Depth 8))
 $start = [Diagnostics.ProcessStartInfo]::new()
@@ -130,7 +130,14 @@ try {
         Start-Sleep -Milliseconds 250
     }
     function Set-Control([string]$Name, [string]$Value) {
-        (Find-Control $Name).GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Value)
+        $nameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $Name)
+        $editCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Edit)
+        $comboCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ComboBox)
+        $typeCondition = [Windows.Automation.OrCondition]::new($editCondition, $comboCondition)
+        $condition = [Windows.Automation.AndCondition]::new($nameCondition, $typeCondition)
+        $control = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
+        if ($null -eq $control) { throw "Editable control not found: $Name" }
+        $control.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Value)
         Start-Sleep -Milliseconds 150
     }
     function Assert-InWindow($Element, [string]$Description) {
@@ -146,13 +153,15 @@ try {
         $card = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $cardCondition)
         if ($null -eq $card) { throw 'Device card was not published.' }
         Assert-InWindow $card 'Device card'
-        if ($card.Current.BoundingRectangle.Width -gt 421 * [double]$ScaleFactor) { throw 'Device card stretched beyond its maximum width.' }
-        $search = Find-Control 'Search saved Macs'
-        if ($search.Current.BoundingRectangle.Width -gt 321 * [double]$ScaleFactor) { throw 'Search stretched beyond its maximum width.' }
-        Set-Control 'Search saved Macs' 'there-is-no-such-mac'
-        $null = Find-Control 'No Macs match this search.'
-        Capture-OwnedWindow (Join-Path $images "no-results$suffix.png")
-        Invoke-Control 'Clear search'
+        if ($card.Current.BoundingRectangle.Width -gt $(if ($DeviceCount -eq 1) { 461 } else { 381 }) * [double]$ScaleFactor) { throw 'Device card stretched beyond its maximum width.' }
+        if ($DeviceCount -ge 4) {
+            $search = Find-Control 'Search saved Macs'
+            if ($search.Current.BoundingRectangle.Width -gt 321 * [double]$ScaleFactor) { throw 'Search stretched beyond its maximum width.' }
+            Set-Control 'Search saved Macs' 'there-is-no-such-mac'
+            $null = Find-Control 'No Macs match this search.'
+            Capture-OwnedWindow (Join-Path $images "no-results$suffix.png")
+            Invoke-Control 'Clear search'
+        }
     } else {
         $null = Find-Control 'New connection'
     }
@@ -180,11 +189,12 @@ try {
     }
     $buttonCondition = [Windows.Automation.AndCondition]::new(
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button),
-        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Details')
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'More actions for Studio Mac mini')
     )
     $details = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
     if ($null -eq $details) { throw 'Saved-machine details button was not found.' }
     $details.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Invoke-Control 'Edit Mac'
     Start-Sleep -Milliseconds 400
     $passwordCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac password')
     if ($null -ne $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $passwordCondition)) {
@@ -199,6 +209,7 @@ try {
     $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $allCondition).
         GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
     Start-Sleep -Milliseconds 150
+    if ($DeviceCount -lt 4 -and $SessionPort -eq 0) { Write-Output 'Compact device layout and saved-password non-disclosure: PASS'; return }
     $searchCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Search saved Macs')
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
     do {
@@ -208,6 +219,7 @@ try {
     if ($null -eq $search -or -not $search.Current.IsEnabled) { throw 'Saved-Mac list did not become enabled after closing the editor.' }
     $search.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue('MacBook')
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
+    $buttonCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'More actions for MacBook Pro')
     do {
         $rows = $window.FindAll([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
         if ($rows.Count -ne 1) { Start-Sleep -Milliseconds 50 }
@@ -215,6 +227,7 @@ try {
     if ($rows.Count -ne 1) { throw 'Filtered device list did not publish one stable device row.' }
     $details = $rows.Item(0)
     $details.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Invoke-Control 'Edit Mac'
     $addressCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac address')
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
     do {
