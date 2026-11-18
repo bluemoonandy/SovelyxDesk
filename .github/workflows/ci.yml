@@ -5,6 +5,11 @@ on:
     branches: [main, fix/hevc-frame-size]
   pull_request:
   workflow_dispatch:
+    inputs:
+      build_release:
+        description: Build the standalone Windows test package after validation
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -83,7 +88,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Build and package Windows x64 executables
-        if: github.ref_name != 'codex/p2-ui-device-management'
+        if: github.ref_name != 'codex/p2-ui-device-management' || inputs.build_release
         shell: pwsh
         run: |
           $sourceChanges = @(git status --porcelain)
@@ -96,7 +101,7 @@ jobs:
           .\scripts\Package-Release.ps1 -Version "v$version"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Export verified Windows x64 package
-        if: github.ref_name != 'codex/p2-ui-device-management'
+        if: github.ref_name != 'codex/p2-ui-device-management' || inputs.build_release
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: MacCanvas-Release-windows-x64-${{ github.sha }}
