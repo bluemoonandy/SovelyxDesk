@@ -81,7 +81,7 @@ export component App inherits Window {
     in-out property <string> machine-filter;
     in property <[Machine]> machines;
     in property <int> machine-count;
-    private property <length> single-card-height: root.selected == 0 && (root.connected || root.connecting || root.status == "Connection failed") ? 176px : 148px;
+    private property <length> single-card-height: 184px;
     in property <int> selected: -1;
     in property <bool> connected: false;
     in property <bool> connecting: false;
@@ -310,7 +310,7 @@ export component App inherits Window {
                         height: parent.height;
                         background: transparent;
                         VerticalLayout {
-                            y: !root.connected && root.machine-count > 0 && root.machine-count <= 3 ? max(24px, (parent.height - (root.machine-count == 1 ? 250px : (manager.width >= 1032px || (root.machine-count == 2 && manager.width >= 688px) ? 250px : 440px))) * 0.42) : 24px;
+                            y: !root.connected && root.machine-count > 0 && root.machine-count <= 3 ? max(24px, (parent.height - (root.machine-count == 1 ? 286px : (manager.width >= 1032px || (root.machine-count == 2 && manager.width >= 688px) ? 286px : 496px))) * 0.42) : 24px;
                             height: parent.height - self.y - 24px;
                             spacing: 16px;
                             if root.machine-count > 0 : HorizontalLayout {
@@ -357,30 +357,30 @@ export component App inherits Window {
                                 private property <length> card-width: root.machine-count == 1 ? min(460px, self.visible-width) : min(380px, (self.visible-width - (self.columns - 1) * 16px) / self.columns);
                                 private property <length> grid-width: self.columns * self.card-width + (self.columns - 1) * 16px;
                                 vertical-stretch: root.machine-count <= 3 ? 0 : 1;
-                                max-height: root.machine-count == 1 ? root.single-card-height + 8px : (root.machine-count <= 3 ? ceil(root.machines.length / self.columns) * 172px : 100000px);
-                                min-height: root.machine-count == 1 ? root.single-card-height + 8px : (root.machine-count <= 3 ? min(ceil(root.machines.length / self.columns) * 172px, manager.height - 180px) : 0px);
+                                max-height: root.machine-count == 1 ? root.single-card-height + 8px : (root.machine-count <= 3 ? ceil(root.machines.length / self.columns) * 200px : 100000px);
+                                min-height: root.machine-count == 1 ? root.single-card-height + 8px : (root.machine-count <= 3 ? min(ceil(root.machines.length / self.columns) * 200px, manager.height - 180px) : 0px);
                                 horizontal-scrollbar-policy: always-off;
                                 vertical-scrollbar-policy: root.machine-count <= 3 ? always-off : as-needed;
                                 content-width: self.visible-width;
-                                content-height: root.machine-count == 1 ? root.single-card-height + 4px : ceil(root.machines.length / self.columns) * 172px - 12px;
+                                content-height: root.machine-count == 1 ? root.single-card-height + 4px : ceil(root.machines.length / self.columns) * 200px - 12px;
                                 for machine[index] in root.machines : GlassPanel {
                                     x: (grid.visible-width - grid.grid-width) / 2 + mod(index, grid.columns) * (grid.card-width + 16px);
-                                    y: 2px + floor(index / grid.columns) * 172px;
-                                    width: grid.card-width; height: root.machine-count == 1 ? root.single-card-height : 156px; radius: 14px;
+                                    y: 2px + floor(index / grid.columns) * 200px;
+                                    width: grid.card-width; height: root.single-card-height; radius: 14px;
                                     accessible-role: groupbox; accessible-label: "Mac: " + machine.name;
                                     background: root.selected == index ? root.selection : (card-hover.has-hover ? (root.dark-theme ? #242426 : #fafcff) : root.panel);
                                     border-color: root.selected == index || card-connect.focused || card-menu.focused ? root.accent : (card-hover.has-hover ? root.muted : GlassTheme.edge);
                                     animate background, border-color { duration: root.motion-enabled ? 120ms : 0ms; }
                                     card-hover := TouchArea { }
                                     VerticalLayout {
-                                        padding: 18px; spacing: 10px; alignment: start;
+                                        padding: 18px; spacing: 10px;
                                         HorizontalLayout {
-                                            spacing: 12px;
-                                            Image { source: @image-url("../assets/logo-mark.svg"); width: 32px; height: 32px; }
+                                            height: 44px; spacing: 12px;
+                                            Image { source: @image-url("../assets/mac-display.svg"); width: 32px; height: 32px; colorize: root.ink; }
                                             VerticalLayout {
                                                 spacing: 4px; horizontal-stretch: 1;
-                                                Text { text: machine.name; color: root.ink; font-size: 17px; font-weight: 600; overflow: elide; min-width: 0px; }
-                                                Text { text: machine.detail; color: root.muted; font-size: 12px; overflow: elide; min-width: 0px; }
+                                                Text { text: machine.name; color: root.ink; font-size: 18px; font-weight: 600; overflow: elide; min-width: 0px; }
+                                                Text { text: machine.detail; color: root.muted; font-size: 13px; overflow: elide; min-width: 0px; }
                                             }
                                             card-menu := Button {
                                                 text: "···"; accessible-label: "More actions for " + machine.name; quiet: true; width: 36px; enabled: !root.connected && !root.connecting;
@@ -400,11 +400,31 @@ export component App inherits Window {
                                                 }
                                             }
                                         }
-                                        Text { text: machine.login + " · " + machine.protection + (!machine.saved && machine.protection != "Manual" ? " · Password required" : ""); color: root.muted; font-size: 12px; overflow: elide; }
-                                        if root.selected == index && (root.connected || root.connecting || root.status == "Connection failed") : Text { text: root.selected == index && root.connected ? "Connected" : (root.selected == index && root.connecting ? root.status : (root.selected == index && root.status == "Connection failed" ? "Connection failed" : "Password required")); color: root.selected == index && (root.connected || root.connecting) ? root.accent : root.muted; font-size: 12px; overflow: elide; }
                                         HorizontalLayout {
-                                            alignment: start; spacing: 8px;
-                                            card-connect := Button { text: root.selected == index && root.connecting ? "Connecting…" : "Connect"; width: root.machine-count == 1 ? root.single-card-height : 120px; primary: true; enabled: !root.connected && !root.connecting; clicked => { root.quick-connect(machine.id); } }
+                                            height: 18px; alignment: start; spacing: 8px;
+                                            Text { text: machine.login; color: root.ink; font-size: 13px; font-weight: 500; }
+                                            Text { text: "·"; color: root.muted; font-size: 13px; }
+                                            Text { text: machine.protection; color: root.muted; font-size: 13px; overflow: elide; min-width: 0px; }
+                                        }
+                                        Rectangle { background: transparent; vertical-stretch: 1; }
+                                        Rectangle { height: 1px; background: root.outline; opacity: 0.5; }
+                                        HorizontalLayout {
+                                            height: 36px; spacing: 12px;
+                                            Text {
+                                                text: root.selected == index && root.connected ? "Connected" : (root.selected == index && root.connecting ? root.status : (root.selected == index && root.status == "Connection failed" ? "Connection failed" : (machine.saved ? "Password saved" : "Password required")));
+                                                accessible-label: "Credential and connection status: " + self.text;
+                                                color: root.selected == index && root.status == "Connection failed" && !root.connected && !root.connecting ? (root.dark-theme ? #ff6961 : #b42318) : (root.selected == index && root.connected ? (root.dark-theme ? #62d38b : #157a3b) : root.muted);
+                                                font-size: 13px; font-weight: 500; vertical-alignment: center;
+                                                horizontal-stretch: 1; min-width: 0px; overflow: elide;
+                                            }
+                                            card-connect := Button {
+                                                text: root.selected == index && root.connected ? "Connected" : (root.selected == index && root.connecting ? "Connecting…" : (root.selected == index && root.status == "Connection failed" ? "Retry" : "Connect"));
+                                                accessible-label: self.text + " to " + machine.name;
+                                                width: root.machine-count == 1 ? 148px : 124px;
+                                                primary: !(root.selected == index && root.connected);
+                                                enabled: !root.connected && !root.connecting;
+                                                clicked => { root.quick-connect(machine.id); }
+                                            }
                                         }
                                     }
                                 }
