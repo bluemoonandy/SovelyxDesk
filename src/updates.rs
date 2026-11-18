@@ -34,7 +34,7 @@ use serde_json::json;
 pub(crate) mod http;
 mod shortcuts;
 
-const REPOSITORY: &str = "false00/maccanvas";
+const REPOSITORY: &str = "bluemoonandy/maccanvas";
 const ASSET: &str = "MacCanvas-windows-x64.exe";
 const MAX_EXE: u64 = 100 * 1024 * 1024;
 const MAX_METADATA: u64 = 256 * 1024;
@@ -657,7 +657,7 @@ mod tests {
         bytes[152..154].copy_from_slice(&[0x0b, 0x02]);
         let release = Release {
             version: Version::new(9, 0, 0), tag: "v9.0.0".into(), size: bytes.len() as u64,
-            sha256: format!("{:x}", Sha256::digest(&bytes)), url: "https://github.com/false00/maccanvas/releases/download/v9.0.0/MacCanvas-windows-x64.exe".into(),
+            sha256: format!("{:x}", Sha256::digest(&bytes)), url: "https://github.com/bluemoonandy/maccanvas/releases/download/v9.0.0/MacCanvas-windows-x64.exe".into(),
         };
         (bytes, release)
     }
@@ -692,6 +692,23 @@ mod tests {
         assert_eq!(selected.size, release.size);
         assert_eq!(selected.url, release.url);
     }
+    #[test]
+    fn fork_updater_rejects_upstream_packages() {
+        let (_, release) = fixture();
+        let mut metadata = metadata(&release);
+        metadata["html_url"] = format!(
+            "https://github.com/false00/maccanvas/releases/tag/{}",
+            release.tag
+        )
+        .into();
+        metadata["assets"][0]["browser_download_url"] = format!(
+            "https://github.com/false00/maccanvas/releases/download/{}/{ASSET}",
+            release.tag
+        )
+        .into();
+        assert!(parse_release(&serde_json::to_vec(&metadata).unwrap(), "0.2.1").is_err());
+    }
+
     #[test]
     fn rejects_foreign_assets_missing_hashes_and_prereleases() {
         let (_, release) = fixture();
