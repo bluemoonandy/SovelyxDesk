@@ -163,6 +163,16 @@ impl Viewport {
         {
             return None;
         }
+        // Captured remote drags may leave the canvas. Clamp to the visible view,
+        // including when Zoom crops a larger source image behind the canvas.
+        let (x, y) = if dragging {
+            (
+                x.clamp(0.0, (self.canvas.0 - 1.0 / self.dpi as f32).max(0.0)),
+                y.clamp(0.0, (self.canvas.1 - 1.0 / self.dpi as f32).max(0.0)),
+            )
+        } else {
+            (x, y)
+        };
         let map = |position: f32, origin: f32, pixels: u32, source: u32| -> u16 {
             let pixel = (f64::from(position) - f64::from(origin)) * self.dpi;
             if pixel <= 0.0 {
@@ -344,6 +354,14 @@ mod tests {
         assert_eq!(bottom_right.to_remote(1000.0, 300.0, false), None);
         assert_eq!(center.to_remote(-1.0, 300.0, false), None);
         assert!(center.to_remote(-1.0, 300.0, true).is_some());
+        assert_eq!(
+            center.to_remote(-100.0, 300.0, true),
+            center.to_remote(0.0, 300.0, true)
+        );
+        assert_eq!(
+            center.to_remote(2000.0, 300.0, true),
+            center.to_remote(999.5, 300.0, true)
+        );
     }
 
     #[test]
