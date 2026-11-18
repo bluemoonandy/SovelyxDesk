@@ -17,6 +17,7 @@ use serde_json::json;
 use slint::{
     ComponentHandle, ModelRc, Rgba8Pixel, SharedPixelBuffer, VecModel,
     language::{PointerEventButton, PointerEventKind},
+    winit_030::WinitWindowAccessor,
 };
 use uuid::Uuid;
 
@@ -415,6 +416,32 @@ fn refresh_layout(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
             return Ok(());
         };
         let viewport = Viewport::fit(size, width, height, dpi)?;
+        // Only record geometry changes, never every video frame. These are the same
+        // logical coordinates consumed by the Image and the pointer/wheel handlers.
+        if state.viewport != Some(viewport) || state.layout != (width, height, dpi) {
+            let window = app.window().size();
+            let monitor = app.window().with_winit_window(|window| {
+                window.current_monitor().map(|monitor| {
+                    let size = monitor.size();
+                    json!({"physical_px": [size.width, size.height], "dpi_scale": monitor.scale_factor()})
+                })
+            }).flatten();
+            state.audit.event("display.geometry.changed", Level::Info, json!({
+                "display.monitor": monitor,
+                "display.window.physical_px": [window.width, window.height],
+                "display.window.logical_px": [window.width as f32 / dpi, window.height as f32 / dpi],
+                "display.dpi_scale": dpi,
+                "display.fullscreen": app.window().is_fullscreen(),
+                "display.viewport.logical_px": [width, height],
+                "display.frame.source_px": [size.width, size.height],
+                "display.image.current_source_px": [app.get_frame_image().size().width, app.get_frame_image().size().height],
+                "display.fit.logical_per_source_px": [viewport.width / size.width as f32, viewport.height / size.height as f32],
+                "display.render.logical_xywh": [viewport.left, viewport.top, viewport.width, viewport.height],
+                "display.render.physical_px": [viewport.pixels.width, viewport.pixels.height],
+                "display.input": "canvas logical px -> shared render rectangle -> source px; padding rejected; active drag clamped",
+                "display.renderer.gpu": state.gpu_renderer,
+            }))?;
+        }
         state.layout = (width, height, dpi);
         state.viewport = Some(viewport);
         state.ticket += 1;

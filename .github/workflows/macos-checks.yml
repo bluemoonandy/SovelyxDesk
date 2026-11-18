@@ -18,6 +18,10 @@ jobs:
         run: |
           rustc --edition=2024 --test -D warnings scripts/test_hevc_bitstream.rs -o "$RUNNER_TEMP/hevc-bitstream-tests"
           "$RUNNER_TEMP/hevc-bitstream-tests"
+      - name: Test portable display geometry and DPI mapping
+        run: |
+          rustc --edition=2024 --test -D warnings scripts/test_display_geometry.rs -o "$RUNNER_TEMP/display-geometry-tests"
+          "$RUNNER_TEMP/display-geometry-tests"
       - name: Test HEVC diagnostics and unchanged pacing behavior
         run: |
           rustc --edition=2024 --test -D warnings scripts/test_hevc_diagnostics.rs -o "$RUNNER_TEMP/hevc-diagnostics-tests"
