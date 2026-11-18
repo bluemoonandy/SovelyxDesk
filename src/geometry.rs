@@ -57,10 +57,12 @@ impl Rect {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Viewport {
     pub source: Extent,
+    // Draw rectangle and input positions use Slint logical pixels.
     pub left: f32,
     pub top: f32,
     pub width: f32,
     pub height: f32,
+    // Physical output size for CPU resampling; GPU images keep their decoded size.
     pub pixels: Extent,
     dpi: f64,
 }
@@ -78,8 +80,7 @@ impl Viewport {
         }
         let dpi = f64::from(dpi);
         let factor = (f64::from(width) * dpi / f64::from(source.width))
-            .min(f64::from(height) * dpi / f64::from(source.height))
-            .min(1.0);
+            .min(f64::from(height) * dpi / f64::from(source.height));
         let pixels = Extent::new(
             (f64::from(source.width) * factor).floor().max(1.0) as u32,
             (f64::from(source.height) * factor).floor().max(1.0) as u32,
@@ -161,10 +162,71 @@ mod tests {
     }
 
     #[test]
-    fn smaller_desktops_stay_at_native_size() {
+    fn smaller_desktops_fill_the_available_canvas() {
         let view = Viewport::fit(Extent::new(1280, 720).unwrap(), 2560.0, 1440.0, 1.0).unwrap();
-        assert_eq!(view.pixels, Extent::new(1280, 720).unwrap());
-        assert_eq!(view.left, 640.0);
+        assert_eq!(view.pixels, Extent::new(2560, 1440).unwrap());
+        assert_eq!(view.left, 0.0);
+    }
+
+    #[test]
+    fn fit_uses_the_canvas_at_every_dpi_and_aspect_ratio() {
+        for source in [(1280, 720), (3840, 2160), (1920, 1200), (1600, 1200)] {
+            let source = Extent::new(source.0, source.1).unwrap();
+            for (physical_width, physical_height) in
+                [(640.0, 480.0), (2880.0, 1800.0), (3840.0, 2160.0)]
+            {
+                for dpi in [1.0, 1.5, 2.0] {
+                    let width = physical_width / dpi;
+                    let height = physical_height / dpi;
+                    let view = Viewport::fit(source, width, height, dpi).unwrap();
+                    let scale = (physical_width / source.width as f32)
+                        .min(physical_height / source.height as f32);
+                    assert!((view.width * dpi - source.width as f32 * scale).abs() < 1.01);
+                    assert!((view.height * dpi - source.height as f32 * scale).abs() < 1.01);
+                    assert!(view.left >= 0.0 && view.top >= 0.0);
+                    assert!((view.left * 2.0 + view.width - width).abs() < 0.001);
+                    assert!((view.top * 2.0 + view.height - height).abs() < 0.001);
+                    assert!(
+                        view.to_remote(view.left + view.width, view.top, false)
+                            .is_none()
+                    );
+                    assert!(
+                        view.to_remote(view.left, view.top + view.height, false)
+                            .is_none()
+                    );
+                    assert_eq!(view.to_remote(view.left, view.top, false), Some((0, 0)));
+                    assert_eq!(view.to_remote(-1.0, -1.0, false), None);
+                    assert_eq!(view.to_remote(-1.0, -1.0, true), Some((0, 0)));
+                    assert_eq!(
+                        view.to_remote(width + 1.0, height + 1.0, true),
+                        Some(((source.width - 1) as u16, (source.height - 1) as u16))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn resizing_fullscreen_and_cross_monitor_moves_use_fresh_geometry() {
+        let source = Extent::new(1280, 720).unwrap();
+        let initial = Viewport::fit(source, 960.0, 600.0, 2.0).unwrap();
+        let mut previous = initial;
+        // Window, maximized laptop, full screen, external 4K, then back to window.
+        for (width, height, dpi) in [
+            (1440.0, 780.0, 2.0),
+            (1440.0, 900.0, 2.0),
+            (3840.0, 2160.0, 1.0),
+            (1920.0, 1080.0, 2.0),
+            (960.0, 600.0, 2.0),
+        ] {
+            let next = Viewport::fit(source, width, height, dpi).unwrap();
+            assert_ne!(next, previous);
+            let center = next.to_remote(width / 2.0, height / 2.0, false).unwrap();
+            assert!((i32::from(center.0) - 640).abs() <= 1);
+            assert!((i32::from(center.1) - 360).abs() <= 1);
+            previous = next;
+        }
+        assert_eq!(previous, initial);
     }
 
     #[test]
