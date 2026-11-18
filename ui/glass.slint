@@ -78,6 +78,7 @@ export component Button inherits Rectangle {
             horizontal-alignment: center; vertical-alignment: center; accessible-role: none;
         }
     }
+    Tooltip { text: @markdown("\{root.accessible-label}"); }
     pointer := TouchArea {
         enabled: root.enabled; mouse-cursor: MouseCursor.pointer;
         clicked => { keyboard.focus(); if root.enabled { root.clicked(); } }

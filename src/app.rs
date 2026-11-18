@@ -228,14 +228,22 @@ fn model(app: &App, state: &State) {
             }
             .into(),
             protection: login_ui::entry(state, profile)
-                .map_or("Windows Hello", |d| match d.protection {
-                    maccanvas::login::Protection::Quick => "Quick connect",
-                    maccanvas::login::Protection::Hello => "Windows Hello",
-                    maccanvas::login::Protection::Never => "Password required",
-                })
+                .map_or(
+                    if profile.has_saved_credentials {
+                        "Windows Hello"
+                    } else {
+                        "Manual"
+                    },
+                    |d| match d.protection {
+                        maccanvas::login::Protection::Quick => "Quick connect",
+                        maccanvas::login::Protection::Hello => "Windows Hello",
+                        maccanvas::login::Protection::Never => "Manual",
+                    },
+                )
                 .into(),
         })
         .collect();
+    app.set_machine_count(state.settings.profiles.len() as i32);
     app.set_machines(ModelRc::from(Rc::new(VecModel::from(rows))));
     app.set_selected(
         state
@@ -622,7 +630,7 @@ fn close_stream(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
     app.set_audio_status("Audio is available with HEVC.".into());
     app.set_frame_image(slint::Image::default());
     app.set_active_encoding("Waiting for pixels".into());
-    app.set_status("Disconnected".into());
+    app.set_status("Ready to connect".into());
     app.set_desktop_description("".into());
     app.set_download_rate("0.0 kbps".into());
     app.set_upload_rate("0.0 kbps".into());
@@ -1595,9 +1603,9 @@ pub fn run(
             )
         })();
         model(&app, &connection_state.borrow());
-        app.set_password("".into());
         match result {
             Ok(()) => {
+                app.set_password("".into());
                 app.set_error_text("".into());
                 app.set_connecting(true);
                 app.set_status("Verifying and connecting...".into());

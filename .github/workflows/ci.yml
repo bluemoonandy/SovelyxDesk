@@ -2,7 +2,7 @@ name: Windows x64 tests and Release
 
 on:
   push:
-    branches: [main, fix/hevc-frame-size]
+    branches: [main, fix/hevc-frame-size, codex/p2-ui-device-management]
   pull_request:
   workflow_dispatch:
 
@@ -60,8 +60,19 @@ jobs:
           foreach ($scale in @('1.25', '1.5', '2')) {
             .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -ScaleFactor $scale -OutputDirectory "$env:RUNNER_TEMP\login-ui"
           }
+      - name: Verify device layouts and capture P2 UI states
+        shell: pwsh
+        run: |
+          $exe = 'target\x86_64-pc-windows-msvc\debug\maccanvas.exe'
+          foreach ($count in @(0, 1, 6)) {
+            .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -DeviceCount $count -WindowWidth 1280 -WindowHeight 720 -OutputDirectory "$env:RUNNER_TEMP\login-ui"
+          }
+          foreach ($size in @(@(1440,900), @(1920,1080), @(2560,1440))) {
+            .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -DeviceCount 6 -WindowWidth $size[0] -WindowHeight $size[1] -OutputDirectory "$env:RUNNER_TEMP\login-ui"
+          }
+          .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -DeviceCount 6 -WindowWidth 3840 -WindowHeight 2160 -ScaleFactor 2 -OutputDirectory "$env:RUNNER_TEMP\login-ui"
       - name: Export login UI screenshots
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: UI-check-screenshots-${{ github.sha }}

@@ -4,7 +4,10 @@ param(
     [string]$Executable = '',
     [ValidateSet('auto', 'light', 'dark')][string]$PreviewTheme = 'auto',
     [ValidateSet('1', '1.25', '1.5', '2')][string]$ScaleFactor = '1',
-    [string]$OutputDirectory = ''
+    [string]$OutputDirectory = '',
+    [ValidateSet(0,1,2,6)][int]$DeviceCount = 2,
+    [int]$WindowWidth = 1240,
+    [int]$WindowHeight = 820
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,6 +20,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 public static class MacCanvasScreenshot {
     [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out Rect r);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags);
     [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h, uint attribute, out Rect bounds, int size);
@@ -53,6 +57,11 @@ $settings = @{
         @{ id = [guid]::NewGuid().ToString(); name = 'MacBook Pro'; host = '192.0.2.20'; port = 5900; authentication = 'mac_login'; has_saved_credentials = $false }
     )
     ctrl_as_command = $true; sidebar_open = $true; show_fps = $true
+}
+if ($DeviceCount -eq 0) { $settings.profiles = @() }
+elseif ($DeviceCount -eq 1) { $settings.profiles = @($settings.profiles[0]) }
+elseif ($DeviceCount -eq 6) {
+    $settings.profiles += @(1..4 | ForEach-Object { @{ id = [guid]::NewGuid().ToString(); name = "Office Mac $_"; host = "mac-$_.example.test"; port = 5900; authentication = 'vnc_password'; has_saved_credentials = $false } })
 }
 [IO.File]::WriteAllText((Join-Path $temporary 'settings.json'), ($settings | ConvertTo-Json -Depth 8))
 $start = [Diagnostics.ProcessStartInfo]::new()
@@ -96,12 +105,72 @@ try {
         $handle = [MacCanvasScreenshot]::Find($process.Id)
     }
     if ($handle -eq [IntPtr]::Zero) { throw 'Fixture did not create its window.' }
+    if (-not [MacCanvasScreenshot]::SetWindowPos($handle, [IntPtr]::Zero, 0, 0, $WindowWidth, $WindowHeight, 0x0044)) { throw 'Cannot resize fixture window.' }
     Start-Sleep -Seconds 1
     $images = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $root 'docs\images' }
     $null = [IO.Directory]::CreateDirectory($images)
-    $suffix = "-$PreviewTheme-$ScaleFactor"
+    $suffix = "-$PreviewTheme-$ScaleFactor-$DeviceCount-${WindowWidth}x${WindowHeight}"
     Capture-OwnedWindow (Join-Path $images "connections$suffix.png")
     $window = [Windows.Automation.AutomationElement]::FromHandle($handle)
+    function Find-Control([string]$Name) {
+        $condition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $Name)
+        $deadline = [DateTime]::UtcNow.AddSeconds(5)
+        do {
+            $element = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
+            if ($null -eq $element) { Start-Sleep -Milliseconds 50 }
+        } while ($null -eq $element -and [DateTime]::UtcNow -lt $deadline)
+        if ($null -eq $element) { throw "Control not found: $Name" }
+        return $element
+    }
+    function Invoke-Control([string]$Name) {
+        (Find-Control $Name).GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+        Start-Sleep -Milliseconds 250
+    }
+    function Set-Control([string]$Name, [string]$Value) {
+        (Find-Control $Name).GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Value)
+        Start-Sleep -Milliseconds 150
+    }
+    function Assert-InWindow($Element, [string]$Description) {
+        $bounds = $Element.Current.BoundingRectangle
+        $outer = $window.Current.BoundingRectangle
+        if ($bounds.Width -le 0 -or $bounds.Height -le 0 -or $bounds.Left -lt $outer.Left -or $bounds.Right -gt $outer.Right + 1 -or $bounds.Bottom -gt $outer.Bottom + 1) { throw "Control outside window: $Description ($bounds)" }
+    }
+    if ($DeviceCount -gt 0) {
+        $cardCondition = [Windows.Automation.AndCondition]::new(
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Group),
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac: Studio Mac mini')
+        )
+        $card = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $cardCondition)
+        if ($null -eq $card) { throw 'Device card was not published.' }
+        Assert-InWindow $card 'Device card'
+        if ($card.Current.BoundingRectangle.Width -gt 421 * [double]$ScaleFactor) { throw 'Device card stretched beyond its maximum width.' }
+        $search = Find-Control 'Search saved Macs'
+        if ($search.Current.BoundingRectangle.Width -gt 321 * [double]$ScaleFactor) { throw 'Search stretched beyond its maximum width.' }
+        Set-Control 'Search saved Macs' 'there-is-no-such-mac'
+        $null = Find-Control 'No Macs match this search.'
+        Capture-OwnedWindow (Join-Path $images "no-results$suffix.png")
+        Invoke-Control 'Clear search'
+    } else {
+        $null = Find-Control 'New connection'
+    }
+    # New connection forms use synthetic data and never contact a real Mac.
+    Invoke-Control 'New connection'
+    Assert-InWindow (Find-Control 'Connect to Mac') 'Save & Connect'
+    Set-Control 'Machine name' 'Test Mac'
+    Set-Control 'Mac address' '127.0.0.1'
+    Capture-OwnedWindow (Join-Path $images "new-mac-account$suffix.png")
+    Set-Control 'Login method' 'VNC password'
+    $usernameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac username')
+    if ($null -ne $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $usernameCondition)) { throw 'VNC password form exposed a Mac username.' }
+    Capture-OwnedWindow (Join-Path $images "new-vnc-password$suffix.png")
+    Invoke-Control 'Close connection editor'
+    Invoke-Control 'Settings'
+    Capture-OwnedWindow (Join-Path $images "settings$suffix.png")
+    Invoke-Control 'Close'
+    if ($DeviceCount -lt 2) {
+        Write-Output 'Empty/single-device, form and compact layout checks: PASS'
+        return
+    }
     $buttonCondition = [Windows.Automation.AndCondition]::new(
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button),
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Details')
@@ -118,7 +187,7 @@ try {
     if ($null -eq $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $helloCondition)) {
         throw 'Legacy Windows Hello protection is not visible.'
     }
-    if ($PreviewTheme -eq 'auto') { Capture-OwnedWindow (Join-Path $images 'saved-login.png') }
+    if ($true) { Capture-OwnedWindow (Join-Path $images "saved-login$suffix.png") }
     $allCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Close connection editor')
     $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $allCondition).
         GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
@@ -149,6 +218,7 @@ try {
     if ($address.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne '192.0.2.20') {
         throw 'Search selected the wrong saved Mac.'
     }
+    Capture-OwnedWindow (Join-Path $images "edit-mac$suffix.png")
     Write-Output 'Synthetic screenshot capture and saved-password non-disclosure checks: PASS'
  } catch {
     if ($handle -ne [IntPtr]::Zero -and -not $process.HasExited) {
