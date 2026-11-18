@@ -287,12 +287,13 @@ fn profile_from_form(app: &App, state: &State) -> Result<Profile> {
         .and_then(|index| state.settings.profiles.get(index));
     if let Some(previous) = previous
         && previous.has_saved_credentials
+        && app.get_use_saved()
         && (previous.host != host
             || previous.port != port
             || previous.authentication != authentication)
     {
         return Err(Error::Configuration(
-                "This saved login is tied to the original address and login method. Create a new machine rather than sending it to a different endpoint.".into()
+                "Enter the password again before changing the address, port or login method. Existing credentials will not be sent to a different endpoint.".into()
             ));
     }
     let profile = Profile {
@@ -1878,23 +1879,27 @@ pub fn run(
                 };
                 vault.delete(id)?;
                 if let Some(entry) = state.login.devices.iter().find(|d| d.binding.device == id) {
-                    for mode in [
-                        maccanvas::login::Protection::Quick,
-                        maccanvas::login::Protection::Hello,
-                    ] {
-                        if let Some(target) = entry.binding.target(mode) {
-                            state.audit.critical(
-                                "credential.delete.requested",
-                                Level::Info,
-                                json!({"profile.id":id}),
-                            )?;
-                            maccanvas::login::Vault::delete(
-                                &maccanvas::credentials::WindowsVault,
-                                &target,
-                            )
-                            .map_err(|_| {
-                                Error::Credential("Could not remove the saved login".into())
-                            })?;
+                    for binding in
+                        std::iter::once(&entry.binding).chain(entry.retired_bindings.iter())
+                    {
+                        for mode in [
+                            maccanvas::login::Protection::Quick,
+                            maccanvas::login::Protection::Hello,
+                        ] {
+                            if let Some(target) = binding.target(mode) {
+                                state.audit.critical(
+                                    "credential.delete.requested",
+                                    Level::Info,
+                                    json!({"profile.id":id}),
+                                )?;
+                                maccanvas::login::Vault::delete(
+                                    &maccanvas::credentials::WindowsVault,
+                                    &target,
+                                )
+                                .map_err(|_| {
+                                    Error::Credential("Could not remove the saved login".into())
+                                })?;
+                            }
                         }
                     }
                 }

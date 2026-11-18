@@ -8,6 +8,8 @@ use std::collections::HashSet;
 pub struct Device {
     pub binding: Binding,
     pub protection: Protection,
+    #[serde(default)]
+    pub retired_bindings: Vec<Binding>,
     #[serde(default = "enabled")]
     pub auto_reconnect: bool,
     #[serde(default)]
@@ -46,6 +48,14 @@ impl Preferences {
         for device in &parsed.devices {
             if device.streaming.is_some_and(|s| s.validate().is_err()) {
                 return Err("Invalid saved display preferences");
+            }
+            if device.retired_bindings.len() > 32
+                || device
+                    .retired_bindings
+                    .iter()
+                    .any(|b| b.device != device.binding.device)
+            {
+                return Err("Invalid credential binding history");
             }
             let binding = &device.binding;
             if !ids.insert(binding.device)
@@ -110,6 +120,47 @@ mod tests {
     use super::*;
 
     #[test]
+    fn historical_bindings_cannot_cross_devices_or_grow_unbounded() {
+        let binding = Binding {
+            device: uuid::Uuid::new_v4(),
+            host: "mac.local".into(),
+            port: 5900,
+            authentication: super::super::Authentication::MacAccount,
+            username: "fixture".into(),
+        };
+        let mut device = Device {
+            binding: binding.clone(),
+            protection: Protection::Quick,
+            retired_bindings: vec![binding.clone(); 33],
+            auto_reconnect: true,
+            streaming: None,
+        };
+        assert!(
+            Preferences::parse(
+                &serde_json::to_vec(&Preferences {
+                    version: 1,
+                    devices: vec![device.clone()]
+                })
+                .unwrap()
+            )
+            .is_err()
+        );
+        device.retired_bindings = vec![Binding {
+            device: uuid::Uuid::new_v4(),
+            ..binding
+        }];
+        assert!(
+            Preferences::parse(
+                &serde_json::to_vec(&Preferences {
+                    version: 1,
+                    devices: vec![device]
+                })
+                .unwrap()
+            )
+            .is_err()
+        );
+    }
+    #[test]
     fn disk_round_trip_and_corruption_preserve_legacy_device_file() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("connections-v1.json");
@@ -136,6 +187,7 @@ mod tests {
         let d = Device {
             binding: b,
             protection: Protection::Quick,
+            retired_bindings: Vec::new(),
             auto_reconnect: true,
             streaming: None,
         };

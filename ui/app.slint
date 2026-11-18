@@ -501,15 +501,16 @@ LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.ma
                                 Caption { text: "Name"; }
                                 LineEdit { accessible-label: "Machine name"; text <=> root.machine-name; placeholder-text: "Mac mini"; enabled: !root.connected && !root.connecting; }
                                 Caption { text: "Host or IP address"; }
-                                LineEdit { accessible-label: "Mac address"; text <=> root.host; placeholder-text: "192.168.1.50"; enabled: !root.has-saved && !root.connected && !root.connecting; }
+                                LineEdit { accessible-label: "Mac address"; text <=> root.host; edited => {root.use-saved = false; root.password = ""; root.credential-approved = false;} placeholder-text: "192.168.1.50"; enabled: !root.connected && !root.connecting; }
                                 HorizontalLayout {
                                     Caption { text: "Port"; }
-                                    LineEdit { accessible-label: "VNC port"; width: 88px; text <=> root.port; input-type: InputType.number; enabled: !root.has-saved && !root.connected && !root.connecting; }
+                                    LineEdit { accessible-label: "VNC port"; width: 88px; text <=> root.port; edited => {root.use-saved = false; root.password = ""; root.credential-approved = false;} input-type: InputType.number; enabled: !root.connected && !root.connecting; }
                                 }
                                 Caption { text: "Login method"; }
                                 ComboBox {
                                     accessible-label: "Login method"; model: ["Mac account", "VNC password"];
-                                    current-index <=> root.auth-mode; enabled: !root.has-saved && !root.connected && !root.connecting;
+                                    current-index <=> root.auth-mode; enabled: !root.connected && !root.connecting;
+                                    selected => {root.use-saved = false;root.password = "";root.credential-approved = false;}
                                 }
                                 Caption { text: "Credential protection"; }
                                 ComboBox {

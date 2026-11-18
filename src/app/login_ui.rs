@@ -54,9 +54,25 @@ pub(super) fn persist(app: &App, state: &mut State, profile: &Profile) -> Result
         return Err(Error::Configuration(error.clone()));
     }
     let mut updated = state.login.clone();
+    let binding = binding(app, profile);
+    let previous = state
+        .login
+        .devices
+        .iter()
+        .find(|d| d.binding.device == profile.id);
+    let mut retired_bindings = previous
+        .map(|d| d.retired_bindings.clone())
+        .unwrap_or_default();
+    if let Some(previous) = previous
+        && previous.binding != binding
+        && !retired_bindings.contains(&previous.binding)
+    {
+        retired_bindings.push(previous.binding.clone());
+    }
     updated.devices.retain(|d| d.binding.device != profile.id);
     updated.devices.push(Device {
-        binding: binding(app, profile),
+        binding,
+        retired_bindings,
         protection: mode(app),
         auto_reconnect: app.get_auto_reconnect(),
         streaming: Some(state.settings.streaming),
