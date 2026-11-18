@@ -31,6 +31,7 @@ jobs:
           env-vars: ImageOS ImageVersion
           cache-bin: false
           cache-workspace-crates: false
+          cache-on-failure: true
           save-if: ${{ github.event_name != 'pull_request' }}
       - name: Validate audio component policy (build converter from source)
         shell: pwsh

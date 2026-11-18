@@ -137,7 +137,35 @@ try {
         $condition = [Windows.Automation.AndCondition]::new($nameCondition, $typeCondition)
         $control = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
         if ($null -eq $control) { throw "Editable control not found: $Name" }
-        $control.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Value)
+        if ($control.Current.ControlType -eq [Windows.Automation.ControlType]::ComboBox) {
+            # Cupertino ComboBox does not apply UIA SetValue; use its public arrow-key interaction.
+            $choices = switch ($Name) {
+                'Login method' { @('Mac account', 'VNC password') }
+                'Credential protection' { @('Quick Connect', 'Windows Hello', 'Manual') }
+                default { throw "No fixture choices for combo: $Name" }
+            }
+            $index = [Array]::IndexOf($choices, $Value)
+            if ($index -lt 0) { throw "Unknown combo value: $Value" }
+            $control.SetFocus()
+            Start-Sleep -Milliseconds 150
+            function Send-ComboArrow([int]$Key, [int]$Scan) {
+                $down = [long]1 -bor ([long]$Scan -shl 16) -bor [long]0x01000000
+                $up = $down -bor [long]3221225472
+                if (-not [MacCanvasScreenshot]::PostMessage($handle, 0x100, [IntPtr]$Key, [IntPtr]$down)) { throw 'Cannot post fixture key down.' }
+                if (-not [MacCanvasScreenshot]::PostMessage($handle, 0x101, [IntPtr]$Key, [IntPtr]$up)) { throw 'Cannot post fixture key up.' }
+                Start-Sleep -Milliseconds 50
+            }
+            for ($step = 0; $step -lt $choices.Count; $step++) { Send-ComboArrow 0x26 0x48 }
+            for ($step = 0; $step -lt $index; $step++) { Send-ComboArrow 0x28 0x50 }
+            $deadline = [DateTime]::UtcNow.AddSeconds(5)
+            do {
+                $actual = $control.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
+                if ($actual -cne $Value) { Start-Sleep -Milliseconds 50 }
+            } while ($actual -cne $Value -and [DateTime]::UtcNow -lt $deadline)
+            if ($actual -cne $Value) { throw "Combo did not select '$Value': '$actual'" }
+        } else {
+            $control.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Value)
+        }
         Start-Sleep -Milliseconds 150
     }
     function Assert-InWindow($Element, [string]$Description) {
