@@ -5,7 +5,7 @@ import { ClipboardOverlay } from "clipboard.slint";
 import { AudioOverlay } from "audio.slint";
 import { FilesOverlay, FileRow } from "files.slint";
 
-export struct Machine { name: string, detail: string, saved: bool, login: string, protection: string }
+export struct Machine { id: string, name: string, detail: string, saved: bool, login: string, protection: string }
 export struct TrafficBar { download: float, upload: float }
 export struct CodecGuide { name: string, detail: string, estimate: string }
 
@@ -182,8 +182,8 @@ export component App inherits Window {
     callback save-machine();
     callback new-machine();
     callback delete-machine();
-    callback select-machine(int);
-    callback quick-connect(int);
+    callback select-machine(string);
+    callback quick-connect(string);
     callback filter-machines();
     callback save-preferences();
     callback quality-changed();
@@ -344,11 +344,11 @@ LineEdit { accessible-label: "Search saved Macs"; height: 34px; text <=> root.ma
                                         Text { text: machine.detail; color: root.muted; font-size: 11px; overflow: elide; }
                                         HorizontalLayout {
                                             Text { text: root.selected == index && (root.connecting || root.connected) ? root.status : machine.login + " · " + (machine.saved ? machine.protection : "Password required"); overflow: elide; min-width: 0px; color: root.accent; font-size: 11px; vertical-alignment: center; }
-                                            Button { text: "Details"; quiet: true; enabled: !root.connected && !root.connecting; clicked => { root.select-machine(index); } }
+                                            Button { text: "Details"; quiet: true; enabled: !root.connected && !root.connecting; clicked => { root.select-machine(machine.id); } }
                                             Button {
                                                 text: "Connect";
                                                 primary: true; enabled: !root.connected && !root.connecting;
-                                                clicked => { root.quick-connect(index); }
+                                                clicked => { root.quick-connect(machine.id); }
                                             }
                                         }
                                     }

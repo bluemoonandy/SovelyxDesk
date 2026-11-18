@@ -217,6 +217,7 @@ fn model(app: &App, state: &State) {
         .enumerate()
         .filter(|(index, _)| indices.contains(index))
         .map(|(_, profile)| Machine {
+            id: profile.id.to_string().into(),
             name: profile.name.clone().into(),
             detail: format!("{}:{}", profile.host, profile.port).into(),
             saved: profile.has_saved_credentials,
@@ -259,11 +260,15 @@ fn filtered_indices(app: &App, state: &State) -> Vec<usize> {
         .collect()
 }
 
-fn row_index(app: &App, state: &State, index: i32) -> Result<usize> {
-    usize::try_from(index)
-        .ok()
-        .and_then(|index| filtered_indices(app, state).get(index).copied())
-        .ok_or_else(|| Error::Configuration("The selected Mac is no longer in this list".into()))
+fn machine_index(state: &State, id: &str) -> Result<usize> {
+    let id =
+        Uuid::parse_str(id).map_err(|_| Error::Configuration("Invalid device identity".into()))?;
+    state
+        .settings
+        .profiles
+        .iter()
+        .position(|profile| profile.id == id)
+        .ok_or_else(|| Error::Configuration("The selected Mac no longer exists".into()))
 }
 
 fn profile_from_form(app: &App, state: &State) -> Result<Profile> {
@@ -1576,6 +1581,7 @@ pub fn run(
                 &connection_events,
             )
         })();
+        model(&app, &connection_state.borrow());
         app.set_password("".into());
         match result {
             Ok(()) => {
@@ -1759,9 +1765,9 @@ pub fn run(
     });
     let weak = app.as_weak();
     let selected_state = state.clone();
-    app.on_select_machine(move |index| {
+    app.on_select_machine(move |id| {
         if let Some(app) = weak.upgrade() {
-            let selected = row_index(&app, &selected_state.borrow(), index);
+            let selected = machine_index(&selected_state.borrow(), id.as_str());
             match selected {
                 Ok(index) => {
                     if let Err(error) = select(&app, &selected_state, Some(index)) {
@@ -1774,9 +1780,9 @@ pub fn run(
     });
     let weak = app.as_weak();
     let quick_state = state.clone();
-    app.on_quick_connect(move |index| {
+    app.on_quick_connect(move |id| {
         let Some(app) = weak.upgrade() else { return };
-        let index = row_index(&app, &quick_state.borrow(), index);
+        let index = machine_index(&quick_state.borrow(), id.as_str());
         match index.and_then(|index| select(&app, &quick_state, Some(index))) {
             Ok(()) if app.get_use_saved() => {
                 app.set_editor_open(false);

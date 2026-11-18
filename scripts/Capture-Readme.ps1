@@ -126,12 +126,17 @@ try {
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
     do {
         $search = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $searchCondition)
-        if ($null -eq $search) { Start-Sleep -Milliseconds 50 }
-    } while ($null -eq $search -and [DateTime]::UtcNow -lt $deadline)
-    if ($null -eq $search) { throw 'Saved-Mac list did not reopen after activating All Macs.' }
+        if ($null -eq $search -or -not $search.Current.IsEnabled) { Start-Sleep -Milliseconds 50 }
+    } while (($null -eq $search -or -not $search.Current.IsEnabled) -and [DateTime]::UtcNow -lt $deadline)
+    if ($null -eq $search -or -not $search.Current.IsEnabled) { throw 'Saved-Mac list did not become enabled after closing the editor.' }
     $search.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue('MacBook')
-    Start-Sleep -Milliseconds 150
-    $details = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
+    $deadline = [DateTime]::UtcNow.AddSeconds(5)
+    do {
+        $rows = $window.FindAll([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
+        if ($rows.Count -ne 1) { Start-Sleep -Milliseconds 50 }
+    } while ($rows.Count -ne 1 -and [DateTime]::UtcNow -lt $deadline)
+    if ($rows.Count -ne 1) { throw 'Filtered device list did not publish one stable device row.' }
+    $details = $rows.Item(0)
     $details.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
     $addressCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac address')
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
@@ -144,7 +149,15 @@ try {
         throw 'Search selected the wrong saved Mac.'
     }
     Write-Output 'Synthetic screenshot capture and saved-password non-disclosure checks: PASS'
-} catch {
+ } catch {
+    if ($handle -ne [IntPtr]::Zero -and -not $process.HasExited) {
+        Capture-OwnedWindow (Join-Path $images ("failure-$PreviewTheme-$ScaleFactor.png"))
+        foreach ($label in @('Details', 'Close connection editor', 'Mac address', 'Search saved Macs')) {
+            $condition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $label)
+            $matches = $window.FindAll([Windows.Automation.TreeScope]::Descendants, $condition)
+            Write-Output ("UI fixture control: {0}; count: {1}" -f $label, $matches.Count)
+        }
+    }
     Write-Output $_.ToString()
     throw
 } finally {

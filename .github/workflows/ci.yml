@@ -86,10 +86,13 @@ jobs:
             .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -ScaleFactor $scale
           }
       - name: Export login UI screenshots
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: MacCanvas-login-ui-${{ github.sha }}
-          path: docs/images/connections-*.png
+          path: |
+            docs/images/connections-*.png
+            docs/images/failure-*.png
           if-no-files-found: error
           retention-days: 14
       - name: Export Windows x64 diagnostic debug executable
