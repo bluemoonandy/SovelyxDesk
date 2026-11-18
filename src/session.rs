@@ -443,7 +443,9 @@ fn run(
             },
         ) {
             Ok(()) => {
-                profile.has_saved_credentials = true;
+                if matches!(credential_policy, CredentialSource::Saved) {
+                    profile.has_saved_credentials = true;
+                }
                 credentials_saved = true;
             }
             Err(error) => {

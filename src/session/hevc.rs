@@ -162,7 +162,9 @@ pub(super) fn run(
                         },
                     ) {
                         Ok(()) => {
-                            connected.has_saved_credentials = true;
+                            if matches!(credential_policy, credentials::CredentialSource::Saved) {
+                                connected.has_saved_credentials = true;
+                            }
                             credentials_saved = true;
                         }
                         Err(error) => events

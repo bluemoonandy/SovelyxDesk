@@ -34,6 +34,11 @@ pub(super) fn entry<'a>(state: &'a State, profile: &Profile) -> Option<&'a Devic
                 == (profile.authentication == AuthMode::MacLogin)
     })
 }
+pub(super) fn has_saved(state: &State, profile: &Profile) -> bool {
+    entry(state, profile).map_or(profile.has_saved_credentials, |d| {
+        d.saved && d.protection != Protection::Never
+    })
+}
 pub(super) fn select(app: &App, state: &State, profile: &Profile) {
     if let Some(d) = entry(state, profile) {
         app.set_username(d.binding.username.clone().into());
@@ -42,7 +47,8 @@ pub(super) fn select(app: &App, state: &State, profile: &Profile) {
             Protection::Hello => 1,
             Protection::Never => 2,
         });
-        app.set_use_saved(profile.has_saved_credentials && d.protection != Protection::Never);
+        app.set_has_saved(has_saved(state, profile));
+        app.set_use_saved(has_saved(state, profile));
         app.set_auto_reconnect(d.auto_reconnect);
     } else {
         app.set_credential_mode(1);
@@ -69,10 +75,13 @@ pub(super) fn persist(app: &App, state: &mut State, profile: &Profile) -> Result
     {
         retired_bindings.push(previous.binding.clone());
     }
+    let saved =
+        previous.is_some_and(|d| d.saved && d.binding == binding && d.protection == mode(app));
     updated.devices.retain(|d| d.binding.device != profile.id);
     updated.devices.push(Device {
         binding,
         retired_bindings,
+        saved,
         protection: mode(app),
         auto_reconnect: app.get_auto_reconnect(),
         streaming: Some(state.settings.streaming),
@@ -97,7 +106,7 @@ pub(super) fn source(app: &App, state: &State, profile: &Profile) -> Result<Cred
                 protection,
             ));
         }
-        if protection != Protection::Hello {
+        if protection != Protection::Hello || !profile.has_saved_credentials {
             return Err(Error::Credential(
                 "Enter your Mac password once to enable quick connection".into(),
             ));

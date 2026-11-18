@@ -220,7 +220,7 @@ fn model(app: &App, state: &State) {
             id: profile.id.to_string().into(),
             name: profile.name.clone().into(),
             detail: format!("{}:{}", profile.host, profile.port).into(),
-            saved: profile.has_saved_credentials,
+            saved: login_ui::has_saved(state, profile),
             login: if profile.authentication == AuthMode::MacLogin {
                 "Mac account"
             } else {
@@ -304,10 +304,15 @@ fn profile_from_form(app: &App, state: &State) -> Result<Profile> {
     let profile = Profile {
         id: previous.map_or_else(Uuid::new_v4, |profile| profile.id),
         name: if name.is_empty() { host.clone() } else { name },
-        host,
+        host: host.clone(),
         port,
         authentication,
-        has_saved_credentials: previous.is_some_and(|profile| profile.has_saved_credentials),
+        has_saved_credentials: previous.is_some_and(|profile| {
+            profile.has_saved_credentials
+                && profile.host.eq_ignore_ascii_case(&host)
+                && profile.port == port
+                && profile.authentication == authentication
+        }),
     };
     profile.validate()?;
     Ok(profile)
@@ -2295,6 +2300,8 @@ pub fn run(
                             let mut state = timer_state.borrow_mut();
                             if credentials_saved {
                                 state.connection_credentials = state.connection_credentials.as_ref().map(CredentialSource::saved);
+                                if let Some(entry)=state.login.devices.iter_mut().find(|d|d.binding.device==profile.id) {entry.saved=true;}
+
                             }
                             if state.reconnect_attempt != 0 {
                                 let _ = state.audit.event("session.reconnect.completed",Level::Info,json!({
@@ -2315,7 +2322,8 @@ pub fn run(
                                 state.settings.profiles.push(profile.clone());
                                 state.selected = Some(state.settings.profiles.len() - 1);
                             }
-                            state.persist()
+                            let preferences_saved=if credentials_saved {state.login.save(&state.path.with_file_name("connections-v1.json")).map_err(Error::Configuration)} else {Ok(())};
+                            state.persist().and(preferences_saved)
                         };
                         app.set_connecting(false);
                         app.set_connected(true);

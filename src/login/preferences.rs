@@ -9,6 +9,8 @@ pub struct Device {
     pub binding: Binding,
     pub protection: Protection,
     #[serde(default)]
+    pub saved: bool,
+    #[serde(default)]
     pub retired_bindings: Vec<Binding>,
     #[serde(default = "enabled")]
     pub auto_reconnect: bool,
@@ -120,6 +122,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn unverified_v2_preferences_do_not_claim_a_saved_password() {
+        let fixture = serde_json::json!({"version":1,"devices":[{"binding":{"device":uuid::Uuid::new_v4(),"host":"mac.local","port":5900,"authentication":"mac_account","username":"fixture"},"protection":"quick"}]});
+        let preferences = Preferences::parse(&serde_json::to_vec(&fixture).unwrap()).unwrap();
+        assert!(!preferences.devices[0].saved);
+        let mut verified = preferences.clone();
+        verified.devices[0].saved = true;
+        assert!(
+            Preferences::parse(&serde_json::to_vec(&verified).unwrap())
+                .unwrap()
+                .devices[0]
+                .saved
+        );
+        assert!(
+            !String::from_utf8(serde_json::to_vec(&verified).unwrap())
+                .unwrap()
+                .contains("password")
+        );
+    }
+    #[test]
     fn historical_bindings_cannot_cross_devices_or_grow_unbounded() {
         let binding = Binding {
             device: uuid::Uuid::new_v4(),
@@ -131,6 +152,7 @@ mod tests {
         let mut device = Device {
             binding: binding.clone(),
             protection: Protection::Quick,
+            saved: false,
             retired_bindings: vec![binding.clone(); 33],
             auto_reconnect: true,
             streaming: None,
@@ -187,6 +209,7 @@ mod tests {
         let d = Device {
             binding: b,
             protection: Protection::Quick,
+            saved: false,
             retired_bindings: Vec::new(),
             auto_reconnect: true,
             streaming: None,
