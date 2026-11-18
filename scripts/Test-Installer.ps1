@@ -43,7 +43,7 @@ function Set-Fixture([string]$Version, [byte]$Marker) {
 function Receive-MacCanvasBytes($Client, [uri]$Uri, [long]$Maximum) {
     Assert-MacCanvasUrl $Uri
     if ($Uri.DnsSafeHost -eq 'api.github.com') {
-        Assert-Test ($Uri.AbsolutePath.StartsWith('/repos/bluemoonandy/maccanvas/releases/')) 'installer metadata stays on the fork'
+        if (-not $Uri.AbsolutePath.StartsWith('/repos/bluemoonandy/maccanvas/releases/')) { throw 'Installer metadata left the fork repository.' }
         return ,[Text.Encoding]::UTF8.GetBytes(($script:release | ConvertTo-Json -Depth 8))
     }
     if ($Uri.AbsolutePath.EndsWith('/SHA256SUMS.txt')) { return ,$script:checksums }
