@@ -52,7 +52,7 @@ export component App inherits Window {
     icon: @image-url("../assets/logo.svg");
     preferred-width: 1240px;
     preferred-height: 820px;
-    min-width: 820px;
+    min-width: 760px;
     min-height: 560px;
     default-font-family: "Segoe UI";
     default-font-size: 14px;
@@ -267,11 +267,11 @@ export component App inherits Window {
                     icon: @image-url("../assets/sidebar.svg"); quiet: !root.sidebar-open;
                     clicked => { root.sidebar-open = !root.sidebar-open; root.save-preferences(); }
                 }
-                Image { source: @image-url("../assets/logo.svg"); width: 40px; height: 40px; }
-                VerticalLayout {
+                Image { source: @image-url("../assets/logo.svg"); width: 32px; height: 32px; }
+                if !root.connected : VerticalLayout {
                     spacing: 0px;
                     Text { text: "MacCanvas"; color: root.ink; font-size: 19px; font-weight: 700; }
-                    Text { text: "A little closer to your Mac."; color: root.muted; font-size: 11px; }
+                    if !root.connected : Text { text: "A little closer to your Mac."; color: root.muted; font-size: 11px; }
                 }
                 Rectangle { horizontal-stretch: 1; background: transparent; }
                 if root.connected : Button { text: "Quality"; icon: @image-url("../assets/tune.svg"); accessible-label: "Stream quality"; clicked => { root.quality-open = true; root.release-input(); } }
@@ -296,10 +296,11 @@ export component App inherits Window {
                 border-radius: 20px;
                 clip: true;
                 background: transparent;
-                GlassPanel {
+                Rectangle {
                     width: parent.width;
                     height: parent.height;
-                    radius: sidebar.border-radius;
+                    background: root.connected ? root.panel : transparent;
+                    border-radius: sidebar.border-radius;
                     opacity: min(1, sidebar.width / 240px);
                     visible: sidebar.width > 1px;
                     manager := Rectangle {
@@ -349,7 +350,7 @@ export component App inherits Window {
                                 Text { text: "Try another name or address. Your saved Macs are still here."; color: root.muted; wrap: word-wrap; }
                             }
                             if root.machines.length > 0 : grid := ScrollView {
-                                private property <int> columns: self.visible-width >= 1008px ? 3 : (self.visible-width >= 656px ? 2 : 1);
+                                private property <int> columns: self.visible-width >= 1008px ? 3 : (self.visible-width >= 720px ? 2 : 1);
                                 private property <length> card-width: min(420px, (self.visible-width - (self.columns - 1) * 16px) / self.columns);
                                 horizontal-scrollbar-policy: always-off;
                                 content-width: self.visible-width;
@@ -499,8 +500,8 @@ export component App inherits Window {
                         animate opacity { duration: root.motion-enabled ? 500ms : 0ms; }
                     }
                 }
-                Text { text: root.status; color: root.ink; font-size: 12px; overflow: elide; vertical-alignment: center; horizontal-stretch: 1; }
-                if root.connected : Text { text: root.active-encoding; color: root.muted; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                Text { text: root.status; color: root.ink; font-size: 12px; min-width: 0px; overflow: elide; vertical-alignment: center; horizontal-stretch: 1; }
+                if root.connected : Text { max-width: 180px; min-width: 0px; text: root.active-encoding; color: root.muted; font-size: 12px; vertical-alignment: center; overflow: elide; }
                 if root.connected : Text { text: "IN " + root.download-rate + "   OUT " + root.upload-rate; color: root.muted; font-size: 12px; vertical-alignment: center; }
                 if root.connected && root.show-fps : Text { accessible-label: "Live FPS: " + root.fps-text; text: root.fps-text; color: root.ink; font-family: "Consolas"; font-size: 12px; vertical-alignment: center; }
                 if !root.connected : Text { text: "v" + root.app-version; color: root.muted; font-size: 11px; vertical-alignment: center; }
