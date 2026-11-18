@@ -264,11 +264,16 @@ try {
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'More actions for MacBook Pro'),
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button)
     )
+    $groupCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Group)
     do {
         $rows = $window.FindAll([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
-        if ($rows.Count -ne 1) { Start-Sleep -Milliseconds 50 }
-    } while ($rows.Count -ne 1 -and [DateTime]::UtcNow -lt $deadline)
-    if ($rows.Count -ne 1) { throw 'Filtered device list did not publish one stable device row.' }
+        # MacBook's button already exists before filtering. Wait for the old cards
+        # to leave the tree so its queued Invoke cannot target a replaced row.
+        $cards = @($window.FindAll([Windows.Automation.TreeScope]::Descendants, $groupCondition) | Where-Object { $_.Current.Name.StartsWith('Mac: ') })
+        $filtered = $rows.Count -eq 1 -and $cards.Count -eq 1 -and $cards[0].Current.Name -ceq 'Mac: MacBook Pro'
+        if (-not $filtered) { Start-Sleep -Milliseconds 50 }
+    } while (-not $filtered -and [DateTime]::UtcNow -lt $deadline)
+    if (-not $filtered) { throw 'Filtered device list did not publish one stable device row.' }
     $details = $rows.Item(0)
     Invoke-Control 'More actions for MacBook Pro'
     Invoke-Control 'Edit Mac'
