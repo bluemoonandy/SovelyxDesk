@@ -149,7 +149,7 @@ export component App inherits Window {
     in property <string> files-error;
     in property <string> files-progress-label;
     in property <float> files-progress;
-    out property <bool> modal-open: native-files-open || editor-open || settings-open || quality-open || help-open || about-open || clipboard-open || files-open || audio-open || update-installing;
+    out property <bool> modal-open: display-open || native-files-open || editor-open || settings-open || quality-open || help-open || about-open || clipboard-open || files-open || audio-open || update-installing;
     out property <bool> canvas-focused: remote-focus.has-focus;
     in property <bool> update-checking: false;
     in property <bool> update-available: false;
@@ -185,6 +185,13 @@ export component App inherits Window {
     in property <[CodecGuide]> codec-guide;
     in property <string> estimate-context;
     in-out property <bool> quality-open: false;
+    in-out property <bool> display-open: false;
+    in-out property <int> display-mode: 0;
+    in property <bool> display-can-pan: false;
+    in-out property <bool> pan-view: false;
+    callback display-mode-changed(int);
+    callback pan-step(float, float);
+    callback pan-pointer(float, float, PointerEvent);
     in-out property <bool> help-open: false;
     in-out property <bool> confirm-delete: false;
     out property <float> canvas-width: canvas.width / 1px;
@@ -258,6 +265,7 @@ export component App inherits Window {
     }
     changed motion-enabled => { GlassTheme.motion = root.motion-enabled; }
     changed glass-enabled => { GlassTheme.effects = root.glass-enabled; }
+    changed pan-view => { root.release-input(); }
     changed canvas-width => { root.canvas-resized(); }
     changed canvas-height => { root.canvas-resized(); }
     changed encoding-index => { root.quality-changed(); }
@@ -297,6 +305,7 @@ export component App inherits Window {
                 }
                 Rectangle { horizontal-stretch: 1; background: transparent; }
                 if root.connected : Button { text: "Quality"; icon: @image-url("../assets/tune.svg"); accessible-label: "Stream quality"; clicked => { root.quality-open = true; root.release-input(); } }
+                if root.connected : Button { text: "Display"; accessible-label: "Display scaling"; clicked => { root.release-input(); root.display-open = true; } }
                 if root.connected : Button { icon: @image-url("../assets/audio.svg"); accessible-label: "Audio playback"; quiet: root.audio-muted; clicked => { root.audio-open = true; root.release-input(); } }
                 if root.connected : Button { icon: @image-url("../assets/clipboard.svg"); accessible-label: "Clipboard sharing"; quiet: true; clicked => { root.open-clipboard(); } }
                 if root.connected : Button { icon: @image-url("../assets/folder.svg"); accessible-label: "File transfer"; quiet: !root.files-connected; clicked => { root.open-files(); } }
@@ -506,15 +515,16 @@ export component App inherits Window {
                         remote-pointer := TouchArea {
                             private property <bool> over-video: self.mouse-x >= root.draw-left * 1px && self.mouse-y >= root.draw-top * 1px && self.mouse-x < (root.draw-left + root.draw-width) * 1px && self.mouse-y < (root.draw-top + root.draw-height) * 1px;
                             enabled: root.connected;
-                            mouse-cursor: self.over-video && (root.remote-cursor-ready || root.remote-cursor-hidden) ? MouseCursor.none : MouseCursor.default;
+                            mouse-cursor: !root.pan-view && self.over-video && (root.remote-cursor-ready || root.remote-cursor-hidden) ? MouseCursor.none : MouseCursor.default;
                             pointer-event(event) => {
                                 if event.kind == PointerEventKind.down { remote-focus.focus(); }
-                                root.pointer-event(self.mouse-x / 1px, self.mouse-y / 1px, event);
+                                if root.pan-view { root.pan-pointer(self.mouse-x / 1px, self.mouse-y / 1px, event); }
+                                else { root.pointer-event(self.mouse-x / 1px, self.mouse-y / 1px, event); }
                             }
-                            scroll-event(event) => { root.wheel-event(self.mouse-x / 1px, self.mouse-y / 1px, event); return EventResult.accept; }
+                            scroll-event(event) => { if !root.pan-view { root.wheel-event(self.mouse-x / 1px, self.mouse-y / 1px, event); } return EventResult.accept; }
                         }
                     }
-                    if root.connected && !root.modal-open && root.remote-cursor-ready && remote-pointer.has-hover && remote-pointer.over-video : Image {
+                    if root.connected && !root.modal-open && !root.pan-view && root.remote-cursor-ready && remote-pointer.has-hover && remote-pointer.over-video : Image {
                         source: root.remote-cursor-image;
                         x: remote-pointer.mouse-x - root.remote-cursor-hotspot-x * root.remote-cursor-zoom * 1px;
                         y: remote-pointer.mouse-y - root.remote-cursor-hotspot-y * root.remote-cursor-zoom * 1px;
@@ -530,6 +540,16 @@ export component App inherits Window {
                             TrafficPlot { width: 78px; samples: root.traffic; motion: root.motion-enabled; }
                             if root.show-fps : Text { text: root.fps-text; color: #ffffff; font-size: 12px; vertical-alignment: center; }
                         }
+                    }
+                    if root.immersive : Button {
+                        x: parent.width - 280px; y: 12px; width: 100px; height: 32px;
+                        text: "Display"; accessible-label: "Display scaling";
+                        clicked => { root.release-input(); root.display-open = true; }
+                    }
+                    if root.pan-view : Button {
+                        x: 12px; y: parent.height - 48px; width: 220px; height: 36px;
+                        text: "Pan on · Stop panning"; accessible-label: "Stop local panning"; primary: true;
+                        clicked => { root.pan-view = false; }
                     }
                     if root.immersive : Button {
                         x: parent.width - self.width - 12px; y: 12px;
@@ -725,6 +745,44 @@ export component App inherits Window {
                         }
                     }
                 }
+            }
+        }
+    }
+    if root.display-open : Rectangle {
+        background: root.dark-theme ? #00000099 : #00000033;
+        TouchArea { clicked => { root.display-open = false; } }
+        GlassPanel {
+            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+            width: min(530px, parent.width - 48px); height: min(500px, parent.height - 48px);
+            radius: 24px; raised: true;
+            TouchArea { }
+            VerticalLayout {
+                padding: 24px; spacing: 12px;
+                HorizontalLayout {
+                    Text { text: "Display"; color: root.ink; font-size: 22px; font-weight: 600; }
+                    Button { text: "Done"; accessible-label: "Close display settings"; clicked => { root.display-open = false; } }
+                }
+                Caption { text: "LOCAL DISPLAY SCALE"; }
+                ComboBox {
+                    accessible-label: "Display scale";
+                    model: ["Fit to Window", "Actual Size (1:1 physical pixels)", "100% of Fit", "125% of Fit", "150% of Fit", "175% of Fit", "200% of Fit"];
+                    current-index <=> root.display-mode;
+                    selected => { root.display-mode-changed(self.current-index); }
+                }
+                Text { text: "Zoom enlarges the fitted view and may crop the edges. It does not change the Mac resolution. Actual Size maps one decoded pixel to one Windows physical pixel."; color: root.muted; font-size: 12px; wrap: word-wrap; }
+                HorizontalLayout {
+                    Button { text: "Fit to Window"; accessible-label: "Reset display to Fit"; clicked => { root.display-mode-changed(0); root.pan-view = false; } }
+                    Button { text: root.pan-view ? "Pan on" : "Drag to pan"; accessible-label: "Toggle local pan"; enabled: root.display-can-pan; primary: root.pan-view; clicked => { root.pan-view = !root.pan-view; root.display-open = false; } }
+                }
+                HorizontalLayout {
+                    alignment: center; spacing: 6px;
+                    Button { text: "←"; accessible-label: "Pan view left"; enabled: root.display-can-pan; clicked => { root.pan-step(-0.25, 0); } }
+                    Button { text: "↑"; accessible-label: "Pan view up"; enabled: root.display-can-pan; clicked => { root.pan-step(0, -0.25); } }
+                    Button { text: "Center"; accessible-label: "Center display view"; enabled: root.display-can-pan; clicked => { root.pan-step(0, 0); } }
+                    Button { text: "↓"; accessible-label: "Pan view down"; enabled: root.display-can-pan; clicked => { root.pan-step(0, 0.25); } }
+                    Button { text: "→"; accessible-label: "Pan view right"; enabled: root.display-can-pan; clicked => { root.pan-step(0.25, 0); } }
+                }
+                Text { text: root.pan-view ? "Pan mode: dragging moves only the local view. Turn Pan off to click or drag on the Mac." : "Use the Pan button to drag the enlarged view, or use the arrow buttons above. Saved separately for each Mac."; color: root.muted; font-size: 12px; wrap: word-wrap; }
             }
         }
     }

@@ -54,6 +54,14 @@ impl Rect {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ViewScale {
+    #[default]
+    Fit,
+    Actual,
+    Zoom(u16),
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Viewport {
     pub source: Extent,
@@ -65,10 +73,22 @@ pub struct Viewport {
     // Physical output size for CPU resampling; GPU images keep their decoded size.
     pub pixels: Extent,
     dpi: f64,
+    canvas: (f32, f32),
 }
 
 impl Viewport {
     pub fn fit(source: Extent, width: f32, height: f32, dpi: f32) -> Result<Self> {
+        Self::scaled(source, width, height, dpi, ViewScale::Fit, (0.0, 0.0))
+    }
+
+    pub fn scaled(
+        source: Extent,
+        width: f32,
+        height: f32,
+        dpi: f32,
+        scale: ViewScale,
+        pan: (f32, f32),
+    ) -> Result<Self> {
         if !width.is_finite()
             || !height.is_finite()
             || !dpi.is_finite()
@@ -81,6 +101,17 @@ impl Viewport {
         let dpi = f64::from(dpi);
         let factor = (f64::from(width) * dpi / f64::from(source.width))
             .min(f64::from(height) * dpi / f64::from(source.height));
+        let factor = match scale {
+            ViewScale::Fit => factor,
+            ViewScale::Actual => 1.0,
+            ViewScale::Zoom(percent) if matches!(percent, 100 | 125 | 150 | 175 | 200) => {
+                factor * f64::from(percent) / 100.0
+            }
+            ViewScale::Zoom(_) => return Err(Error::Display("Unsupported display zoom".into())),
+        };
+        if !pan.0.is_finite() || !pan.1.is_finite() {
+            return Err(Error::Display("Invalid display pan".into()));
+        }
         let pixels = Extent::new(
             (f64::from(source.width) * factor).floor().max(1.0) as u32,
             (f64::from(source.height) * factor).floor().max(1.0) as u32,
@@ -89,13 +120,31 @@ impl Viewport {
         let draw_height = (f64::from(pixels.height) / dpi) as f32;
         Ok(Self {
             source,
-            left: (width - draw_width) / 2.0,
-            top: (height - draw_height) / 2.0,
+            left: (width - draw_width) / 2.0
+                - pan.0.clamp(-1.0, 1.0) * (draw_width - width).max(0.0) / 2.0,
+            top: (height - draw_height) / 2.0
+                - pan.1.clamp(-1.0, 1.0) * (draw_height - height).max(0.0) / 2.0,
             width: draw_width,
             height: draw_height,
             pixels,
             dpi,
+            canvas: (width, height),
         })
+    }
+
+    /// Dragging the view moves content with the pointer; normalized offsets survive DPI changes.
+    pub fn pan_after_drag(self, pan: (f32, f32), dx: f32, dy: f32) -> (f32, f32) {
+        let shift = |current: f32, delta: f32, overflow: f32| {
+            if overflow > 0.0 && delta.is_finite() {
+                (current - 2.0 * delta / overflow).clamp(-1.0, 1.0)
+            } else {
+                0.0
+            }
+        };
+        (
+            shift(pan.0, dx, self.width - self.canvas.0),
+            shift(pan.1, dy, self.height - self.canvas.1),
+        )
     }
 
     pub fn to_remote(self, x: f32, y: f32, dragging: bool) -> Option<(u16, u16)> {
@@ -103,7 +152,11 @@ impl Viewport {
             return None;
         }
         if !dragging
-            && (x < self.left
+            && (x < 0.0
+                || y < 0.0
+                || x >= self.canvas.0
+                || y >= self.canvas.1
+                || x < self.left
                 || y < self.top
                 || x >= self.left + self.width
                 || y >= self.top + self.height)
@@ -227,6 +280,89 @@ mod tests {
             previous = next;
         }
         assert_eq!(previous, initial);
+    }
+
+    #[test]
+    fn zoom_enlarges_fit_at_every_dpi_without_changing_source() {
+        let source = Extent::new(1920, 1080).unwrap();
+        for dpi in [1.0, 1.5, 2.0] {
+            let fit = Viewport::fit(source, 1440.0, 900.0, dpi).unwrap();
+            for percent in [100, 125, 150, 175, 200] {
+                let zoom = Viewport::scaled(
+                    source,
+                    1440.0,
+                    900.0,
+                    dpi,
+                    ViewScale::Zoom(percent),
+                    (0.0, 0.0),
+                )
+                .unwrap();
+                assert_eq!(zoom.source, source);
+                assert!((zoom.width - fit.width * percent as f32 / 100.0).abs() < 1.1 / dpi);
+                assert!((zoom.height - fit.height * percent as f32 / 100.0).abs() < 1.1 / dpi);
+                let center = zoom.to_remote(720.0, 450.0, false).unwrap();
+                assert!((i32::from(center.0) - 960).abs() <= 1);
+                assert!((i32::from(center.1) - 540).abs() <= 1);
+            }
+        }
+    }
+
+    #[test]
+    fn actual_size_is_one_source_pixel_per_physical_pixel() {
+        let source = Extent::new(1920, 1080).unwrap();
+        for dpi in [1.0, 1.5, 2.0] {
+            let view = Viewport::scaled(source, 1440.0, 900.0, dpi, ViewScale::Actual, (0.0, 0.0))
+                .unwrap();
+            assert_eq!(view.pixels, source);
+            assert!((view.width * dpi - 1920.0).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn pan_changes_mapping_and_never_exposes_empty_space() {
+        let source = Extent::new(1920, 1080).unwrap();
+        let center =
+            Viewport::scaled(source, 1000.0, 600.0, 2.0, ViewScale::Zoom(200), (0.0, 0.0)).unwrap();
+        let top_left = Viewport::scaled(
+            source,
+            1000.0,
+            600.0,
+            2.0,
+            ViewScale::Zoom(200),
+            (-1.0, -1.0),
+        )
+        .unwrap();
+        let bottom_right =
+            Viewport::scaled(source, 1000.0, 600.0, 2.0, ViewScale::Zoom(200), (1.0, 1.0)).unwrap();
+        assert_eq!((top_left.left, top_left.top), (0.0, 0.0));
+        assert_eq!(bottom_right.left + bottom_right.width, 1000.0);
+        assert_eq!(bottom_right.top + bottom_right.height, 600.0);
+        assert!(
+            bottom_right.to_remote(500.0, 300.0, false).unwrap().0
+                > center.to_remote(500.0, 300.0, false).unwrap().0
+        );
+        assert_eq!(bottom_right.to_remote(1000.0, 300.0, false), None);
+        assert_eq!(center.to_remote(-1.0, 300.0, false), None);
+        assert!(center.to_remote(-1.0, 300.0, true).is_some());
+    }
+
+    #[test]
+    fn local_drag_pan_is_bounded_and_fit_has_no_pan() {
+        let source = Extent::new(1920, 1080).unwrap();
+        let fit = Viewport::fit(source, 1000.0, 600.0, 2.0).unwrap();
+        assert_eq!(fit.pan_after_drag((0.0, 0.0), 100.0, 100.0), (0.0, 0.0));
+        let zoom =
+            Viewport::scaled(source, 1000.0, 600.0, 2.0, ViewScale::Zoom(200), (0.0, 0.0)).unwrap();
+        assert_eq!(
+            zoom.pan_after_drag((0.0, 0.0), 5000.0, -5000.0),
+            (-1.0, 1.0)
+        );
+        assert!(
+            Viewport::scaled(source, 1000.0, 600.0, 2.0, ViewScale::Zoom(999), (0.0, 0.0)).is_err()
+        );
+        assert!(
+            Viewport::scaled(source, 1000.0, 600.0, 2.0, ViewScale::Fit, (f32::NAN, 0.0)).is_err()
+        );
     }
 
     #[test]

@@ -23,6 +23,8 @@ using System.Text;
 using System.Runtime.InteropServices;
 public static class MacCanvasScreenshot {
     [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] public struct Point { public int X, Y; }
+    [DllImport("user32.dll")] public static extern bool ScreenToClient(IntPtr h, ref Point point);
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out Rect r);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags);
@@ -155,6 +157,7 @@ try {
             $choices = switch ($Name) {
                 'Login method' { @('Mac account', 'VNC password') }
                 'Credential protection' { @('Quick Connect', 'Windows Hello', 'Manual') }
+                'Display scale' { @('Fit to Window', 'Actual Size (1:1 physical pixels)', '100% of Fit', '125% of Fit', '150% of Fit', '175% of Fit', '200% of Fit') }
                 default { throw "No fixture choices for combo: $Name" }
             }
             $index = [Array]::IndexOf($choices, $Value)
@@ -309,9 +312,43 @@ try {
         $null = Find-Control 'Disconnect'
         Start-Sleep -Seconds 1
         Capture-OwnedWindow (Join-Path $images "connected$suffix.png")
+        Invoke-Control 'Display scaling'
+        Set-Control 'Display scale' '150% of Fit'
+        Invoke-Control 'Pan view right'
+        $displayPath = Join-Path $temporary 'display-v1.json'
+        $display = Get-Content -LiteralPath $displayPath -Raw | ConvertFrom-Json
+        $zoom = @($display.devices | Where-Object { $_.view.mode.zoom -eq 150 })
+        if ($zoom.Count -ne 1 -or $zoom[0].view.pan[0] -le 0) { throw 'Zoom and pan were not saved per device.' }
+        Capture-OwnedWindow (Join-Path $images "display-zoom-menu$suffix.png")
+        Invoke-Control 'Toggle local pan'
+        $desktop = (Find-Control 'Remote desktop').Current.BoundingRectangle
+        $point = [MacCanvasScreenshot+Point]::new()
+        $point.X = [int]($desktop.Left + $desktop.Width / 2)
+        $point.Y = [int]($desktop.Top + $desktop.Height / 2)
+        if (-not [MacCanvasScreenshot]::ScreenToClient($handle, [ref]$point)) { throw 'Cannot map fixture pan point.' }
+        $position = [long]$point.X -bor ([long]$point.Y -shl 16)
+        $null = [MacCanvasScreenshot]::PostMessage($handle, 0x201, [IntPtr]1, [IntPtr]$position)
+        Start-Sleep -Milliseconds 100
+        $position = [long]($point.X + 30) -bor ([long]$point.Y -shl 16)
+        $null = [MacCanvasScreenshot]::PostMessage($handle, 0x200, [IntPtr]1, [IntPtr]$position)
+        Start-Sleep -Milliseconds 100
+        $null = [MacCanvasScreenshot]::PostMessage($handle, 0x202, [IntPtr]0, [IntPtr]$position)
+        Start-Sleep -Milliseconds 250
+        $panned = Get-Content -LiteralPath $displayPath -Raw | ConvertFrom-Json
+        if ($panned.devices[0].view.pan[0] -ge $zoom[0].view.pan[0]) { throw 'Drag did not move the local view with the pointer.' }
+        Invoke-Control 'Stop local panning'
+        Capture-OwnedWindow (Join-Path $images "display-zoomed$suffix.png")
         Invoke-Control 'Full screen'
         Capture-OwnedWindow (Join-Path $images "fullscreen$suffix.png")
+        Invoke-Control 'Display scaling'
+        if ((Find-Control 'Display scale').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne '150% of Fit') { throw 'Fullscreen did not retain the display mode.' }
+        Set-Control 'Display scale' 'Actual Size (1:1 physical pixels)'
+        Invoke-Control 'Reset display to Fit'
+        Invoke-Control 'Close display settings'
         Invoke-Control 'Exit full screen'
+        $requests = @(Get-Content -LiteralPath (Join-Path $temporary 'audit\log.json') | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.event_name -eq 'session.connection.requested' })
+        if ($requests.Count -ne 2) { throw 'Local zoom/fullscreen unexpectedly restarted the video session.' }
+        Write-Output 'Display Zoom/Actual/Fit, saved pan, fullscreen retention and no reconnect: PASS'
         Invoke-Control 'Disconnect'
         $null = Find-Control 'Search saved Macs'
         Write-Output 'Loopback failure/retry, remote desktop, fullscreen and disconnect: PASS'

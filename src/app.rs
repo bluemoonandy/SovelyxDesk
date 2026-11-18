@@ -1,3 +1,5 @@
+mod display_preferences;
+mod display_ui;
 mod files_ui;
 mod login_ui;
 mod native_clipboard;
@@ -85,6 +87,8 @@ struct State {
     renderer: Renderer,
     ticket: u64,
     layout: (f32, f32, f32),
+    display: display_preferences::Store,
+    pan_drag: Option<(f32, f32, (f32, f32), Viewport)>,
     buttons: u8,
     pointer: (u16, u16),
     pending_pointer: Option<(u16, u16)>,
@@ -415,7 +419,13 @@ fn refresh_layout(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
         let Some(size) = state.source_size else {
             return Ok(());
         };
-        let viewport = Viewport::fit(size, width, height, dpi)?;
+        let display = state
+            .connection_profile
+            .as_ref()
+            .map(|p| state.display.view(p.id))
+            .unwrap_or_default();
+        let viewport =
+            Viewport::scaled(size, width, height, dpi, display.mode.scale(), display.pan)?;
         // Only record geometry changes, never every video frame. These are the same
         // logical coordinates consumed by the Image and the pointer/wheel handlers.
         if state.viewport != Some(viewport) || state.layout != (width, height, dpi) {
@@ -435,7 +445,9 @@ fn refresh_layout(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
                 "display.viewport.logical_px": [width, height],
                 "display.frame.source_px": [size.width, size.height],
                 "display.image.current_source_px": [app.get_frame_image().size().width, app.get_frame_image().size().height],
-                "display.fit.logical_per_source_px": [viewport.width / size.width as f32, viewport.height / size.height as f32],
+                "display.mode": display.mode,
+                "display.pan.normalized": [display.pan.0, display.pan.1],
+                "display.scale.logical_per_source_px": [viewport.width / size.width as f32, viewport.height / size.height as f32],
                 "display.render.logical_xywh": [viewport.left, viewport.top, viewport.width, viewport.height],
                 "display.render.physical_px": [viewport.pixels.width, viewport.pixels.height],
                 "display.input": "canvas logical px -> shared render rectangle -> source px; padding rejected; active drag clamped",
@@ -474,6 +486,20 @@ fn refresh_layout(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
     app.set_draw_top(viewport.top);
     app.set_draw_width(viewport.width);
     app.set_draw_height(viewport.height);
+    let mode = {
+        let state = state.borrow();
+        state
+            .connection_profile
+            .as_ref()
+            .map(|p| state.display.view(p.id).mode)
+            .unwrap_or_default()
+    };
+    app.set_display_mode(mode.index());
+    let can_pan = viewport.width > width || viewport.height > height;
+    app.set_display_can_pan(can_pan);
+    if !can_pan {
+        app.set_pan_view(false);
+    }
     let scaling = if state.borrow().gpu_renderer {
         "GPU fit"
     } else {
@@ -497,6 +523,8 @@ fn disconnect(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
         state.files.stop(app);
     }
     app.set_files_open(false);
+    app.set_display_open(false);
+    app.set_pan_view(false);
     result
 }
 
@@ -628,6 +656,7 @@ fn close_stream(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
         state.gpu_frame = None;
         state.source_size = None;
         state.viewport = None;
+        state.pan_drag = None;
         state.monitor = Monitor::new(Instant::now());
         state.frame_number = 0;
         state.last_displayed_frame = 0;
@@ -1452,6 +1481,8 @@ pub fn run(
         renderer: Renderer::new(),
         ticket: 0,
         layout: (0.0, 0.0, 0.0),
+        display: display_preferences::Store::load(directory.join("display-v1.json")),
+        pan_drag: None,
         buttons: 0,
         pointer: (0, 0),
         pending_pointer: None,
@@ -2030,6 +2061,7 @@ pub fn run(
             notify(&app, error);
         }
     });
+    display_ui::register(&app, &state);
     let weak = app.as_weak();
     let layout_state = state.clone();
     app.on_canvas_resized(move || {
@@ -2075,6 +2107,16 @@ pub fn run(
     let pointer_state = state.clone();
     app.on_pointer_event(move |x, y, event| {
         let Some(app) = weak.upgrade() else { return };
+        let layout = (
+            app.get_canvas_width(),
+            app.get_canvas_height(),
+            app.window().scale_factor(),
+        );
+        let layout_changed = layout != pointer_state.borrow().layout;
+        if layout_changed && let Err(error) = refresh_layout(&app, &pointer_state) {
+            notify(&app, error);
+            return;
+        }
         let result = (|| -> Result<()> {
             let mut state = pointer_state.borrow_mut();
             let Some(viewport) = state.viewport else {
@@ -2119,6 +2161,16 @@ pub fn run(
     let wheel_state = state.clone();
     app.on_wheel_event(move |x, y, event| {
         let Some(app) = weak.upgrade() else { return };
+        let layout = (
+            app.get_canvas_width(),
+            app.get_canvas_height(),
+            app.window().scale_factor(),
+        );
+        let layout_changed = layout != wheel_state.borrow().layout;
+        if layout_changed && let Err(error) = refresh_layout(&app, &wheel_state) {
+            notify(&app, error);
+            return;
+        }
         let result = (|| -> Result<()> {
             let mut state = wheel_state.borrow_mut();
             let Some(viewport) = state.viewport else {
