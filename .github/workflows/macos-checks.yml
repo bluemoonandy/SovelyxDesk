@@ -1,0 +1,31 @@
+name: macOS protocol checks (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mac-clipboard:
+    # Use the Intel pool: the default ARM pool repeatedly failed to allocate a runner.
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Set up the pinned Rust toolchain
+        run: rustup show
+      - name: Test portable HEVC bitstream and display geometry
+        run: |
+          rustc --edition=2024 --test -D warnings scripts/test_hevc_bitstream.rs -o "$RUNNER_TEMP/hevc-bitstream-tests"
+          "$RUNNER_TEMP/hevc-bitstream-tests"
+      - name: Test HEVC diagnostics and unchanged pacing behavior
+        run: |
+          rustc --edition=2024 --test -D warnings scripts/test_hevc_diagnostics.rs -o "$RUNNER_TEMP/hevc-diagnostics-tests"
+          "$RUNNER_TEMP/hevc-diagnostics-tests"
+      - name: Verify the native macOS Unicode clipboard helpers
+        run: python3 scripts/test_macos_clipboard.py
+      - name: Verify native Apple audio conformance encoding
+        run: |
+          clang -std=c11 -O2 scripts/generate_macos_audio_fixture.c -framework AudioToolbox -framework AudioUnit -framework CoreAudio -o "$RUNNER_TEMP/native-audio-fixture"
+          cd "$RUNNER_TEMP"
+          ./native-audio-fixture stereo.aaceld

@@ -18,24 +18,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  mac-clipboard:
-    # Fork releases are dispatched from the working branch to reuse its validated CI cache.
-    if: github.repository == 'false00/maccanvas' || github.event_name == 'workflow_dispatch'
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          ref: ${{ github.event.inputs.tag || github.ref_name }}
-      - name: Verify the native macOS Unicode clipboard helpers
-        run: python3 scripts/test_macos_clipboard.py
-      - name: Verify native Apple audio conformance encoding
-        run: |
-          clang -std=c11 -O2 scripts/generate_macos_audio_fixture.c -framework AudioToolbox -framework AudioUnit -framework CoreAudio -o "$RUNNER_TEMP/native-audio-fixture"
-          cd "$RUNNER_TEMP"
-          ./native-audio-fixture stereo.aaceld
   release:
     if: github.repository == 'false00/maccanvas' || github.event_name == 'workflow_dispatch'
-    needs: mac-clipboard
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803

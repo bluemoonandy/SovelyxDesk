@@ -1,4 +1,4 @@
-name: Windows checks
+name: Windows x64 tests and Release
 
 on:
   push:
@@ -10,27 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  mac-clipboard:
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-      - name: Set up the pinned Rust toolchain
-        run: rustup show
-      - name: Test portable HEVC bitstream and display geometry
-        run: |
-          rustc --edition=2024 --test -D warnings scripts/test_hevc_bitstream.rs -o "$RUNNER_TEMP/hevc-bitstream-tests"
-          "$RUNNER_TEMP/hevc-bitstream-tests"
-      - name: Test HEVC diagnostics and unchanged pacing behavior
-        run: |
-          rustc --edition=2024 --test -D warnings scripts/test_hevc_diagnostics.rs -o "$RUNNER_TEMP/hevc-diagnostics-tests"
-          "$RUNNER_TEMP/hevc-diagnostics-tests"
-      - name: Verify the native macOS Unicode clipboard helpers
-        run: python3 scripts/test_macos_clipboard.py
-      - name: Verify native Apple audio conformance encoding
-        run: |
-          clang -std=c11 -O2 scripts/generate_macos_audio_fixture.c -framework AudioToolbox -framework AudioUnit -framework CoreAudio -o "$RUNNER_TEMP/native-audio-fixture"
-          cd "$RUNNER_TEMP"
-          ./native-audio-fixture stereo.aaceld
   check:
     runs-on: windows-latest
     steps:
@@ -67,15 +46,11 @@ jobs:
           .\scripts\Test-Installer.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Build Windows x64 diagnostic debug executable
+      - name: Build executable for UI checks
         shell: pwsh
         run: |
           cargo build --locked
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          New-Item -ItemType Directory -Force diagnostic-dist | Out-Null
-          Copy-Item target\x86_64-pc-windows-msvc\debug\maccanvas.exe diagnostic-dist\MacCanvas-diagnostics-debug-windows-x64.exe
-          $hash = (Get-FileHash diagnostic-dist\MacCanvas-diagnostics-debug-windows-x64.exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  MacCanvas-diagnostics-debug-windows-x64.exe" | Set-Content diagnostic-dist\SHA256SUMS.txt
       - name: Verify login UI themes and scale factors
         shell: pwsh
         run: |
@@ -86,18 +61,11 @@ jobs:
             .\scripts\Capture-Readme.ps1 -Executable $exe -PreviewTheme light -ScaleFactor $scale -OutputDirectory "$env:RUNNER_TEMP\login-ui"
           }
       - name: Export login UI screenshots
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: MacCanvas-login-ui-${{ github.sha }}
+          name: UI-check-screenshots-${{ github.sha }}
           path: ${{ runner.temp }}/login-ui/*.png
-          if-no-files-found: error
-          retention-days: 14
-      - name: Export Windows x64 diagnostic debug executable
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: MacCanvas-diagnostics-debug-windows-x64-${{ github.sha }}
-          path: diagnostic-dist/*
           if-no-files-found: error
           retention-days: 14
       - name: Build and package Windows x64 executables
@@ -115,7 +83,11 @@ jobs:
       - name: Export verified Windows x64 package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: MacCanvas-windows-x64-${{ github.sha }}
-          path: dist/*
+          name: MacCanvas-Release-windows-x64-${{ github.sha }}
+          path: |
+            dist/MacCanvas-windows-x64.exe
+            dist/MacCanvas-audio-windows-x64.exe
+            dist/MacCanvas-audio-NOTICES.txt
+            dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
