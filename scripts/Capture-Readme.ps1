@@ -126,7 +126,20 @@ try {
         return $element
     }
     function Invoke-Control([string]$Name) {
-        (Find-Control $Name).GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+        $nameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $Name)
+        $typeCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button)
+        $condition = [Windows.Automation.AndCondition]::new($nameCondition, $typeCondition)
+        $deadline = [DateTime]::UtcNow.AddSeconds(5)
+        $invoke = $null
+        do {
+            $button = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
+            if ($null -ne $button -and $button.Current.IsEnabled -and
+                $button.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) { break }
+            $invoke = $null
+            Start-Sleep -Milliseconds 50
+        } while ([DateTime]::UtcNow -lt $deadline)
+        if ($null -eq $invoke) { throw "Invokable button not found: $Name" }
+        $invoke.Invoke()
         Start-Sleep -Milliseconds 250
     }
     function Set-Control([string]$Name, [string]$Value) {
@@ -221,7 +234,7 @@ try {
     )
     $details = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
     if ($null -eq $details) { throw 'Saved-machine details button was not found.' }
-    $details.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Invoke-Control 'More actions for Studio Mac mini'
     Invoke-Control 'Edit Mac'
     Start-Sleep -Milliseconds 400
     $passwordCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac password')
@@ -247,14 +260,17 @@ try {
     if ($null -eq $search -or -not $search.Current.IsEnabled) { throw 'Saved-Mac list did not become enabled after closing the editor.' }
     $search.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue('MacBook')
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
-    $buttonCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'More actions for MacBook Pro')
+    $buttonCondition = [Windows.Automation.AndCondition]::new(
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'More actions for MacBook Pro'),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button)
+    )
     do {
         $rows = $window.FindAll([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
         if ($rows.Count -ne 1) { Start-Sleep -Milliseconds 50 }
     } while ($rows.Count -ne 1 -and [DateTime]::UtcNow -lt $deadline)
     if ($rows.Count -ne 1) { throw 'Filtered device list did not publish one stable device row.' }
     $details = $rows.Item(0)
-    $details.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Invoke-Control 'More actions for MacBook Pro'
     Invoke-Control 'Edit Mac'
     $addressCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac address')
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
@@ -299,7 +315,7 @@ try {
  } catch {
     if ($handle -ne [IntPtr]::Zero -and -not $process.HasExited) {
         Capture-OwnedWindow (Join-Path $images ("failure-$PreviewTheme-$ScaleFactor.png"))
-        foreach ($label in @('Details', 'Close connection editor', 'Mac address', 'Search saved Macs')) {
+        foreach ($label in @('More actions for MacBook Pro', 'Edit Mac', 'Close connection editor', 'Mac address', 'Search saved Macs')) {
             $condition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $label)
             $matches = $window.FindAll([Windows.Automation.TreeScope]::Descendants, $condition)
             Write-Output ("UI fixture control: {0}; count: {1}" -f $label, $matches.Count)
