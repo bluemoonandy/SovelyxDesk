@@ -161,10 +161,10 @@ jobs:
           $captureExe = Join-Path $captureExeDir 'maccanvas.exe'
           $captureOutput = Join-Path $env:RUNNER_TEMP 'complete-ui'
           foreach ($language in @('en','zh-CN')) {
-            python scripts/test_device_session_ui.py --executable $captureExe --output $captureOutput --language $language --window-width 1000 --window-height 700
+            python scripts/test_device_session_ui.py --executable $captureExe --output $captureOutput --language $language --window-width 1000 --window-height 760
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-          $metadata = @{ build_commit=$sourceRun.headSha; source_run=$env:CAPTURE_RUN; executable_sha256=(Get-FileHash -LiteralPath $captureExe -Algorithm SHA256).Hash.ToLowerInvariant(); build_type='debug UI; same source commit as verified Release'; requested_window='1000x700' }
+          $metadata = @{ build_commit=$sourceRun.headSha; source_run=$env:CAPTURE_RUN; executable_sha256=(Get-FileHash -LiteralPath $captureExe -Algorithm SHA256).Hash.ToLowerInvariant(); build_type='debug UI; same source commit as verified Release'; requested_window='1000x760' }
           $metadata | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $captureOutput 'capture-source.json') -Encoding utf8
       - name: Export complete bilingual screenshots
         if: always()

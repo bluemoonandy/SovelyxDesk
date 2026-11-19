@@ -162,12 +162,15 @@ try {
         $comboCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ComboBox)
         $typeCondition = [Windows.Automation.OrCondition]::new($editCondition, $comboCondition)
         $condition = [Windows.Automation.AndCondition]::new($nameCondition, $typeCondition)
+        $enabledCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::IsEnabledProperty, $true)
+        $condition = [Windows.Automation.AndCondition]::new($condition, $enabledCondition)
         $deadline = [DateTime]::UtcNow.AddSeconds(5)
         do {
             $control = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
             if ($null -eq $control) { Start-Sleep -Milliseconds 50 }
         } while ($null -eq $control -and [DateTime]::UtcNow -lt $deadline)
         if ($null -eq $control) { throw "Editable control not found: $Name" }
+        if ($Name -in @('Language','Display scale') -and $control.Current.BoundingRectangle.Height -gt 48 * [double]$ScaleFactor) { throw "Selector stretched vertically: $Name" }
         if ($control.Current.ControlType -eq [Windows.Automation.ControlType]::ComboBox) {
             # Cupertino ComboBox does not apply UIA SetValue; use its public arrow-key interaction.
             $choices = switch ($Name) {
