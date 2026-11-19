@@ -765,6 +765,7 @@ export component App inherits Window {
                 Caption { text: "LOCAL DISPLAY SCALE"; }
                 ComboBox {
                     accessible-label: "Display scale";
+                    height: 36px; min-height: 36px; max-height: 36px; vertical-stretch: 0;
                     model: ["Fit to Window", "Actual Size (1:1 physical pixels)", "100% of Fit", "125% of Fit", "150% of Fit", "175% of Fit", "200% of Fit"];
                     current-index <=> root.display-mode;
                     selected => { root.display-mode-changed(self.current-index); }
