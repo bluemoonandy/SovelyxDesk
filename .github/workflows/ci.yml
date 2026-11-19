@@ -39,6 +39,10 @@ jobs:
       - name: Validate Rust and installer
         shell: pwsh
         run: |
+          python scripts/check_brand.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/translations.py --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cargo fmt --all -- --check
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cargo fmt --manifest-path crates\audio-codec-tool\Cargo.toml -- --check
@@ -80,6 +84,14 @@ jobs:
       - name: Verify loopback connection states and full screen
         shell: pwsh
         run: python scripts/test_device_session_ui.py --executable target/x86_64-pc-windows-msvc/debug/maccanvas.exe --output "$env:RUNNER_TEMP/login-ui"
+      - name: Verify Chinese UI and live language switching
+        shell: pwsh
+        run: |
+          python scripts/test_device_session_ui.py --executable target/x86_64-pc-windows-msvc/debug/maccanvas.exe --language zh-CN --output "$env:RUNNER_TEMP/login-ui"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($scale in @('1', '1.25', '1.5', '2')) {
+            .\scripts\Capture-Readme.ps1 -Language zh-CN -PreviewTheme light -ScaleFactor $scale -OutputDirectory "$env:RUNNER_TEMP\login-ui"
+          }
       - name: Export login UI screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -109,11 +121,7 @@ jobs:
         if: github.ref_name != 'codex/p2-ui-device-management' || inputs.build_release
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: MacCanvas-Release-windows-x64-${{ github.sha }}
-          path: |
-            dist/MacCanvas-windows-x64.exe
-            dist/MacCanvas-audio-windows-x64.exe
-            dist/MacCanvas-audio-NOTICES.txt
-            dist/SHA256SUMS.txt
+          name: Sovelyx-Desk-windows-x64-${{ github.sha }}
+          path: dist/*
           if-no-files-found: error
           retention-days: 14

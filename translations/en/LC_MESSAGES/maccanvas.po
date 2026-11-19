@@ -1,0 +1,2358 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "ui"
+msgid "   OUT "
+msgstr "   OUT "
+
+msgctxt "ui"
+msgid "  -  Apple encrypted session"
+msgstr "  -  Apple encrypted session"
+
+msgctxt "ui"
+msgid "  -  SSH / SFTP"
+msgstr "  -  SSH / SFTP"
+
+msgctxt "ui"
+msgid " Socket cleanup also reported: {error}"
+msgstr " Socket cleanup also reported: {error}"
+
+msgctxt "ui"
+msgid " in"
+msgstr " in"
+
+msgctxt "ui"
+msgid " is ready"
+msgstr " is ready"
+
+msgctxt "ui"
+msgid " saved Macs"
+msgstr " saved Macs"
+
+msgctxt "ui"
+msgid " to "
+msgstr " to "
+
+msgctxt "ui"
+msgid " · Fork development build"
+msgstr " · Fork development build"
+
+msgctxt "ui"
+msgid "+ Add Mac"
+msgstr "+ Add Mac"
+
+msgctxt "ui"
+msgid "+ Add another Mac"
+msgstr "+ Add another Mac"
+
+msgctxt "ui"
+msgid ". Uses the encrypted session; no SSH login is required."
+msgstr ". Uses the encrypted session; no SSH login is required."
+
+msgctxt "ui"
+msgid "0 = less CPU, potentially more traffic. 9 = more CPU, potentially fewer bytes. This is a server hint, not a bitrate."
+msgstr "0 = less CPU, potentially more traffic. 9 = more CPU, potentially fewer bytes. This is a server hint, not a bitrate."
+
+msgctxt "ui"
+msgid "0 FPS"
+msgstr "0 FPS"
+
+msgctxt "ui"
+msgid "0.0 kbps"
+msgstr "0.0 kbps"
+
+msgctxt "ui"
+msgid "100% of Fit"
+msgstr "100% of Fit"
+
+msgctxt "ui"
+msgid "125% of Fit"
+msgstr "125% of Fit"
+
+msgctxt "ui"
+msgid "150% of Fit"
+msgstr "150% of Fit"
+
+msgctxt "ui"
+msgid "175% of Fit"
+msgstr "175% of Fit"
+
+msgctxt "ui"
+msgid "200% of Fit"
+msgstr "200% of Fit"
+
+msgctxt "ui"
+msgid "@false00"
+msgstr "@false00"
+
+msgctxt "ui"
+msgid "A connection is already active"
+msgstr "A connection is already active"
+
+msgctxt "ui"
+msgid "A little closer to your Mac."
+msgstr "A little closer to your Mac."
+
+msgctxt "ui"
+msgid "A moment closer."
+msgstr "A moment closer."
+
+msgctxt "ui"
+msgid "A native Windows window is required"
+msgstr "A native Windows window is required"
+
+msgctxt "ui"
+msgid "A new version is available. The download will be verified before installation. Saved Macs and logins stay."
+msgstr "A new version is available. The download will be verified before installation. Saved Macs and logins stay."
+
+msgctxt "ui"
+msgid "A previous file worker is still stopping"
+msgstr "A previous file worker is still stopping"
+
+msgctxt "ui"
+msgid "ABOUT & UPDATES"
+msgstr "ABOUT & UPDATES"
+
+msgctxt "ui"
+msgid "AGPL-3.0 license"
+msgstr "AGPL-3.0 license"
+
+msgctxt "ui"
+msgid "About"
+msgstr "About"
+
+msgctxt "ui"
+msgid "About MacCanvas"
+msgstr "About MacCanvas"
+
+msgctxt "ui"
+msgid "Actual Size (1:1 physical pixels)"
+msgstr "Actual Size (1:1 physical pixels)"
+
+msgctxt "ui"
+msgid "Adaptive bitrate is the default. A manual ceiling requests your chosen Mbps from the Mac; static screens and encoder limits can lower the actual rate, and bursts may exceed it. Compression, JPEG quality and the VNC bandwidth target do not apply. Apply reconnects when changing transports, HEVC presets or the bitrate ceiling; saved logins require Windows Hello again."
+msgstr "Adaptive bitrate is the default. A manual ceiling requests your chosen Mbps from the Mac; static screens and encoder limits can lower the actual rate, and bursts may exceed it. Compression, JPEG quality and the VNC bandwidth target do not apply. Apply reconnects when changing transports, HEVC presets or the bitrate ceiling; saved logins require Windows Hello again."
+
+msgctxt "ui"
+msgid "Adaptive video bitrate"
+msgstr "Adaptive video bitrate"
+
+msgctxt "ui"
+msgid "Add Your First Mac"
+msgstr "Add Your First Mac"
+
+msgctxt "ui"
+msgid "Add a Mac"
+msgstr "Add a Mac"
+
+msgctxt "ui"
+msgid "Add your first Mac to get started."
+msgstr "Add your first Mac to get started."
+
+msgctxt "ui"
+msgid "Allow file transfers in this session"
+msgstr "Allow file transfers in this session"
+
+msgctxt "ui"
+msgid "Also delete saved credentials"
+msgstr "Also delete saved credentials"
+
+msgctxt "ui"
+msgid "Apple HEVC uses encrypted control and SRTP video. Standard VNC traffic is not encrypted; use a trusted network or VPN for remote access."
+msgstr "Apple HEVC uses encrypted control and SRTP video. Standard VNC traffic is not encrypted; use a trusted network or VPN for remote access."
+
+msgctxt "ui"
+msgid "Apple High Performance HEVC/H.265 at up to 30 FPS. Lower stream and decoding load than 60 FPS; preserves the Mac's physical desktop. Requires Mac account login and UDP on the VNC port and the next port. A native decoder is bundled; no codec extension is needed. Apply reconnects automatically when needed. Use Clipboard for encrypted text sharing."
+msgstr "Apple High Performance HEVC/H.265 at up to 30 FPS. Lower stream and decoding load than 60 FPS; preserves the Mac's physical desktop. Requires Mac account login and UDP on the VNC port and the next port. A native decoder is bundled; no codec extension is needed. Apply reconnects automatically when needed. Use Clipboard for encrypted text sharing."
+
+msgctxt "ui"
+msgid "Application update notification"
+msgstr "Application update notification"
+
+msgctxt "ui"
+msgid "Apply"
+msgstr "Apply"
+
+msgctxt "ui"
+msgid "Audio codec installed."
+msgstr "Audio codec installed."
+
+msgctxt "ui"
+msgid "Audio installation stopped unexpectedly"
+msgstr "Audio installation stopped unexpectedly"
+
+msgctxt "ui"
+msgid "Audio is available with HEVC."
+msgstr "Audio is available with HEVC."
+
+msgctxt "ui"
+msgid "Audio playback"
+msgstr "Audio playback"
+
+msgctxt "ui"
+msgid "Audio uses an optional, separately licensed AAC converter. Enabling audio downloads and verifies it from the official release. No system codec extension is installed."
+msgstr "Audio uses an optional, separately licensed AAC converter. Enabling audio downloads and verifies it from the official release. No system codec extension is installed."
+
+msgctxt "ui"
+msgid "Audio volume"
+msgstr "Audio volume"
+
+msgctxt "ui"
+msgid "Audio volume must be between 0 and 100"
+msgstr "Audio volume must be between 0 and 100"
+
+msgctxt "ui"
+msgid "Audio: {error}"
+msgstr "Audio: {error}"
+
+msgctxt "ui"
+msgid "Authentication, password protection and automatic reconnection are configured per Mac. Choose Edit on a device card."
+msgstr "Authentication, password protection and automatic reconnection are configured per Mac. Choose Edit on a device card."
+
+msgctxt "ui"
+msgid "Auto (lossless VNC)"
+msgstr "Auto (lossless VNC)"
+
+msgctxt "ui"
+msgid "Auto (lossless)"
+msgstr "Auto (lossless)"
+
+msgctxt "ui"
+msgid "Auto Sync Clipboard"
+msgstr "Auto Sync Clipboard"
+
+msgctxt "ui"
+msgid "Auto sync text limit must be 1–1048576 UTF-8 bytes"
+msgstr "Auto sync text limit must be 1–1048576 UTF-8 bytes"
+
+msgctxt "ui"
+msgid "Automatic (no target)"
+msgstr "Automatic (no target)"
+
+msgctxt "ui"
+msgid "Automatic clipboard preferences are too large"
+msgstr "Automatic clipboard preferences are too large"
+
+msgctxt "ui"
+msgid "Automatic means no bandwidth target. A manual target spaces screen requests based on received bytes; bursts can exceed it. Apply reconnects automatically when switching to or from HEVC. Other VNC changes apply live."
+msgstr "Automatic means no bandwidth target. A manual target spaces screen requests based on received bytes; bursts can exceed it. Apply reconnects automatically when switching to or from HEVC. Other VNC changes apply live."
+
+msgctxt "ui"
+msgid "Automatically reconnect after an interrupted session"
+msgstr "Automatically reconnect after an interrupted session"
+
+msgctxt "ui"
+msgid "BASIC INFORMATION"
+msgstr "BASIC INFORMATION"
+
+msgctxt "ui"
+msgid "BUILD DETAILS"
+msgstr "BUILD DETAILS"
+
+msgctxt "ui"
+msgid "Back to quality"
+msgstr "Back to quality"
+
+msgctxt "ui"
+msgid "Bandwidth target Mbps"
+msgstr "Bandwidth target Mbps"
+
+msgctxt "ui"
+msgid "Bandwidth target must be 0.1-1000 Mbps"
+msgstr "Bandwidth target must be 0.1-1000 Mbps"
+
+msgctxt "ui"
+msgid "Built by "
+msgstr "Built by "
+
+msgctxt "ui"
+msgid "Built: "
+msgstr "Built: "
+
+msgctxt "ui"
+msgid "CLIPBOARD"
+msgstr "CLIPBOARD"
+
+msgctxt "ui"
+msgid "CONNECTION"
+msgstr "CONNECTION"
+
+msgctxt "ui"
+msgid "CREDENTIAL PROTECTION"
+msgstr "CREDENTIAL PROTECTION"
+
+msgctxt "ui"
+msgid "Cancel"
+msgstr "Cancel"
+
+msgctxt "ui"
+msgid "Cancel operation"
+msgstr "Cancel operation"
+
+msgctxt "ui"
+msgid "Cancel transfer"
+msgstr "Cancel transfer"
+
+msgctxt "ui"
+msgid "Cancelling and cleaning up temporary files..."
+msgstr "Cancelling and cleaning up temporary files..."
+
+msgctxt "ui"
+msgid "Cancelling native file transfer…"
+msgstr "Cancelling native file transfer…"
+
+msgctxt "ui"
+msgid "Cannot encode automatic clipboard preferences"
+msgstr "Cannot encode automatic clipboard preferences"
+
+msgctxt "ui"
+msgid "Cannot open the Mac folder \"{path}\". {error}"
+msgstr "Cannot open the Mac folder \"{path}\". {error}"
+
+msgctxt "ui"
+msgid "Center"
+msgstr "Center"
+
+msgctxt "ui"
+msgid "Center display view"
+msgstr "Center display view"
+
+msgctxt "ui"
+msgid "Check updates"
+msgstr "Check updates"
+
+msgctxt "ui"
+msgid "Checking for updates on launch..."
+msgstr "Checking for updates on launch..."
+
+msgctxt "ui"
+msgid "Checking the latest official release..."
+msgstr "Checking the latest official release..."
+
+msgctxt "ui"
+msgid "Checking…"
+msgstr "Checking…"
+
+msgctxt "ui"
+msgid "Checks for updates on every launch."
+msgstr "Checks for updates on every launch."
+
+msgctxt "ui"
+msgid "Chinese"
+msgstr "Chinese"
+
+msgctxt "ui"
+msgid "Choose Windows destination…"
+msgstr "Choose Windows destination…"
+
+msgctxt "ui"
+msgid "Choose a saved Mac or add a new connection."
+msgstr "Choose a saved Mac or add a new connection."
+
+msgctxt "ui"
+msgid "Choose a supported compression method"
+msgstr "Choose a supported compression method"
+
+msgctxt "ui"
+msgid "Choose a supported login method"
+msgstr "Choose a supported login method"
+
+msgctxt "ui"
+msgid "Choose file…"
+msgstr "Choose file…"
+
+msgctxt "ui"
+msgid "Choose folder…"
+msgstr "Choose folder…"
+
+msgctxt "ui"
+msgid "Clear"
+msgstr "Clear"
+
+msgctxt "ui"
+msgid "Clear search"
+msgstr "Clear search"
+
+msgctxt "ui"
+msgid "Clipboard"
+msgstr "Clipboard"
+
+msgctxt "ui"
+msgid "Clipboard image worker failed"
+msgstr "Clipboard image worker failed"
+
+msgctxt "ui"
+msgid "Clipboard sharing"
+msgstr "Clipboard sharing"
+
+msgctxt "ui"
+msgid "Clipboard: {error}"
+msgstr "Clipboard: {error}"
+
+msgctxt "ui"
+msgid "Close"
+msgstr "Close"
+
+msgctxt "ui"
+msgid "Close connection editor"
+msgstr "Close connection editor"
+
+msgctxt "ui"
+msgid "Close display settings"
+msgstr "Close display settings"
+
+msgctxt "ui"
+msgid "Close licenses"
+msgstr "Close licenses"
+
+msgctxt "ui"
+msgid "CoRRE (legacy)"
+msgstr "CoRRE (legacy)"
+
+msgctxt "ui"
+msgid "CoRRE: compact RRE subrectangles. A legacy low-CPU choice for small simple regions; poor for modern photo-heavy desktops."
+msgstr "CoRRE: compact RRE subrectangles. A legacy low-CPU choice for small simple regions; poor for modern photo-heavy desktops."
+
+msgctxt "ui"
+msgid "Commit: "
+msgstr "Commit: "
+
+msgctxt "ui"
+msgid "Compare methods & bandwidth estimates"
+msgstr "Compare methods & bandwidth estimates"
+
+msgctxt "ui"
+msgid "Compare this fingerprint on the Mac before trusting it. A changed key is always blocked. No saved password is read or sent before the key is accepted."
+msgstr "Compare this fingerprint on the Mac before trusting it. A changed key is always blocked. No saved password is read or sent before the key is accepted."
+
+msgctxt "ui"
+msgid "Completed file transfer location"
+msgstr "Completed file transfer location"
+
+msgctxt "ui"
+msgid "Compression and JPEG quality must be between 0 and 9"
+msgstr "Compression and JPEG quality must be between 0 and 9"
+
+msgctxt "ui"
+msgid "Compression effort"
+msgstr "Compression effort"
+
+msgctxt "ui"
+msgid "Compression effort: "
+msgstr "Compression effort: "
+
+msgctxt "ui"
+msgid "Compression, explained"
+msgstr "Compression, explained"
+
+msgctxt "ui"
+msgid "Confirm saving this password, or choose Do not save"
+msgstr "Confirm saving this password, or choose Do not save"
+
+msgctxt "ui"
+msgid "Connect"
+msgstr "Connect"
+
+msgctxt "ui"
+msgid "Connect SSH first"
+msgstr "Connect SSH first"
+
+msgctxt "ui"
+msgid "Connect securely"
+msgstr "Connect securely"
+
+msgctxt "ui"
+msgid "Connect to Mac"
+msgstr "Connect to Mac"
+
+msgctxt "ui"
+msgid "Connect to a Mac first"
+msgstr "Connect to a Mac first"
+
+msgctxt "ui"
+msgid "Connect to a Mac to manage clipboard sharing from the toolbar."
+msgstr "Connect to a Mac to manage clipboard sharing from the toolbar."
+
+msgctxt "ui"
+msgid "Connect to your Mac first"
+msgstr "Connect to your Mac first"
+
+msgctxt "ui"
+msgid "Connect to your Mac's screen first"
+msgstr "Connect to your Mac's screen first"
+
+msgctxt "ui"
+msgid "Connect with HEVC before retrying audio"
+msgstr "Connect with HEVC before retrying audio"
+
+msgctxt "ui"
+msgid "Connect with the new password to change a saved login"
+msgstr "Connect with the new password to change a saved login"
+
+msgctxt "ui"
+msgid "Connected"
+msgstr "Connected"
+
+msgctxt "ui"
+msgid "Connected Mac: "
+msgstr "Connected Mac: "
+
+msgctxt "ui"
+msgid "Connected to {0} ({1})"
+msgstr "Connected to {0} ({1})"
+
+msgctxt "ui"
+msgid "Connected to {0} ({server_name})"
+msgstr "Connected to {0} ({server_name})"
+
+msgctxt "ui"
+msgid "Connected to {host} ({name})"
+msgstr "Connected to {host} ({name})"
+
+msgctxt "ui"
+msgid "Connected — automatic text sync active"
+msgstr "Connected — automatic text sync active"
+
+msgctxt "ui"
+msgid "Connecting…"
+msgstr "Connecting…"
+
+msgctxt "ui"
+msgid "Connection error: {error}"
+msgstr "Connection error: {error}"
+
+msgctxt "ui"
+msgid "Connection failed"
+msgstr "Connection failed"
+
+msgctxt "ui"
+msgid "Connection interrupted. Reconnecting in {0}s (attempt {attempt}); Cancel to stop."
+msgstr "Connection interrupted. Reconnecting in {0}s (attempt {attempt}); Cancel to stop."
+
+msgctxt "ui"
+msgid "Connection interrupted: {error}"
+msgstr "Connection interrupted: {error}"
+
+msgctxt "ui"
+msgid "Connection status indicator"
+msgstr "Connection status indicator"
+
+msgctxt "ui"
+msgid "Consolas"
+msgstr "Consolas"
+
+msgctxt "ui"
+msgid "Copy Mac text"
+msgstr "Copy Mac text"
+
+msgctxt "ui"
+msgid "Could not check for updates. {error}"
+msgstr "Could not check for updates. {error}"
+
+msgctxt "ui"
+msgid "Could not finish the update. {error}"
+msgstr "Could not finish the update. {error}"
+
+msgctxt "ui"
+msgid "Could not refresh application shortcuts. {error}"
+msgstr "Could not refresh application shortcuts. {error}"
+
+msgctxt "ui"
+msgid "Could not remove the saved login"
+msgstr "Could not remove the saved login"
+
+msgctxt "ui"
+msgid "Could not start clipboard worker: {error}"
+msgstr "Could not start clipboard worker: {error}"
+
+msgctxt "ui"
+msgid "Could not start file worker"
+msgstr "Could not start file worker"
+
+msgctxt "ui"
+msgid "Credential and connection status: "
+msgstr "Credential and connection status: "
+
+msgctxt "ui"
+msgid "Credential protection"
+msgstr "Credential protection"
+
+msgctxt "ui"
+msgid "Ctrl shortcuts act as Command"
+msgstr "Ctrl shortcuts act as Command"
+
+msgctxt "ui"
+msgid "Ctrl+V sends Windows text when pasting into your Mac. Incoming Mac text can replace your Windows clipboard while the viewer is active. Clipboard contents are never logged."
+msgstr "Ctrl+V sends Windows text when pasting into your Mac. Incoming Mac text can replace your Windows clipboard while the viewer is active. Clipboard contents are never logged."
+
+msgctxt "ui"
+msgid "DISPLAY & QUALITY"
+msgstr "DISPLAY & QUALITY"
+
+msgctxt "ui"
+msgid "Default: Apple High Performance HEVC/H.265 at up to 60 FPS. Smoother motion with higher decoding and bandwidth use. Uses the same physical Mac desktop, encrypted control and SRTP video, with native decoding and software fallback. Requires a compatible Mac, Mac account login and UDP on both media ports. Apply reconnects automatically when needed."
+msgstr "Default: Apple High Performance HEVC/H.265 at up to 60 FPS. Smoother motion with higher decoding and bandwidth use. Uses the same physical Mac desktop, encrypted control and SRTP video, with native decoding and software fallback. Requires a compatible Mac, Mac account login and UDP on both media ports. Apply reconnects automatically when needed."
+
+msgctxt "ui"
+msgid "Default: HEVC / H.265 at up to 60 FPS, with adaptive bitrate."
+msgstr "Default: HEVC / H.265 at up to 60 FPS, with adaptive bitrate."
+
+msgctxt "ui"
+msgid "Default: HEVC / H.265, adaptive bitrate, up to 60 FPS."
+msgstr "Default: HEVC / H.265, adaptive bitrate, up to 60 FPS."
+
+msgctxt "ui"
+msgid "Device details are saved; the password is not persisted."
+msgstr "Device details are saved; the password is not persisted."
+
+msgctxt "ui"
+msgid "Device details saved. Connect once to verify and save a new password."
+msgstr "Device details saved. Connect once to verify and save a new password."
+
+msgctxt "ui"
+msgid "Device name"
+msgstr "Device name"
+
+msgctxt "ui"
+msgid "Disconnect"
+msgstr "Disconnect"
+
+msgctxt "ui"
+msgid "Disconnect SSH"
+msgstr "Disconnect SSH"
+
+msgctxt "ui"
+msgid "Disconnect before changing this Mac's details."
+msgstr "Disconnect before changing this Mac's details."
+
+msgctxt "ui"
+msgid "Disconnect from the Mac and wait for SSH cleanup before updating and restarting"
+msgstr "Disconnect from the Mac and wait for SSH cleanup before updating and restarting"
+
+msgctxt "ui"
+msgid "Disconnect when you're ready to install and restart. Your saved Macs and logins will stay."
+msgstr "Disconnect when you're ready to install and restart. Your saved Macs and logins will stay."
+
+msgctxt "ui"
+msgid "Dismiss"
+msgstr "Dismiss"
+
+msgctxt "ui"
+msgid "Display"
+msgstr "Display"
+
+msgctxt "ui"
+msgid "Display preference device limit reached"
+msgstr "Display preference device limit reached"
+
+msgctxt "ui"
+msgid "Display preferences exceed the size limit"
+msgstr "Display preferences exceed the size limit"
+
+msgctxt "ui"
+msgid "Display scale"
+msgstr "Display scale"
+
+msgctxt "ui"
+msgid "Display scaling"
+msgstr "Display scaling"
+
+msgctxt "ui"
+msgid "Display: {error}"
+msgstr "Display: {error}"
+
+msgctxt "ui"
+msgid "Done"
+msgstr "Done"
+
+msgctxt "ui"
+msgid "Download complete in a new folder at the chosen location. Existing files were not replaced."
+msgstr "Download complete in a new folder at the chosen location. Existing files were not replaced."
+
+msgctxt "ui"
+msgid "Downloading and verifying the audio codec..."
+msgstr "Downloading and verifying the audio codec..."
+
+msgctxt "ui"
+msgid "Downloading audio..."
+msgstr "Downloading audio..."
+
+msgctxt "ui"
+msgid "Downloading to the selected Windows folder…"
+msgstr "Downloading to the selected Windows folder…"
+
+msgctxt "ui"
+msgid "Downloading {0}%..."
+msgstr "Downloading {0}%..."
+
+msgctxt "ui"
+msgid "Downloads are saved in a new folder. Existing files are not replaced. Links are unsupported; each transfer is limited to 256 MiB."
+msgstr "Downloads are saved in a new folder. Existing files are not replaced. Links are unsupported; each transfer is limited to 256 MiB."
+
+msgctxt "ui"
+msgid "Drag to pan"
+msgstr "Drag to pan"
+
+msgctxt "ui"
+msgid "Duplicate SSH host-key endpoint"
+msgstr "Duplicate SSH host-key endpoint"
+
+msgctxt "ui"
+msgid "Duplicate machine identifier"
+msgstr "Duplicate machine identifier"
+
+msgctxt "ui"
+msgid "Edit Mac"
+msgstr "Edit Mac"
+
+msgctxt "ui"
+msgid "Edit Mac connection"
+msgstr "Edit Mac connection"
+
+msgctxt "ui"
+msgid "Enable audio"
+msgstr "Enable audio"
+
+msgctxt "ui"
+msgid "Enable native Apple sharing (clipboard and files)"
+msgstr "Enable native Apple sharing (clipboard and files)"
+
+msgctxt "ui"
+msgid "Enable native sharing, file transfers and the selected direction first"
+msgstr "Enable native sharing, file transfers and the selected direction first"
+
+msgctxt "ui"
+msgid "Enabling or retrying audio reconnects an active HEVC stream automatically. Saved logins require Windows Hello again."
+msgstr "Enabling or retrying audio reconnects an active HEVC stream automatically. Saved logins require Windows Hello again."
+
+msgctxt "ui"
+msgid "Encrypted Apple clipboard: establishing baseline"
+msgstr "Encrypted Apple clipboard: establishing baseline"
+
+msgctxt "ui"
+msgid "Encrypted SFTP. No files are automatically opened or replaced."
+msgstr "Encrypted SFTP. No files are automatically opened or replaced."
+
+msgctxt "ui"
+msgid "Encrypted SSH clipboard (optional fallback)"
+msgstr "Encrypted SSH clipboard (optional fallback)"
+
+msgctxt "ui"
+msgid "English"
+msgstr "English"
+
+msgctxt "ui"
+msgid "Enter a Mac folder path to browse."
+msgstr "Enter a Mac folder path to browse."
+
+msgctxt "ui"
+msgid "Enter a bandwidth target in Mbps, for example 10 or 0.5"
+msgstr "Enter a bandwidth target in Mbps, for example 10 or 0.5"
+
+msgctxt "ui"
+msgid "Enter a host/IP and a separate port (1-65535)"
+msgstr "Enter a host/IP and a separate port (1-65535)"
+
+msgctxt "ui"
+msgid "Enter a password"
+msgstr "Enter a password"
+
+msgctxt "ui"
+msgid "Enter a password without NUL characters"
+msgstr "Enter a password without NUL characters"
+
+msgctxt "ui"
+msgid "Enter an HEVC bitrate in Mbps, for example 25 or 0.5"
+msgstr "Enter an HEVC bitrate in Mbps, for example 25 or 0.5"
+
+msgctxt "ui"
+msgid "Enter an absolute Mac path without dot components"
+msgstr "Enter an absolute Mac path without dot components"
+
+msgctxt "ui"
+msgid "Enter an existing absolute Mac folder. Each upload creates a new transfer folder inside it."
+msgstr "Enter an existing absolute Mac folder. Each upload creates a new transfer folder inside it."
+
+msgctxt "ui"
+msgid "Enter different credentials"
+msgstr "Enter different credentials"
+
+msgctxt "ui"
+msgid "Enter the password again before changing the address, port or login method. Existing credentials will not be sent to a different endpoint."
+msgstr "Enter the password again before changing the address, port or login method. Existing credentials will not be sent to a different endpoint."
+
+msgctxt "ui"
+msgid "Enter the password for this device"
+msgstr "Enter the password for this device"
+
+msgctxt "ui"
+msgid "Enter the password to change credential protection"
+msgstr "Enter the password to change credential protection"
+
+msgctxt "ui"
+msgid "Enter the password to configure this login"
+msgstr "Enter the password to configure this login"
+
+msgctxt "ui"
+msgid "Enter your Mac password once to enable quick connection"
+msgstr "Enter your Mac password once to enable quick connection"
+
+msgctxt "ui"
+msgid "Error — disable VNC sharing before starting automatic SSH sync"
+msgstr "Error — disable VNC sharing before starting automatic SSH sync"
+
+msgctxt "ui"
+msgid "Error — {error}"
+msgstr "Error — {error}"
+
+msgctxt "ui"
+msgid "Exit full screen"
+msgstr "Exit full screen"
+
+msgctxt "ui"
+msgid "Experimental Apple clipboard — disabled"
+msgstr "Experimental Apple clipboard — disabled"
+
+msgctxt "ui"
+msgid "FPS counts unique desktop images submitted for display, not monitor refreshes. An idle desktop correctly reads 0 FPS. Traffic measures VNC, HEVC/audio SRTP and SSH payloads in bits/s, excluding TCP/UDP/VPN overhead."
+msgstr "FPS counts unique desktop images submitted for display, not monitor refreshes. An idle desktop correctly reads 0 FPS. Traffic measures VNC, HEVC/audio SRTP and SSH payloads in bits/s, excluding TCP/UDP/VPN overhead."
+
+msgctxt "ui"
+msgid "File"
+msgstr "File"
+
+msgctxt "ui"
+msgid "File (size unavailable)"
+msgstr "File (size unavailable)"
+
+msgctxt "ui"
+msgid "File data uploaded; file URLs queued on encrypted control — verify by pasting on the Mac"
+msgstr "File data uploaded; file URLs queued on encrypted control — verify by pasting on the Mac"
+
+msgctxt "ui"
+msgid "File download: {error}"
+msgstr "File download: {error}"
+
+msgctxt "ui"
+msgid "File staging cache exceeds 1 GiB"
+msgstr "File staging cache exceeds 1 GiB"
+
+msgctxt "ui"
+msgid "File transfer"
+msgstr "File transfer"
+
+msgctxt "ui"
+msgid "File transfer cancelled"
+msgstr "File transfer cancelled"
+
+msgctxt "ui"
+msgid "File transfer completed by the Mac; open the selected folder. No clipboard publication was attempted."
+msgstr "File transfer completed by the Mac; open the selected folder. No clipboard publication was attempted."
+
+msgctxt "ui"
+msgid "File transfer: {error}"
+msgstr "File transfer: {error}"
+
+msgctxt "ui"
+msgid "File transfer: {message}"
+msgstr "File transfer: {message}"
+
+msgctxt "ui"
+msgid "File upload: {error}"
+msgstr "File upload: {error}"
+
+msgctxt "ui"
+msgid "File worker failed"
+msgstr "File worker failed"
+
+msgctxt "ui"
+msgid "Files"
+msgstr "Files"
+
+msgctxt "ui"
+msgid "Finish or cancel the current connection before applying stream settings"
+msgstr "Finish or cancel the current connection before applying stream settings"
+
+msgctxt "ui"
+msgid "Finish the application update before connecting"
+msgstr "Finish the application update before connecting"
+
+msgctxt "ui"
+msgid "Fit to Window"
+msgstr "Fit to Window"
+
+msgctxt "ui"
+msgid "Folder"
+msgstr "Folder"
+
+msgctxt "ui"
+msgid "For a trusted PC. Programs running as your Windows user may access these credentials. Quick mode adds no separate hardware protection."
+msgstr "For a trusted PC. Programs running as your Windows user may access these credentials. Quick mode adds no separate hardware protection."
+
+msgctxt "ui"
+msgid "Frame queue is unavailable"
+msgstr "Frame queue is unavailable"
+
+msgctxt "ui"
+msgid "Frame rate limit"
+msgstr "Frame rate limit"
+
+msgctxt "ui"
+msgid "Full screen"
+msgstr "Full screen"
+
+msgctxt "ui"
+msgid "GENERAL"
+msgstr "GENERAL"
+
+msgctxt "ui"
+msgid "GPU fit"
+msgstr "GPU fit"
+
+msgctxt "ui"
+msgid "GitHub profile"
+msgstr "GitHub profile"
+
+msgctxt "ui"
+msgid "Go"
+msgstr "Go"
+
+msgctxt "ui"
+msgid "HEVC / H.265"
+msgstr "HEVC / H.265"
+
+msgctxt "ui"
+msgid "HEVC / H.265 - 30 FPS"
+msgstr "HEVC / H.265 - 30 FPS"
+
+msgctxt "ui"
+msgid "HEVC / H.265 - 60 FPS"
+msgstr "HEVC / H.265 - 60 FPS"
+
+msgctxt "ui"
+msgid "HEVC / H.265 - 60 FPS (default)"
+msgstr "HEVC / H.265 - 60 FPS (default)"
+
+msgctxt "ui"
+msgid "HEVC bitrate (Mbps)"
+msgstr "HEVC bitrate (Mbps)"
+
+msgctxt "ui"
+msgid "HEVC bitrate Mbps"
+msgstr "HEVC bitrate Mbps"
+
+msgctxt "ui"
+msgid "HEVC bitrate must be between 0.000001 and 4294.967295 Mbps"
+msgstr "HEVC bitrate must be between 0.000001 and 4294.967295 Mbps"
+
+msgctxt "ui"
+msgid "HEVC requires Mac account login. Choose a lossless VNC mode in Quality to use a classic VNC password."
+msgstr "HEVC requires Mac account login. Choose a lossless VNC mode in Quality to use a classic VNC password."
+
+msgctxt "ui"
+msgid "HEVC supports the experimental encrypted Apple clipboard; SSH is optional."
+msgstr "HEVC supports the experimental encrypted Apple clipboard; SSH is optional."
+
+msgctxt "ui"
+msgid "HEVC uses Apple's High Performance transport, not an RFB rectangle encoding"
+msgstr "HEVC uses Apple's High Performance transport, not an RFB rectangle encoding"
+
+msgctxt "ui"
+msgid "HEVC video is adaptive by default, with an optional custom bitrate ceiling. Use the live traffic meter: static screens and encoder limits can lower the actual rate. 60 FPS generally costs more bandwidth and CPU than 30 FPS; VNC rectangle-compression ratios do not apply."
+msgstr "HEVC video is adaptive by default, with an optional custom bitrate ceiling. Use the live traffic meter: static screens and encoder limits can lower the actual rate. 60 FPS generally costs more bandwidth and CPU than 30 FPS; VNC rectangle-compression ratios do not apply."
+
+msgctxt "ui"
+msgid "Hextile (lossless)"
+msgstr "Hextile (lossless)"
+
+msgctxt "ui"
+msgid "Hextile: small lossless tiles with solid-color subrectangles. Low CPU for simple desktops; images and video often approach Raw bandwidth."
+msgstr "Hextile: small lossless tiles with solid-color subrectangles. Low CPU for simple desktops; images and video often approach Raw bandwidth."
+
+msgctxt "ui"
+msgid "Host or IP address"
+msgstr "Host or IP address"
+
+msgctxt "ui"
+msgid "I authorize saving this password with the selected protection"
+msgstr "I authorize saving this password with the selected protection"
+
+msgctxt "ui"
+msgid "IN "
+msgstr "IN "
+
+msgctxt "ui"
+msgid "Illustration: {0} - {1}, assuming {low}x - {high}x size reduction."
+msgstr "Illustration: {0} - {1}, assuming {low}x - {high}x size reduction."
+
+msgctxt "ui"
+msgid "Independent Rust + Slint viewer. Thanks to the TigerVNC, RealVNC, TightVNC, and original VNC authors for their work on remote desktop protocols."
+msgstr "Independent Rust + Slint viewer. Thanks to the TigerVNC, RealVNC, TightVNC, and original VNC authors for their work on remote desktop protocols."
+
+msgctxt "ui"
+msgid "Installing replaces this test build. A verified backup is kept for rollback."
+msgstr "Installing replaces this test build. A verified backup is kept for rollback."
+
+msgctxt "ui"
+msgid "Invalid Apple authentication key"
+msgstr "Invalid Apple authentication key"
+
+msgctxt "ui"
+msgid "Invalid DH integer"
+msgstr "Invalid DH integer"
+
+msgctxt "ui"
+msgid "Invalid DH modulus"
+msgstr "Invalid DH modulus"
+
+msgctxt "ui"
+msgid "Invalid DH public key"
+msgstr "Invalid DH public key"
+
+msgctxt "ui"
+msgid "Invalid SSH host-key fingerprint"
+msgstr "Invalid SSH host-key fingerprint"
+
+msgctxt "ui"
+msgid "Invalid VNC authentication key"
+msgstr "Invalid VNC authentication key"
+
+msgctxt "ui"
+msgid "Invalid automatic clipboard preferences"
+msgstr "Invalid automatic clipboard preferences"
+
+msgctxt "ui"
+msgid "Invalid device identity"
+msgstr "Invalid device identity"
+
+msgctxt "ui"
+msgid "Invalid display preferences"
+msgstr "Invalid display preferences"
+
+msgctxt "ui"
+msgid "Invalid display zoom or pan"
+msgstr "Invalid display zoom or pan"
+
+msgctxt "ui"
+msgid "JPEG quality"
+msgstr "JPEG quality"
+
+msgctxt "ui"
+msgid "JPEG quality: "
+msgstr "JPEG quality: "
+
+msgctxt "ui"
+msgid "KEYBOARD & SHORTCUTS"
+msgstr "KEYBOARD & SHORTCUTS"
+
+msgctxt "ui"
+msgid "Keep Mac"
+msgstr "Keep Mac"
+
+msgctxt "ui"
+msgid "Keep the Mac connection open while using SSH"
+msgstr "Keep the Mac connection open while using SSH"
+
+msgctxt "ui"
+msgid "Keep this window open. MacCanvas will restart when ready."
+msgstr "Keep this window open. MacCanvas will restart when ready."
+
+msgctxt "ui"
+msgid "Keep this window open. The application will restart when ready."
+msgstr "Keep this window open. The application will restart when ready."
+
+msgctxt "ui"
+msgid "LOCAL DISPLAY SCALE"
+msgstr "LOCAL DISPLAY SCALE"
+
+msgctxt "ui"
+msgid "LOCAL SECURITY AUDIT"
+msgstr "LOCAL SECURITY AUDIT"
+
+msgctxt "ui"
+msgid "Lanczos fit"
+msgstr "Lanczos fit"
+
+msgctxt "ui"
+msgid "Language"
+msgstr "Language"
+
+msgctxt "ui"
+msgid "Language preference: {error}"
+msgstr "Language preference: {error}"
+
+msgctxt "ui"
+msgid "Later"
+msgstr "Later"
+
+msgctxt "ui"
+msgid "Link or special file - not followed"
+msgstr "Link or special file - not followed"
+
+msgctxt "ui"
+msgid "Links and special files cannot be received"
+msgstr "Links and special files cannot be received"
+
+msgctxt "ui"
+msgid "Listening on encrypted Apple control — copy new text or a image"
+msgstr "Listening on encrypted Apple control — copy new text or a image"
+
+msgctxt "ui"
+msgid "Listening on encrypted Apple control — copy new text or an image"
+msgstr "Listening on encrypted Apple control — copy new text or an image"
+
+msgctxt "ui"
+msgid "Live FPS: "
+msgstr "Live FPS: "
+
+msgctxt "ui"
+msgid "Login account does not match the selected device"
+msgstr "Login account does not match the selected device"
+
+msgctxt "ui"
+msgid "Login method"
+msgstr "Login method"
+
+msgctxt "ui"
+msgid "Lossless VNC: prefer ZRLE, then Tight and legacy fallbacks. The Mac chooses an offered encoding; the live label shows what it actually sends. Use this for Macs or networks that do not support HEVC."
+msgstr "Lossless VNC: prefer ZRLE, then Tight and legacy fallbacks. The Mac chooses an offered encoding; the live label shows what it actually sends. Use this for Macs or networks that do not support HEVC."
+
+msgctxt "ui"
+msgid "Mac account"
+msgstr "Mac account"
+
+msgctxt "ui"
+msgid "Mac account password"
+msgstr "Mac account password"
+
+msgctxt "ui"
+msgid "Mac account short username"
+msgstr "Mac account short username"
+
+msgctxt "ui"
+msgid "Mac account · Manual"
+msgstr "Mac account · Manual"
+
+msgctxt "ui"
+msgid "Mac account · Windows Hello"
+msgstr "Mac account · Windows Hello"
+
+msgctxt "ui"
+msgid "Mac address"
+msgstr "Mac address"
+
+msgctxt "ui"
+msgid "Mac audio"
+msgstr "Mac audio"
+
+msgctxt "ui"
+msgid "Mac destination directory"
+msgstr "Mac destination directory"
+
+msgctxt "ui"
+msgid "Mac folder"
+msgstr "Mac folder"
+
+msgctxt "ui"
+msgid "Mac folder "
+msgstr "Mac folder "
+
+msgctxt "ui"
+msgid "Mac item "
+msgstr "Mac item "
+
+msgctxt "ui"
+msgid "Mac login requires a username and password, each below 64 UTF-8 bytes"
+msgstr "Mac login requires a username and password, each below 64 UTF-8 bytes"
+
+msgctxt "ui"
+msgid "Mac mini"
+msgstr "Mac mini"
+
+msgctxt "ui"
+msgid "Mac password"
+msgstr "Mac password"
+
+msgctxt "ui"
+msgid "Mac plain text is now on the Windows clipboard."
+msgstr "Mac plain text is now on the Windows clipboard."
+
+msgctxt "ui"
+msgid "Mac refused upload"
+msgstr "Mac refused upload"
+
+msgctxt "ui"
+msgid "Mac rejected the transfer"
+msgstr "Mac rejected the transfer"
+
+msgctxt "ui"
+msgid "Mac session changed — rearming native clipboard"
+msgstr "Mac session changed — rearming native clipboard"
+
+msgctxt "ui"
+msgid "Mac source file or folder"
+msgstr "Mac source file or folder"
+
+msgctxt "ui"
+msgid "Mac stopped upload"
+msgstr "Mac stopped upload"
+
+msgctxt "ui"
+msgid "Mac system audio - 48 kHz stereo"
+msgstr "Mac system audio - 48 kHz stereo"
+
+msgctxt "ui"
+msgid "Mac username"
+msgstr "Mac username"
+
+msgctxt "ui"
+msgid "Mac → Windows"
+msgstr "Mac → Windows"
+
+msgctxt "ui"
+msgid "Mac → Windows image received over encrypted Apple control"
+msgstr "Mac → Windows image received over encrypted Apple control"
+
+msgctxt "ui"
+msgid "Mac → Windows received over encrypted Apple control"
+msgstr "Mac → Windows received over encrypted Apple control"
+
+msgctxt "ui"
+msgid "Mac → Windows rich text received over encrypted Apple control"
+msgstr "Mac → Windows rich text received over encrypted Apple control"
+
+msgctxt "ui"
+msgid "Mac: "
+msgstr "Mac: "
+
+msgctxt "ui"
+msgid "MacCanvas"
+msgstr "MacCanvas"
+
+msgctxt "ui"
+msgid "MacCanvas "
+msgstr "MacCanvas "
+
+msgctxt "ui"
+msgid "MacCanvas audio installer window closed"
+msgstr "MacCanvas audio installer window closed"
+
+msgctxt "ui"
+msgid "MacCanvas update notification"
+msgstr "MacCanvas update notification"
+
+msgctxt "ui"
+msgid "Machine name"
+msgstr "Machine name"
+
+msgctxt "ui"
+msgid "Machine name must be 1-100 characters"
+msgstr "Machine name must be 1-100 characters"
+
+msgctxt "ui"
+msgid "Manual"
+msgstr "Manual"
+
+msgctxt "ui"
+msgid "Maximum FPS"
+msgstr "Maximum FPS"
+
+msgctxt "ui"
+msgid "Maximum update rate must be 1-120"
+msgstr "Maximum update rate must be 1-120"
+
+msgctxt "ui"
+msgid "Missing audit directory"
+msgstr "Missing audit directory"
+
+msgctxt "ui"
+msgid "Missing display preferences directory"
+msgstr "Missing display preferences directory"
+
+msgctxt "ui"
+msgid "Missing settings directory"
+msgstr "Missing settings directory"
+
+msgctxt "ui"
+msgid "More actions for "
+msgstr "More actions for "
+
+msgctxt "ui"
+msgid "Mute Mac audio"
+msgstr "Mute Mac audio"
+
+msgctxt "ui"
+msgid "Mute playback"
+msgstr "Mute playback"
+
+msgctxt "ui"
+msgid "My Macs"
+msgstr "My Macs"
+
+msgctxt "ui"
+msgid "NVIDIA NVDEC"
+msgstr "NVIDIA NVDEC"
+
+msgctxt "ui"
+msgid "Native Apple clipboard (experimental, no SSH)"
+msgstr "Native Apple clipboard (experimental, no SSH)"
+
+msgctxt "ui"
+msgid "Native clipboard: unsupported, oversized or invalid image/text; contents unchanged"
+msgstr "Native clipboard: unsupported, oversized or invalid image/text; contents unchanged"
+
+msgctxt "ui"
+msgid "Native error: {error}"
+msgstr "Native error: {error}"
+
+msgctxt "ui"
+msgid "Native experiment: {reason}; inspect clipboard.apple logs (no SSH fallback)"
+msgstr "Native experiment: {reason}; inspect clipboard.apple logs (no SSH fallback)"
+
+msgctxt "ui"
+msgid "Native file transfer failed or timed out; clipboard unchanged. Retry by copying again."
+msgstr "Native file transfer failed or timed out; clipboard unchanged. Retry by copying again."
+
+msgctxt "ui"
+msgid "Native file transfer: {error}"
+msgstr "Native file transfer: {error}"
+
+msgctxt "ui"
+msgid "Native files: {0} / {1} KiB (copy only)"
+msgstr "Native files: {0} / {1} KiB (copy only)"
+
+msgctxt "ui"
+msgid "New connection"
+msgstr "New connection"
+
+msgctxt "ui"
+msgid "No Macs match this search."
+msgstr "No Macs match this search."
+
+msgctxt "ui"
+msgid "No active Apple session"
+msgstr "No active Apple session"
+
+msgctxt "ui"
+msgid "No active connection"
+msgstr "No active connection"
+
+msgctxt "ui"
+msgid "No host-key approval is pending"
+msgstr "No host-key approval is pending"
+
+msgctxt "ui"
+msgid "No newer published version found ({0})."
+msgstr "No newer published version found ({0})."
+
+msgctxt "ui"
+msgid "Not a file"
+msgstr "Not a file"
+
+msgctxt "ui"
+msgid "On the Mac, run:"
+msgstr "On the Mac, run:"
+
+msgctxt "ui"
+msgid "On your Mac: System Settings > General > Sharing > Remote Login. Allow your Mac account."
+msgstr "On your Mac: System Settings > General > Sharing > Remote Login. Allow your Mac account."
+
+msgctxt "ui"
+msgid "Open"
+msgstr "Open"
+
+msgctxt "ui"
+msgid "Open "
+msgstr "Open "
+
+msgctxt "ui"
+msgid "Open Files or Clipboard from an active Mac connection"
+msgstr "Open Files or Clipboard from an active Mac connection"
+
+msgctxt "ui"
+msgid "Open Source Licenses"
+msgstr "Open Source Licenses"
+
+msgctxt "ui"
+msgid "Open an accessible Mac folder before sending a file"
+msgstr "Open an accessible Mac folder before sending a file"
+
+msgctxt "ui"
+msgid "Open log folder"
+msgstr "Open log folder"
+
+msgctxt "ui"
+msgid "Operation cancelled"
+msgstr "Operation cancelled"
+
+msgctxt "ui"
+msgid "Optional new file name on the Mac"
+msgstr "Optional new file name on the Mac"
+
+msgctxt "ui"
+msgid "Original display preferences were preserved: {error}"
+msgstr "Original display preferences were preserved: {error}"
+
+msgctxt "ui"
+msgid "Pan mode: dragging moves only the local view. Turn Pan off to click or drag on the Mac."
+msgstr "Pan mode: dragging moves only the local view. Turn Pan off to click or drag on the Mac."
+
+msgctxt "ui"
+msgid "Pan on"
+msgstr "Pan on"
+
+msgctxt "ui"
+msgid "Pan on · Stop panning"
+msgstr "Pan on · Stop panning"
+
+msgctxt "ui"
+msgid "Pan view down"
+msgstr "Pan view down"
+
+msgctxt "ui"
+msgid "Pan view left"
+msgstr "Pan view left"
+
+msgctxt "ui"
+msgid "Pan view right"
+msgstr "Pan view right"
+
+msgctxt "ui"
+msgid "Pan view up"
+msgstr "Pan view up"
+
+msgctxt "ui"
+msgid "Password"
+msgstr "Password"
+
+msgctxt "ui"
+msgid "Password has an invalid size"
+msgstr "Password has an invalid size"
+
+msgctxt "ui"
+msgid "Password required"
+msgstr "Password required"
+
+msgctxt "ui"
+msgid "Password saved"
+msgstr "Password saved"
+
+msgctxt "ui"
+msgid "Password saving is disabled"
+msgstr "Password saving is disabled"
+
+msgctxt "ui"
+msgid "Paste Windows text"
+msgstr "Paste Windows text"
+
+msgctxt "ui"
+msgid "Paused — SSH disconnected"
+msgstr "Paused — SSH disconnected"
+
+msgctxt "ui"
+msgid "Paused — Windows clipboard is busy or text is unsupported"
+msgstr "Paused — Windows clipboard is busy or text is unsupported"
+
+msgctxt "ui"
+msgid "Paused — Windows session is locked or inactive"
+msgstr "Paused — Windows session is locked or inactive"
+
+msgctxt "ui"
+msgid "Paused — automatic sharing is off"
+msgstr "Paused — automatic sharing is off"
+
+msgctxt "ui"
+msgid "Paused — choose a synchronization direction"
+msgstr "Paused — choose a synchronization direction"
+
+msgctxt "ui"
+msgid "Paused — connect SSH securely to resume"
+msgstr "Paused — connect SSH securely to resume"
+
+msgctxt "ui"
+msgid "Paused — disabled, disconnected or Windows session locked"
+msgstr "Paused — disabled, disconnected or Windows session locked"
+
+msgctxt "ui"
+msgid "Paused — native Apple clipboard selected"
+msgstr "Paused — native Apple clipboard selected"
+
+msgctxt "ui"
+msgid "Picture & connection"
+msgstr "Picture & connection"
+
+msgctxt "ui"
+msgid "Planning illustration, not benchmarks: {width} x {height}, 30 updates/s, 10% of pixels changing each time. Raw is {0}. The ranges use the explicit example ratios below; real usage depends on content, the Mac, and motion. Video/noise can exceed them. Idle screens use almost no pixel traffic."
+msgstr "Planning illustration, not benchmarks: {width} x {height}, 30 updates/s, 10% of pixels changing each time. Raw is {0}. The ranges use the explicit example ratios below; real usage depends on content, the Mac, and motion. Video/noise can exceed them. Idle screens use almost no pixel traffic."
+
+msgctxt "ui"
+msgid "Playback follows your Windows output device. These controls do not change the Mac's volume. No microphone audio is captured or sent."
+msgstr "Playback follows your Windows output device. These controls do not change the Mac's volume. No microphone audio is captured or sent."
+
+msgctxt "ui"
+msgid "Playback volume"
+msgstr "Playback volume"
+
+msgctxt "ui"
+msgid "Port"
+msgstr "Port"
+
+msgctxt "ui"
+msgid "Port must be between 1 and 65535"
+msgstr "Port must be between 1 and 65535"
+
+msgctxt "ui"
+msgid "Product homepage"
+msgstr "Product homepage"
+
+msgctxt "ui"
+msgid "Publisher: "
+msgstr "Publisher: "
+
+msgctxt "ui"
+msgid "Quality"
+msgstr "Quality"
+
+msgctxt "ui"
+msgid "Quick Connect"
+msgstr "Quick Connect"
+
+msgctxt "ui"
+msgid "Quick Connect saves your password with your approval. Windows Hello verifies each saved-password read. Manual never saves a password. Passwords stay in Windows Credential Manager."
+msgstr "Quick Connect saves your password with your approval. Windows Hello verifies each saved-password read. Manual never saves a password. Passwords stay in Windows Credential Manager."
+
+msgctxt "ui"
+msgid "Quick connect"
+msgstr "Quick connect"
+
+msgctxt "ui"
+msgid "RRE (legacy)"
+msgstr "RRE (legacy)"
+
+msgctxt "ui"
+msgid "RRE: lossless background colors and colored rectangles. Useful for legacy flat-color screens; photos can be larger than Raw."
+msgstr "RRE: lossless background colors and colored rectangles. Useful for legacy flat-color screens; photos can be larger than Raw."
+
+msgctxt "ui"
+msgid "Raw (uncompressed)"
+msgstr "Raw (uncompressed)"
+
+msgctxt "ui"
+msgid "Raw: no pixel compression and the lowest compression CPU cost. Best only on fast trusted links; full-frame 4K motion can require several gigabits per second."
+msgstr "Raw: no pixel compression and the lowest compression CPU cost. Best only on fast trusted links; full-frame 4K motion can require several gigabits per second."
+
+msgctxt "ui"
+msgid "Ready to connect"
+msgstr "Ready to connect"
+
+msgctxt "ui"
+msgid "Receive"
+msgstr "Receive"
+
+msgctxt "ui"
+msgid "Receive "
+msgstr "Receive "
+
+msgctxt "ui"
+msgid "Receive from Mac"
+msgstr "Receive from Mac"
+
+msgctxt "ui"
+msgid "Refresh"
+msgstr "Refresh"
+
+msgctxt "ui"
+msgid "Reject"
+msgstr "Reject"
+
+msgctxt "ui"
+msgid "Releases"
+msgstr "Releases"
+
+msgctxt "ui"
+msgid "Remote desktop"
+msgstr "Remote desktop"
+
+msgctxt "ui"
+msgid "Remove Mac"
+msgstr "Remove Mac"
+
+msgctxt "ui"
+msgid "Remove Mac…"
+msgstr "Remove Mac…"
+
+msgctxt "ui"
+msgid "Remove this saved Mac?"
+msgstr "Remove this saved Mac?"
+
+msgctxt "ui"
+msgid "Repair connection preferences before deleting this device"
+msgstr "Repair connection preferences before deleting this device"
+
+msgctxt "ui"
+msgid "Reset display to Fit"
+msgstr "Reset display to Fit"
+
+msgctxt "ui"
+msgid "Restart needed"
+msgstr "Restart needed"
+
+msgctxt "ui"
+msgid "Restart required"
+msgstr "Restart required"
+
+msgctxt "ui"
+msgid "Restore defaults"
+msgstr "Restore defaults"
+
+msgctxt "ui"
+msgid "Retry"
+msgstr "Retry"
+
+msgctxt "ui"
+msgid "Retry audio"
+msgstr "Retry audio"
+
+msgctxt "ui"
+msgid "SECURITY & CREDENTIALS"
+msgstr "SECURITY & CREDENTIALS"
+
+msgctxt "ui"
+msgid "SSH Mac password"
+msgstr "SSH Mac password"
+
+msgctxt "ui"
+msgid "SSH Mac username"
+msgstr "SSH Mac username"
+
+msgctxt "ui"
+msgid "SSH SHA-256 fingerprint"
+msgstr "SSH SHA-256 fingerprint"
+
+msgctxt "ui"
+msgid "SSH connected. Enter a folder this account can access."
+msgstr "SSH connected. Enter a folder this account can access."
+
+msgctxt "ui"
+msgid "SSH connected. Showing {0}."
+msgstr "SSH connected. Showing {0}."
+
+msgctxt "ui"
+msgid "SSH disconnected."
+msgstr "SSH disconnected."
+
+msgctxt "ui"
+msgid "SSH host"
+msgstr "SSH host"
+
+msgctxt "ui"
+msgid "SSH host verified. Reading your Mac folder..."
+msgstr "SSH host verified. Reading your Mac folder..."
+
+msgctxt "ui"
+msgid "SSH is already connected or connecting"
+msgstr "SSH is already connected or connecting"
+
+msgctxt "ui"
+msgid "SSH is shared by file transfer and clipboard."
+msgstr "SSH is shared by file transfer and clipboard."
+
+msgctxt "ui"
+msgid "SSH operation context is unavailable"
+msgstr "SSH operation context is unavailable"
+
+msgctxt "ui"
+msgid "SSH operation error: "
+msgstr "SSH operation error: "
+
+msgctxt "ui"
+msgid "SSH port"
+msgstr "SSH port"
+
+msgctxt "ui"
+msgid "SSH port must be 1-65535"
+msgstr "SSH port must be 1-65535"
+
+msgctxt "ui"
+msgid "Save"
+msgstr "Save"
+
+msgctxt "ui"
+msgid "Save & Connect"
+msgstr "Save & Connect"
+
+msgctxt "ui"
+msgid "Save & Connect verifies the new password before saving it securely."
+msgstr "Save & Connect verifies the new password before saving it securely."
+
+msgctxt "ui"
+msgid "Save keeps device details. Use Save & Connect to verify a new login."
+msgstr "Save keeps device details. Use Save & Connect to verify a new login."
+
+msgctxt "ui"
+msgid "Save machine"
+msgstr "Save machine"
+
+msgctxt "ui"
+msgid "Saved credentials were removed. Enter them manually."
+msgstr "Saved credentials were removed. Enter them manually."
+
+msgctxt "ui"
+msgid "Saved for quick connection"
+msgstr "Saved for quick connection"
+
+msgctxt "ui"
+msgid "Saved login does not match this device"
+msgstr "Saved login does not match this device"
+
+msgctxt "ui"
+msgid "Saved password has an invalid size"
+msgstr "Saved password has an invalid size"
+
+msgctxt "ui"
+msgid "Saved password is not UTF-8"
+msgstr "Saved password is not UTF-8"
+
+msgctxt "ui"
+msgid "Saved passwords remain hidden. Hello mode requires approval; if unavailable, enter the password manually."
+msgstr "Saved passwords remain hidden. Hello mode requires approval; if unavailable, enter the password manually."
+
+msgctxt "ui"
+msgid "Saved username is invalid"
+msgstr "Saved username is invalid"
+
+msgctxt "ui"
+msgid "Search by name or address"
+msgstr "Search by name or address"
+
+msgctxt "ui"
+msgid "Search saved Macs"
+msgstr "Search saved Macs"
+
+msgctxt "ui"
+msgid "Secure randomness failed: {error}"
+msgstr "Secure randomness failed: {error}"
+
+msgctxt "ui"
+msgid "Secure randomness produced an invalid exponent"
+msgstr "Secure randomness produced an invalid exponent"
+
+msgctxt "ui"
+msgid "Security audit: {error}"
+msgstr "Security audit: {error}"
+
+msgctxt "ui"
+msgid "Security logging failed. Connections are disabled until MacCanvas is restarted. {error}"
+msgstr "Security logging failed. Connections are disabled until MacCanvas is restarted. {error}"
+
+msgctxt "ui"
+msgid "Security logging failed. Connections are disabled until Sovelyx Desk is restarted. {error}"
+msgstr "Security logging failed. Connections are disabled until Sovelyx Desk is restarted. {error}"
+
+msgctxt "ui"
+msgid "Select a machine first"
+msgstr "Select a machine first"
+
+msgctxt "ui"
+msgid "Send Windows text"
+msgstr "Send Windows text"
+
+msgctxt "ui"
+msgid "Send a file..."
+msgstr "Send a file..."
+
+msgctxt "ui"
+msgid "Send to Mac"
+msgstr "Send to Mac"
+
+msgctxt "ui"
+msgid "Set up Windows Hello in Windows Settings, or enter your Mac credentials manually instead of using the saved password."
+msgstr "Set up Windows Hello in Windows Settings, or enter your Mac credentials manually instead of using the saved password."
+
+msgctxt "ui"
+msgid "Settings"
+msgstr "Settings"
+
+msgctxt "ui"
+msgid "Settings file is too large"
+msgstr "Settings file is too large"
+
+msgctxt "ui"
+msgid "Settings: {error}"
+msgstr "Settings: {error}"
+
+msgctxt "ui"
+msgid "Share plain-text clipboard over VNC"
+msgstr "Share plain-text clipboard over VNC"
+
+msgctxt "ui"
+msgid "Shares new plain-text copies, including potentially sensitive text, in the background. Default: off. SSH must match the Mac desktop account."
+msgstr "Shares new plain-text copies, including potentially sensitive text, in the background. Default: off. SSH must match the Mac desktop account."
+
+msgctxt "ui"
+msgid "Sharp scaling. A familiar cursor. Your whole desktop."
+msgstr "Sharp scaling. A familiar cursor. Your whole desktop."
+
+msgctxt "ui"
+msgid "Show FPS"
+msgstr "Show FPS"
+
+msgctxt "ui"
+msgid "Show live FPS counter"
+msgstr "Show live FPS counter"
+
+msgctxt "ui"
+msgid "Single files only. Existing files are never replaced. Uploads are verified by reading them back before the final file is created."
+msgstr "Single files only. Existing files are never replaced. Uploads are verified by reading them back before the final file is created."
+
+msgctxt "ui"
+msgid "Source code"
+msgstr "Source code"
+
+msgctxt "ui"
+msgid "Source: "
+msgstr "Source: "
+
+msgctxt "ui"
+msgid "Source: bluemoonandy/maccanvas · GitHub"
+msgstr "Source: bluemoonandy/maccanvas · GitHub"
+
+msgctxt "ui"
+msgid "Sovelyx Desk updates are not published yet. Automatic downloads and installation are disabled."
+msgstr "Sovelyx Desk updates are not published yet. Automatic downloads and installation are disabled."
+
+msgctxt "ui"
+msgid "Standard VNC does not carry audio. Choose HEVC / H.265 in Quality to hear your Mac."
+msgstr "Standard VNC does not carry audio. Choose HEVC / H.265 in Quality to hear your Mac."
+
+msgctxt "ui"
+msgid "Standard VNC offers CopyRect and a Raw fallback; the Mac may ignore compression/JPEG hints. HEVC uses Apple's separate High Performance transport with encrypted control, SRTP video and optional audio. Video decoding is bundled; audio uses a separate converter. Mac account login and UDP on the VNC port and the next port are required. H.264 playback is not supported."
+msgstr "Standard VNC offers CopyRect and a Raw fallback; the Mac may ignore compression/JPEG hints. HEVC uses Apple's separate High Performance transport with encrypted control, SRTP video and optional audio. Video decoding is bundled; audio uses a separate converter. Mac account login and UDP on the VNC port and the next port are required. H.264 playback is not supported."
+
+msgctxt "ui"
+msgid "Standard VNC: Latin-1 compatibility mode."
+msgstr "Standard VNC: Latin-1 compatibility mode."
+
+msgctxt "ui"
+msgid "Standard VNC: Latin-1 text only. Use SSH for other Unicode characters."
+msgstr "Standard VNC: Latin-1 text only. Use SSH for other Unicode characters."
+
+msgctxt "ui"
+msgid "Starting the verified download..."
+msgstr "Starting the verified download..."
+
+msgctxt "ui"
+msgid "Status: "
+msgstr "Status: "
+
+msgctxt "ui"
+msgid "Stop local panning"
+msgstr "Stop local panning"
+
+msgctxt "ui"
+msgid "Stream quality"
+msgstr "Stream quality"
+
+msgctxt "ui"
+msgid "Streaming mode"
+msgstr "Streaming mode"
+
+msgctxt "ui"
+msgid "Switching to {0}..."
+msgstr "Switching to {0}..."
+
+msgctxt "ui"
+msgid "Sync files and folders (experimental, copy only)"
+msgstr "Sync files and folders (experimental, copy only)"
+
+msgctxt "ui"
+msgid "Syncing — encrypted plain text"
+msgstr "Syncing — encrypted plain text"
+
+msgctxt "ui"
+msgid "System Default"
+msgstr "System Default"
+
+msgctxt "ui"
+msgid "Target (Mbps)"
+msgstr "Target (Mbps)"
+
+msgctxt "ui"
+msgid "Target: "
+msgstr "Target: "
+
+msgctxt "ui"
+msgid "Text limit (UTF-8 bytes)"
+msgstr "Text limit (UTF-8 bytes)"
+
+msgctxt "ui"
+msgid "Text/HTML/RTF: 1 MiB each. Images: up to 3840×2160 pixels; PNG transfer under 4 MiB. Single-page 8-bit TIFF is converted. File/folder sync is a separate opt-in below."
+msgstr "Text/HTML/RTF: 1 MiB each. Images: up to 3840×2160 pixels; PNG transfer under 4 MiB. Single-page 8-bit TIFF is converted. File/folder sync is a separate opt-in below."
+
+msgctxt "ui"
+msgid "The Mac supplied an invalid or weak DH modulus"
+msgstr "The Mac supplied an invalid or weak DH modulus"
+
+msgctxt "ui"
+msgid "The SSH approval request is no longer active"
+msgstr "The SSH approval request is no longer active"
+
+msgctxt "ui"
+msgid "The Windows file name cannot be represented as UTF-8"
+msgstr "The Windows file name cannot be represented as UTF-8"
+
+msgctxt "ui"
+msgid "The active Mac is unavailable"
+msgstr "The active Mac is unavailable"
+
+msgctxt "ui"
+msgid "The active connection cannot be restarted"
+msgstr "The active connection cannot be restarted"
+
+msgctxt "ui"
+msgid "The active connection profile is unavailable"
+msgstr "The active connection profile is unavailable"
+
+msgctxt "ui"
+msgid "The connection window is no longer available"
+msgstr "The connection window is no longer available"
+
+msgctxt "ui"
+msgid "The existing host key cannot be replaced from an approval prompt"
+msgstr "The existing host key cannot be replaced from an approval prompt"
+
+msgctxt "ui"
+msgid "The interrupted connection cannot be restarted"
+msgstr "The interrupted connection cannot be restarted"
+
+msgctxt "ui"
+msgid "The interrupted connection profile is unavailable"
+msgstr "The interrupted connection profile is unavailable"
+
+msgctxt "ui"
+msgid "The new version is installed, but could not restart: {error}. Close and reopen MacCanvas."
+msgstr "The new version is installed, but could not restart: {error}. Close and reopen MacCanvas."
+
+msgctxt "ui"
+msgid "The new version is installed, but could not restart: {error}. Close and reopen Sovelyx Desk."
+msgstr "The new version is installed, but could not restart: {error}. Close and reopen Sovelyx Desk."
+
+msgctxt "ui"
+msgid "The selected Mac no longer exists"
+msgstr "The selected Mac no longer exists"
+
+msgctxt "ui"
+msgid "The selected file is no longer in this folder"
+msgstr "The selected file is no longer in this folder"
+
+msgctxt "ui"
+msgid "The selected machine no longer exists"
+msgstr "The selected machine no longer exists"
+
+msgctxt "ui"
+msgid "Theme and motion follow Windows automatically."
+msgstr "Theme and motion follow Windows automatically."
+
+msgctxt "ui"
+msgid "This credential store does not support connection policies"
+msgstr "This credential store does not support connection policies"
+
+msgctxt "ui"
+msgid "This folder is empty."
+msgstr "This folder is empty."
+
+msgctxt "ui"
+msgid "This password is used only for this SSH connection and is not saved."
+msgstr "This password is used only for this SSH connection and is not saved."
+
+msgctxt "ui"
+msgid "Tight (lossless)"
+msgstr "Tight (lossless)"
+
+msgctxt "ui"
+msgid "Tight + JPEG"
+msgstr "Tight + JPEG"
+
+msgctxt "ui"
+msgid "Tight + JPEG (lossy)"
+msgstr "Tight + JPEG (lossy)"
+
+msgctxt "ui"
+msgid "Tight + JPEG: may compress photographs and motion more efficiently. JPEG quality 0-9 trades clarity for smaller updates; text or images can show artifacts. The Mac may ignore this hint."
+msgstr "Tight + JPEG: may compress photographs and motion more efficiently. JPEG quality 0-9 trades clarity for smaller updates; text or images can show artifacts. The Mac may ignore this hint."
+
+msgctxt "ui"
+msgid "Tight lossless"
+msgstr "Tight lossless"
+
+msgctxt "ui"
+msgid "Tight lossless: deflate with palette and gradient filters. Excellent for text and flat-color apps. More encoding CPU; no JPEG artifacts."
+msgstr "Tight lossless: deflate with palette and gradient filters. Excellent for text and flat-color apps. More encoding CPU; no JPEG artifacts."
+
+msgctxt "ui"
+msgid "Toggle connections sidebar"
+msgstr "Toggle connections sidebar"
+
+msgctxt "ui"
+msgid "Toggle local pan"
+msgstr "Toggle local pan"
+
+msgctxt "ui"
+msgid "Trust key & continue"
+msgstr "Trust key & continue"
+
+msgctxt "ui"
+msgid "Try another name or address. Your saved Macs are still here."
+msgstr "Try another name or address. Your saved Macs are still here."
+
+msgctxt "ui"
+msgid "UTF-8 negotiated: Unicode plain text is available."
+msgstr "UTF-8 negotiated: Unicode plain text is available."
+
+msgctxt "ui"
+msgid "Unicode clipboard uses this SSH account's logged-in Mac desktop. No images, rich text, or clipboard contents are logged."
+msgstr "Unicode clipboard uses this SSH account's logged-in Mac desktop. No images, rich text, or clipboard contents are logged."
+
+msgctxt "ui"
+msgid "Unsupported Apple DH key length or generator"
+msgstr "Unsupported Apple DH key length or generator"
+
+msgctxt "ui"
+msgid "Unsupported settings version or too many machines"
+msgstr "Unsupported settings version or too many machines"
+
+msgctxt "ui"
+msgid "Up"
+msgstr "Up"
+
+msgctxt "ui"
+msgid "Up to 16 roots / 256 MiB per batch. Keep this app open until pasting finishes. Files are staged in Mac /tmp and a private Windows temporary folder. Mac /tmp copies remain until system cleanup; links are not supported. Turn off this option to cancel."
+msgstr "Up to 16 roots / 256 MiB per batch. Keep this app open until pasting finishes. Files are staged in Mac /tmp and a private Windows temporary folder. Mac /tmp copies remain until system cleanup; links are not supported. Turn off this option to cancel."
+
+msgctxt "ui"
+msgid "Update & restart"
+msgstr "Update & restart"
+
+msgctxt "ui"
+msgid "Update Password"
+msgstr "Update Password"
+
+msgctxt "ui"
+msgid "Update check"
+msgstr "Update check"
+
+msgctxt "ui"
+msgid "Update recovery: {error}"
+msgstr "Update recovery: {error}"
+
+msgctxt "ui"
+msgid "Update source: bluemoonandy/maccanvas on GitHub. Upstream packages cannot be installed by this updater."
+msgstr "Update source: bluemoonandy/maccanvas on GitHub. Upstream packages cannot be installed by this updater."
+
+msgctxt "ui"
+msgid "Update: {error}"
+msgstr "Update: {error}"
+
+msgctxt "ui"
+msgid "Updating MacCanvas"
+msgstr "Updating MacCanvas"
+
+msgctxt "ui"
+msgid "Updating application"
+msgstr "Updating application"
+
+msgctxt "ui"
+msgid "Upload file name"
+msgstr "Upload file name"
+
+msgctxt "ui"
+msgid "Uploading to the selected Mac folder…"
+msgstr "Uploading to the selected Mac folder…"
+
+msgctxt "ui"
+msgid "Upstream author: "
+msgstr "Upstream author: "
+
+msgctxt "ui"
+msgid "Upstream project"
+msgstr "Upstream project"
+
+msgctxt "ui"
+msgid "Use a manual HEVC bitrate ceiling"
+msgstr "Use a manual HEVC bitrate ceiling"
+
+msgctxt "ui"
+msgid "Use a manual bandwidth target"
+msgstr "Use a manual bandwidth target"
+
+msgctxt "ui"
+msgid "Use compression/quality 0-9, 1-120 FPS, and a bandwidth target of 0.1-1000 Mbps (or Automatic)."
+msgstr "Use compression/quality 0-9, 1-120 FPS, and a bandwidth target of 0.1-1000 Mbps (or Automatic)."
+
+msgctxt "ui"
+msgid "Use existing saved login"
+msgstr "Use existing saved login"
+
+msgctxt "ui"
+msgid "Use saved Mac login (Windows Hello required)"
+msgstr "Use saved Mac login (Windows Hello required)"
+
+msgctxt "ui"
+msgid "Use the HEVC bitrate ceiling instead of the VNC request-bandwidth target"
+msgstr "Use the HEVC bitrate ceiling instead of the VNC request-bandwidth target"
+
+msgctxt "ui"
+msgid "Use the Pan button to drag the enlarged view, or use the arrow buttons above. Saved separately for each Mac."
+msgstr "Use the Pan button to drag the enlarged view, or use the arrow buttons above. Saved separately for each Mac."
+
+msgctxt "ui"
+msgid "Use the encrypted SSH controls in Clipboard while using HEVC"
+msgstr "Use the encrypted SSH controls in Clipboard while using HEVC"
+
+msgctxt "ui"
+msgid "Uses the current encrypted HEVC connection. New text, HTML/RTF and image copies sync in the selected directions. Remote Login and a second authentication are not used."
+msgstr "Uses the current encrypted HEVC connection. New text, HTML/RTF and image copies sync in the selected directions. Remote Login and a second authentication are not used."
+
+msgctxt "ui"
+msgid "VNC clipboard traffic is not encrypted. Use a VPN. Files, images, and rich text are not shared."
+msgstr "VNC clipboard traffic is not encrypted. Use a VPN. Files, images, and rich text are not shared."
+
+msgctxt "ui"
+msgid "VNC password"
+msgstr "VNC password"
+
+msgctxt "ui"
+msgid "VNC password uses standard VNC video. Apple HEVC requires Mac account authentication."
+msgstr "VNC password uses standard VNC video. Apple HEVC requires Mac account authentication."
+
+msgctxt "ui"
+msgid "VNC password · Manual"
+msgstr "VNC password · Manual"
+
+msgctxt "ui"
+msgid "VNC port"
+msgstr "VNC port"
+
+msgctxt "ui"
+msgid "VNC protocol error: {error}"
+msgstr "VNC protocol error: {error}"
+
+msgctxt "ui"
+msgid "Verification was not approved. No saved password was read and no connection was opened."
+msgstr "Verification was not approved. No saved password was read and no connection was opened."
+
+msgctxt "ui"
+msgid "Verify this Mac's SSH host key"
+msgstr "Verify this Mac's SSH host key"
+
+msgctxt "ui"
+msgid "Verify to connect with MacCanvas credentials"
+msgstr "Verify to connect with MacCanvas credentials"
+
+msgctxt "ui"
+msgid "Verify with Windows Hello if prompted."
+msgstr "Verify with Windows Hello if prompted."
+
+msgctxt "ui"
+msgid "Verifying SSH..."
+msgstr "Verifying SSH..."
+
+msgctxt "ui"
+msgid "Verifying and connecting..."
+msgstr "Verifying and connecting..."
+
+msgctxt "ui"
+msgid "Verifying and replacing the executable..."
+msgstr "Verifying and replacing the executable..."
+
+msgctxt "ui"
+msgid "Verifying the Mac's SSH identity before using credentials..."
+msgstr "Verifying the Mac's SSH identity before using credentials..."
+
+msgctxt "ui"
+msgid "Version "
+msgstr "Version "
+
+msgctxt "ui"
+msgid "Wait for the current file transfer to finish or cancel it"
+msgstr "Wait for the current file transfer to finish or cancel it"
+
+msgctxt "ui"
+msgid "Wait for the current installation to finish"
+msgstr "Wait for the current installation to finish"
+
+msgctxt "ui"
+msgid "Wait for the current operation or cancel it first"
+msgstr "Wait for the current operation or cancel it first"
+
+msgctxt "ui"
+msgid "Wait for the previous SSH connection to close"
+msgstr "Wait for the previous SSH connection to close"
+
+msgctxt "ui"
+msgid "Wait for the previous connections to finish closing"
+msgstr "Wait for the previous connections to finish closing"
+
+msgctxt "ui"
+msgid "Waiting for Mac audio..."
+msgstr "Waiting for Mac audio..."
+
+msgctxt "ui"
+msgid "Waiting for pixels"
+msgstr "Waiting for pixels"
+
+msgctxt "ui"
+msgid "Waiting for the Mac..."
+msgstr "Waiting for the Mac..."
+
+msgctxt "ui"
+msgid "Windows Credential Manager: {error}"
+msgstr "Windows Credential Manager: {error}"
+
+msgctxt "ui"
+msgid "Windows Hello"
+msgstr "Windows Hello"
+
+msgctxt "ui"
+msgid "Windows Hello authorizes every saved-password read. You can enter the password manually if Hello is unavailable."
+msgstr "Windows Hello authorizes every saved-password read. You can enter the password manually if Hello is unavailable."
+
+msgctxt "ui"
+msgid "Windows Hello protected"
+msgstr "Windows Hello protected"
+
+msgctxt "ui"
+msgid "Windows Hello: {error}"
+msgstr "Windows Hello: {error}"
+
+msgctxt "ui"
+msgid "Windows clipboard is busy or unavailable"
+msgstr "Windows clipboard is busy or unavailable"
+
+msgctxt "ui"
+msgid "Windows content queued; waiting for the encrypted connection to finish writing."
+msgstr "Windows content queued; waiting for the encrypted connection to finish writing."
+
+msgctxt "ui"
+msgid "Windows content written to the encrypted Mac connection. Paste on the Mac to verify acceptance."
+msgstr "Windows content written to the encrypted Mac connection. Paste on the Mac to verify acceptance."
+
+msgctxt "ui"
+msgid "Windows did not return a local app-data folder"
+msgstr "Windows did not return a local app-data folder"
+
+msgctxt "ui"
+msgid "Windows has no plain text on the clipboard"
+msgstr "Windows has no plain text on the clipboard"
+
+msgctxt "ui"
+msgid "Windows plain text is now on the Mac clipboard. Paste it in your Mac app."
+msgstr "Windows plain text is now on the Mac clipboard. Paste it in your Mac app."
+
+msgctxt "ui"
+msgid "Windows returned an invalid credential"
+msgstr "Windows returned an invalid credential"
+
+msgctxt "ui"
+msgid "Windows → Mac"
+msgstr "Windows → Mac"
+
+msgctxt "ui"
+msgid "Your Mac"
+msgstr "Your Mac"
+
+msgctxt "ui"
+msgid "Your Mac, beautifully in view."
+msgstr "Your Mac, beautifully in view."
+
+msgctxt "ui"
+msgid "Your Mac, within reach."
+msgstr "Your Mac, within reach."
+
+msgctxt "ui"
+msgid "Your Mac. Your Windows screen."
+msgstr "Your Mac. Your Windows screen."
+
+msgctxt "ui"
+msgid "Your Macs, one click away."
+msgstr "Your Macs, one click away."
+
+msgctxt "ui"
+msgid "Your macOS account"
+msgstr "Your macOS account"
+
+msgctxt "ui"
+msgid "Your saved login stays locked in Windows Credential Manager. Approve Windows Hello after SSH host verification."
+msgstr "Your saved login stays locked in Windows Credential Manager. Approve Windows Hello after SSH host verification."
+
+msgctxt "ui"
+msgid "ZRLE (lossless)"
+msgstr "ZRLE (lossless)"
+
+msgctxt "ui"
+msgid "ZRLE: lossless compressed tiles. Sharp text and a good desktop default; more CPU than Raw. Noise and video can still use substantial bandwidth."
+msgstr "ZRLE: lossless compressed tiles. Sharp text and a good desktop default; more CPU than Raw. Noise and video can still use substantial bandwidth."
+
+msgctxt "ui"
+msgid "Zlib (lossless)"
+msgstr "Zlib (lossless)"
+
+msgctxt "ui"
+msgid "Zlib: lossless deflate over pixel data. Simple and broadly compatible; more CPU and usually less efficient than ZRLE or Tight."
+msgstr "Zlib: lossless deflate over pixel data. Simple and broadly compatible; more CPU and usually less efficient than ZRLE or Tight."
+
+msgctxt "ui"
+msgid "Zoom enlarges the fitted view and may crop the edges. It does not change the Mac resolution. Actual Size maps one decoded pixel to one Windows physical pixel."
+msgstr "Zoom enlarges the fitted view and may crop the edges. It does not change the Mac resolution. Actual Size maps one decoded pixel to one Windows physical pixel."
+
+msgctxt "ui"
+msgid "cancelled"
+msgstr "cancelled"
+
+msgctxt "ui"
+msgid "cancelled or Windows session locked"
+msgstr "cancelled or Windows session locked"
+
+msgctxt "ui"
+msgid "connection closed"
+msgstr "connection closed"
+
+msgctxt "ui"
+msgid "curl.red"
+msgstr "curl.red"
+
+msgctxt "ui"
+msgid "encrypted file send timed out"
+msgstr "encrypted file send timed out"
+
+msgctxt "ui"
+msgid "file send acknowledgement timed out"
+msgstr "file send acknowledgement timed out"
+
+msgctxt "ui"
+msgid "file send authorization expired"
+msgstr "file send authorization expired"
+
+msgctxt "ui"
+msgid "source changed or cannot be read"
+msgstr "source changed or cannot be read"
+
+msgctxt "ui"
+msgid "transfer timed out"
+msgstr "transfer timed out"
+
+msgctxt "ui"
+msgid "v"
+msgstr "v"
+
+msgctxt "ui"
+msgid "{0}  |  {1}  |  Up to {2} updates/s"
+msgstr "{0}  |  {1}  |  Up to {2} updates/s"
+
+msgctxt "ui"
+msgid "{0} HEVC ceiling"
+msgstr "{0} HEVC ceiling"
+

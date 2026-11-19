@@ -77,7 +77,7 @@ pub fn codec_available() -> Result<Option<PathBuf>> {
     let sibling = executable
         .parent()
         .ok_or_else(|| failed("The viewer has no application folder"))?
-        .join(audio_codec_tool::ASSET);
+        .join(crate::brand::AUDIO_ASSET);
     for path in [cache_path()?, sibling] {
         if verified(&path)? {
             return Ok(Some(path));
@@ -123,7 +123,7 @@ pub fn install_codec(scope: &Scope) -> Result<PathBuf> {
         "{}/releases/download/v{}/{}",
         crate::REPOSITORY,
         crate::VERSION,
-        audio_codec_tool::ASSET
+        crate::brand::AUDIO_ASSET
     );
     scope.critical(
         "component.audio.download.requested",
@@ -626,7 +626,7 @@ mod tests {
     #[test]
     fn component_verification_rejects_modified_and_nonregular_files() {
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join(audio_codec_tool::ASSET);
+        let path = directory.path().join(crate::brand::AUDIO_ASSET);
         assert!(!verified(&path).unwrap());
         assert!(verified(directory.path()).is_err());
         fs::copy(audio_codec_tool::BUILD_PATH, &path).unwrap();

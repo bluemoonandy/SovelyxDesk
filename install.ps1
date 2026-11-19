@@ -13,6 +13,12 @@ param(
     Set-StrictMode -Version Latest
     $ErrorActionPreference = 'Stop'
 
+    function Get-DeskBrand {
+        return @'
+{"schema_version": 1, "confirmed": true, "app_name": "Sovelyx Desk", "display_name_zh_cn": "Sovelyx 远程桌面", "publisher": "Sovelyx", "tagline": "Your Mac, within reach.", "tagline_zh_cn": "远程连接，触手可及。", "description": "Remote access to your Mac from Windows", "executable": "SovelyxDesk.exe", "release_name": "Sovelyx-Desk-windows-x64", "audio_asset": "SovelyxDesk-audio-windows-x64.exe", "shortcut": "Sovelyx Desk.lnk", "install_receipt": ".sovelyx-desk-install.json", "homepage": "https://sovelyx.com/desk", "homepage_status": "planned", "repository": "https://github.com/bluemoonandy/maccanvas", "repository_slug": "bluemoonandy/maccanvas", "updates_ready": false, "icon": "assets/brand/sovelyx-desk.png", "ico": "assets/brand/sovelyx-desk.ico", "legacy_data_directory": "MacCanvas", "legacy_credential_prefixes": ["MacCanvas/profile/", "MacCanvas/login/v2/"], "upstream_author": "@false00", "upstream_repository": "https://github.com/false00/maccanvas"}
+'@ | ConvertFrom-Json
+    }
+
     function Assert-MacCanvasPath([string]$Path) {
         if ($Path -notmatch '^[A-Za-z]:\\' -or $Path.Length -le 3 -or
             $Path.Substring(2).Contains(':') -or $Path -match '(^|[\\/])\.\.([\\/]|$)') {
@@ -133,13 +139,13 @@ param(
     }
 
     function Read-MacCanvasReceipt([string]$Directory) {
-        $path = Join-Path $Directory '.maccanvas-install.json'
-        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'This directory is not managed by the MacCanvas installer.' }
+        $path = Join-Path $Directory (Get-DeskBrand).install_receipt
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'This directory is not managed by the Sovelyx Desk installer.' }
         $receipt = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
         if ($receipt.repository -cne 'bluemoonandy/maccanvas' -or $receipt.sha256 -notmatch '^[a-fA-F0-9]{64}$') {
-            throw 'The MacCanvas installation receipt is invalid.'
+            throw 'The Sovelyx Desk installation receipt is invalid.'
         }
-        $executable = Join-Path $Directory 'MacCanvas.exe'
+        $executable = Join-Path $Directory (Get-DeskBrand).executable
         if (-not (Test-Path -LiteralPath $executable -PathType Leaf) -or
             (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash -ine $receipt.sha256) {
             throw 'The installed executable was changed; refusing to overwrite or remove it.'
@@ -151,7 +157,7 @@ param(
         foreach ($folder in @('Programs', 'DesktopDirectory')) {
             $directory = [Environment]::GetFolderPath($folder)
             if ([string]::IsNullOrWhiteSpace($directory)) { throw "Windows could not locate the $folder shortcut folder." }
-            Join-Path $directory 'MacCanvas.lnk'
+            Join-Path $directory (Get-DeskBrand).shortcut
         }
     }
 
@@ -176,7 +182,7 @@ param(
         foreach ($path in $paths) {
             if (Test-Path -LiteralPath $path) {
                 if (-not (Test-MacCanvasSamePath ($shell.CreateShortcut($path).TargetPath) $Executable)) {
-                    throw "Existing MacCanvas shortcut points elsewhere; it was not overwritten: $path"
+                    throw "Existing Sovelyx Desk shortcut points elsewhere; it was not overwritten: $path"
                 }
             }
         }
@@ -187,7 +193,7 @@ param(
             $shortcut.WorkingDirectory = Split-Path -Parent $Executable
             $shortcut.Arguments = ''
             $shortcut.IconLocation = "$Executable,0"
-            $shortcut.Description = 'Windows VNC viewer for macOS'
+            $shortcut.Description = (Get-DeskBrand).description
             $shortcut.Save()
         }
     }
@@ -211,7 +217,7 @@ param(
         if (Test-Path -LiteralPath $directory) {
             $items = @(Get-ChildItem -LiteralPath $directory -Force)
             if ($items.Count -gt 0) {
-                if (@($items | Where-Object { $_.Name -notin @('MacCanvas.exe', '.maccanvas-install.json') }).Count -gt 0) {
+                if (@($items | Where-Object { $_.Name -notin @((Get-DeskBrand).executable, (Get-DeskBrand).install_receipt) }).Count -gt 0) {
                     throw 'Installation directory contains unrelated files.'
                 }
                 $oldReceipt = Read-MacCanvasReceipt $directory
@@ -228,7 +234,7 @@ param(
                 ($Version -ne 'latest' -and $release.tag_name -cne $Version)) {
                 throw 'The installer requires a matching published stable release.'
             }
-            $binary = Get-MacCanvasAsset $release 'MacCanvas-windows-x64.exe' 104857600
+            $binary = Get-MacCanvasAsset $release (Get-DeskBrand).executable 104857600
             $checksums = Get-MacCanvasAsset $release 'SHA256SUMS.txt' 16384
             $checksumBytes = Receive-MacCanvasBytes $client ([uri]$checksums.browser_download_url) 16384
             if ("sha256:$(Get-MacCanvasHash $checksumBytes)" -ine $checksums.digest) { throw 'Checksum file digest mismatch.' }
@@ -242,8 +248,8 @@ param(
         } finally { $client.Dispose() }
 
         $null = [IO.Directory]::CreateDirectory($directory)
-        $exe = Join-Path $directory 'MacCanvas.exe'
-        $receiptPath = Join-Path $directory '.maccanvas-install.json'
+        $exe = Join-Path $directory (Get-DeskBrand).executable
+        $receiptPath = Join-Path $directory (Get-DeskBrand).install_receipt
         $stage = Join-Path $directory ('.maccanvas-' + [guid]::NewGuid().ToString('N') + '.tmp')
         $stageReceipt = "$stage.json"
         $backup = "$stage.backup"
@@ -262,9 +268,9 @@ param(
                     try { [IO.File]::Copy($backup, $exe, $true) }
                     catch {
                         $preserveBackup = $true
-                        throw "Installation rollback could not finish. The previous executable is preserved at $backup. Close MacCanvas before restoring it."
+                        throw "Installation rollback could not finish. The previous executable is preserved at $backup. Close Sovelyx Desk before restoring it."
                     }
-                    throw 'Installation failed; the previous executable was restored. Close MacCanvas and retry.'
+                    throw 'Installation failed; the previous executable was restored. Close Sovelyx Desk and retry.'
                 }
             } else {
                 [IO.File]::Move($stage, $exe)
@@ -290,19 +296,20 @@ param(
     function Uninstall-MacCanvas([string]$InstallDirectory) {
         $directory = Assert-MacCanvasPath $InstallDirectory
         $null = Read-MacCanvasReceipt $directory
-        $exe = Join-Path $directory 'MacCanvas.exe'
+        $exe = Join-Path $directory (Get-DeskBrand).executable
         Remove-MacCanvasShortcuts $exe
         [IO.File]::Delete($exe)
-        [IO.File]::Delete((Join-Path $directory '.maccanvas-install.json'))
+        [IO.File]::Delete((Join-Path $directory (Get-DeskBrand).install_receipt))
         if (@(Get-ChildItem -LiteralPath $directory -Force).Count -eq 0) { [IO.Directory]::Delete($directory, $false) }
-        Write-Output 'MacCanvas removed. Machine profiles and Windows credentials were preserved. Delete saved machines inside MacCanvas first if you want to remove their credentials.'
+        Write-Output 'Sovelyx Desk removed. Machine profiles and Windows credentials were preserved. Delete saved machines inside Sovelyx Desk first if you want to remove their credentials.'
     }
 
     $directory = $Options.InstallDirectory
-    if ([string]::IsNullOrWhiteSpace($directory)) { $directory = Join-Path $env:LOCALAPPDATA 'Programs\MacCanvas' }
+    if ([string]::IsNullOrWhiteSpace($directory)) { $directory = Join-Path $env:LOCALAPPDATA ('Programs\' + (Get-DeskBrand).app_name) }
     if ($Options.Uninstall) {
         Uninstall-MacCanvas $directory
     } else {
+        if (-not (Get-DeskBrand).updates_ready) { throw 'Sovelyx Desk online installation is not available yet. Use the verified portable package.' }
         Install-MacCanvas -Version $Options.Version -InstallDirectory $directory -NoLaunch:$Options.NoLaunch -NoShortcut:$Options.NoShortcut
     }
 } @{

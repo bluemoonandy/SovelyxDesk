@@ -4,9 +4,12 @@ pub const BUILD_CLOCK: &str = env!("MACCANVAS_BUILD_CLOCK");
 pub const REVISION: &str = env!("MACCANVAS_REVISION");
 pub const TARGET: &str = env!("MACCANVAS_TARGET");
 pub const RUSTC: &str = env!("MACCANVAS_RUSTC");
-pub const AUTHOR: &str = "@false00";
+pub const AUTHOR: &str = "@false00"; // Upstream authorship is retained.
 pub const AUTHOR_GITHUB: &str = "https://github.com/false00";
-pub const REPOSITORY: &str = "https://github.com/bluemoonandy/maccanvas";
+pub const REPOSITORY: &str = brand::REPOSITORY;
+
+pub mod brand;
+pub mod i18n;
 
 pub mod apple_hps;
 pub mod audio;

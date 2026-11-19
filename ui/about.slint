@@ -1,3 +1,4 @@
+import { UiText, Branding } from "i18n.slint";
 import { GlassTheme, GlassPanel, Button } from "glass.slint";
 import { ScrollView } from "std-widgets.slint";
 
@@ -7,9 +8,10 @@ export component AboutOverlay inherits Rectangle {
     in property <string> revision;
     in property <string> target;
     in property <string> compiler;
-    in property <string> author: "@false00";
+    in property <string> author: @tr("ui" => "@false00");
     in property <string> log-path;
     callback close();
+    callback open-licenses();
     callback open-link(int);
     callback open-logs();
     background: GlassTheme.dark ? #00000099 : #00000033;
@@ -25,44 +27,45 @@ export component AboutOverlay inherits Rectangle {
         VerticalLayout {
             padding: 26px; spacing: 18px;
             HorizontalLayout {
-                Image { source: @image-url("../assets/logo.svg"); width: 64px; height: 64px; }
+                Image { source: @image-url("../assets/brand/sovelyx-desk.png"); width: 64px; height: 64px; }
                 VerticalLayout {
                     spacing: 3px;
-                    Text { text: "MacCanvas"; color: GlassTheme.ink; font-size: 26px; font-weight: 700; }
-                    Text { text: "Version " + root.version; color: GlassTheme.muted; font-size: 13px; }
+                    Text { text: UiText.message(Branding.display-name); color: GlassTheme.ink; font-size: 26px; font-weight: 700; }
+                    Text { text: UiText.message(@tr("ui" => "Version ") + root.version); color: GlassTheme.muted; font-size: 13px; }
                 }
-                Button { text: "Done"; clicked => { root.close(); } }
+                Button { text: @tr("ui" => "Done"); clicked => { root.close(); } }
             }
             ScrollView {
                 VerticalLayout {
                     spacing: 15px; padding-right: 8px;
-                    Text { text: "Your Mac. Your Windows screen."; color: GlassTheme.ink; font-size: 17px; font-weight: 600; }
-                    Text { text: "Built by " + root.author; color: GlassTheme.muted; wrap: word-wrap; font-size: 13px; }
+                    Text { text: UiText.message(Branding.slogan); color: GlassTheme.ink; font-size: 17px; font-weight: 600; }
+                    Text { text: UiText.message(@tr("ui" => "Publisher: ") + Branding.publisher); color: GlassTheme.muted; font-size: 13px; }
+                    Text { text: UiText.message(@tr("ui" => "Upstream author: ") + root.author); color: GlassTheme.muted; wrap: word-wrap; font-size: 13px; }
                     HorizontalLayout {
-                        Button { text: "GitHub profile"; clicked => { root.open-link(0); } }
-                        Button { text: "curl.red"; quiet: true; clicked => { root.open-link(3); } }
+                        Button { text: @tr("ui" => "Upstream project"); clicked => { root.open-link(0); } }
+                        Button { text: @tr("ui" => "Product homepage"); quiet: true; clicked => { root.open-link(3); } }
                         Rectangle { background: transparent; horizontal-stretch: 1; }
                     }
                     GlassPanel {
                         radius: 14px; height: 152px;
                         VerticalLayout {
                             padding: 14px; spacing: 8px;
-                            Text { text: "BUILD DETAILS"; color: GlassTheme.muted; font-size: 11px; font-weight: 600; }
-                            Text { text: "Built: " + root.build-date; color: GlassTheme.ink; font-size: 12px; }
-                            Text { text: "Source: " + root.revision; color: GlassTheme.ink; font-size: 12px; }
-                            Text { text: "Target: " + root.target; color: GlassTheme.ink; font-size: 12px; }
-                            Text { text: root.compiler; color: GlassTheme.muted; font-size: 11px; overflow: elide; }
+                            Text { text: @tr("ui" => "BUILD DETAILS"); color: GlassTheme.muted; font-size: 11px; font-weight: 600; }
+                            Text { text: UiText.message(@tr("ui" => "Built: ") + root.build-date); color: GlassTheme.ink; font-size: 12px; }
+                            Text { text: UiText.message(@tr("ui" => "Source: ") + root.revision); color: GlassTheme.ink; font-size: 12px; }
+                            Text { text: UiText.message(@tr("ui" => "Target: ") + root.target); color: GlassTheme.ink; font-size: 12px; }
+                            Text { text: UiText.message(root.compiler); color: GlassTheme.muted; font-size: 11px; overflow: elide; }
                         }
                     }
                     HorizontalLayout {
-                        Button { text: "Source code"; clicked => { root.open-link(1); } }
-                        Button { text: "Releases"; clicked => { root.open-link(2); } }
-                        Button { text: "AGPL-3.0 license"; clicked => { root.open-link(4); } }
+                        Button { text: @tr("ui" => "Source code"); clicked => { root.open-link(1); } }
+                        Button { text: @tr("ui" => "Releases"); clicked => { root.open-link(2); } }
+                        Button { text: @tr("ui" => "Open Source Licenses"); clicked => { root.open-licenses(); } }
                     }
-                    Text { text: "Independent Rust + Slint viewer. Thanks to the TigerVNC, RealVNC, TightVNC, and original VNC authors for their work on remote desktop protocols."; color: GlassTheme.muted; wrap: word-wrap; font-size: 12px; }
-                    Text { text: "LOCAL SECURITY AUDIT"; color: GlassTheme.muted; font-size: 11px; font-weight: 600; }
+                    Text { text: @tr("ui" => "Independent Rust + Slint viewer. Thanks to the TigerVNC, RealVNC, TightVNC, and original VNC authors for their work on remote desktop protocols."); color: GlassTheme.muted; wrap: word-wrap; font-size: 12px; }
+                    Text { text: @tr("ui" => "LOCAL SECURITY AUDIT"); color: GlassTheme.muted; font-size: 11px; font-weight: 600; }
                     Text { text: root.log-path; color: GlassTheme.ink; wrap: word-wrap; font-size: 12px; }
-                    Button { text: "Open log folder"; clicked => { root.open-logs(); } }
+                    Button { text: @tr("ui" => "Open log folder"); clicked => { root.open-logs(); } }
                 }
             }
         }

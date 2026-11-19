@@ -14,7 +14,7 @@ $probePath = (Resolve-Path -LiteralPath $Probe).Path
 if ($LASTEXITCODE -ne 0) { throw 'Candidate executable preflight failed before replacement.' }
 $temporary = Join-Path ([IO.Path]::GetTempPath()) ('maccanvas-replace-test-' + [guid]::NewGuid().ToString('N'))
 $null = [IO.Directory]::CreateDirectory($temporary)
-$executable = Join-Path $temporary 'MacCanvas.exe'
+$executable = Join-Path $temporary 'SovelyxDesk.exe'
 Copy-Item -LiteralPath $probePath -Destination $executable
 $process = $null
 try {
@@ -47,7 +47,7 @@ try {
         }
         $manifest = Get-Content -LiteralPath (Join-Path $root 'Cargo.toml') -Raw
         $expected = [regex]::Match($manifest, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
-        if ($version.ExitCode -ne 0 -or $version.StandardOutput.ReadToEnd().Trim() -cne "MacCanvas $expected") {
+        if ($version.ExitCode -ne 0 -or $version.StandardOutput.ReadToEnd().Trim() -cne "Sovelyx Desk $expected") {
             throw 'The replaced executable reports an unexpected version.'
         }
     } finally { $version.Dispose() }

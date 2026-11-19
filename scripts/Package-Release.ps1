@@ -10,6 +10,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $root = Split-Path -Parent $PSScriptRoot
+$brand = Get-Content -LiteralPath (Join-Path $root 'brand\brand.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $manifest = Get-Content -LiteralPath (Join-Path $root 'Cargo.toml') -Raw
 $match = [regex]::Match($manifest, '(?m)^version\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"')
 if (-not $match.Success -or $Version -cne "v$($match.Groups[1].Value)") {
@@ -17,6 +18,8 @@ if (-not $match.Success -or $Version -cne "v$($match.Groups[1].Value)") {
 }
 if (-not $Executable) { $Executable = Join-Path $root 'target\x86_64-pc-windows-msvc\release\maccanvas.exe' }
 $exe = (Resolve-Path -LiteralPath $Executable).Path
+$resources = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
+if ($resources.ProductName -cne $brand.app_name -or $resources.CompanyName -cne $brand.publisher -or $resources.FileDescription -cne $brand.description) { throw 'Windows product resources do not match brand metadata.' }
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
 $visualStudio = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 if ($LASTEXITCODE -ne 0 -or -not $visualStudio) { throw 'Visual Studio C++ tools were not found.' }
@@ -64,7 +67,7 @@ function Read-ReleaseCli([string]$Path, [string]$Argument) {
     } finally { $process.Dispose() }
 }
 $codec = Read-ReleaseCli $exe '--audio-component-info' | ConvertFrom-Json
-if ($codec.version -cne $match.Groups[1].Value -or $codec.asset -cne 'MacCanvas-audio-windows-x64.exe' -or
+if ($codec.version -cne $match.Groups[1].Value -or $codec.asset -cne $brand.audio_asset -or
     $codec.sha256 -cnotmatch '^[a-f0-9]{64}$' -or $codec.size -le 0 -or $codec.size -gt (8MB)) {
     throw 'The viewer did not provide valid matching-release audio component metadata.'
 }
@@ -98,15 +101,23 @@ if (-not $audioNotices.Contains('Software License for The Fraunhofer FDK AAC Cod
 $dist = if ([IO.Path]::IsPathRooted($OutputDirectory)) { $OutputDirectory } else { Join-Path $root $OutputDirectory }
 if (Test-Path -LiteralPath $dist) { throw 'dist already exists; preserve the previous package and choose a clean build directory.' }
 $null = [IO.Directory]::CreateDirectory($dist)
-$destination = Join-Path $dist 'MacCanvas-windows-x64.exe'
+$destination = Join-Path $dist $brand.executable
 Copy-Item -LiteralPath $exe -Destination $destination
 Copy-Item -LiteralPath $audio -Destination (Join-Path $dist $codec.asset)
 Copy-Item -LiteralPath (Join-Path $root 'install.ps1') -Destination $dist
-[IO.File]::WriteAllText((Join-Path $dist 'MacCanvas-audio-NOTICES.txt'), $audioNotices, [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText((Join-Path $dist 'SovelyxDesk-audio-NOTICES.txt'), $audioNotices, [Text.UTF8Encoding]::new($false))
 $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
-[IO.File]::WriteAllText((Join-Path $dist 'SHA256SUMS.txt'), "$hash  MacCanvas-windows-x64.exe`n$($codec.sha256)  $($codec.asset)`n", [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText((Join-Path $dist 'SHA256SUMS.txt'), "$hash  $($brand.executable)`n$($codec.sha256)  $($codec.asset)`n", [Text.UTF8Encoding]::new($false))
 Write-Output "Portable executable: $destination"
 Write-Output "SHA-256: $hash"
 Write-Output "Optional audio component: $($codec.asset)"
 Write-Output "Audio SHA-256: $($codec.sha256)"
 Write-Output "Windows system imports only: viewer=$imports; audio=$audioImports"
+
+foreach ($file in @('LICENSE', 'THIRD_PARTY_NOTICES.txt')) { Copy-Item -LiteralPath (Join-Path $root $file) -Destination $dist }
+Copy-Item -LiteralPath (Join-Path $root 'brand\brand.json') -Destination (Join-Path $dist 'brand.json')
+$revision = (git -C $root rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $revision -notmatch '^[a-f0-9]{40}$') { throw 'Cannot determine corresponding source revision.' }
+& git -C $root archive --format=zip "--output=$dist\Sovelyx-Desk-source-$revision.zip" HEAD
+if ($LASTEXITCODE -ne 0) { throw 'Corresponding source export failed.' }
+[IO.File]::WriteAllText((Join-Path $dist 'SOURCE.txt'), "$($brand.repository)/tree/$revision`nBuild: see README.md and .github/workflows/ci.yml in the source archive.`n", [Text.UTF8Encoding]::new($false))

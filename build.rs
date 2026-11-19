@@ -1,20 +1,27 @@
 fn main() {
+    let brand = build_brand();
     build_metadata();
     build_gpu();
-    println!("cargo:rerun-if-changed=assets/logo.svg");
+    println!("cargo:rerun-if-changed=assets/brand");
+    println!("cargo:rerun-if-changed=translations");
     slint_build::compile_with_config(
         "ui/app.slint",
-        slint_build::CompilerConfiguration::new().with_style("cupertino".into()),
+        slint_build::CompilerConfiguration::new()
+            .with_style("cupertino".into())
+            .with_bundled_translations("translations"),
     )
     .expect("Slint interface compilation failed");
 
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
         let mut resource = winresource::WindowsResource::new();
         resource
-            .set_icon(generate_icon().to_str().expect("Icon path is UTF-8"))
-            .set("ProductName", "MacCanvas")
-            .set("FileDescription", "MacCanvas - Windows viewer for macOS")
-            .set("LegalCopyright", "MacCanvas contributors. See --licenses.")
+            .set_icon("assets/brand/sovelyx-desk.ico")
+            .set("ProductName", brand["app_name"].as_str().unwrap())
+            .set("FileDescription", brand["description"].as_str().unwrap())
+            .set("CompanyName", brand["publisher"].as_str().unwrap())
+            .set("OriginalFilename", brand["executable"].as_str().unwrap())
+            .set("InternalName", brand["app_name"].as_str().unwrap())
+            .set("LegalCopyright", "MacCanvas upstream authors and Sovelyx contributors. See --licenses.")
             .set_manifest(
                 r#"<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
 <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3"><security><requestedPrivileges>
@@ -154,47 +161,48 @@ fn main() {
         }
     }
 
-    fn generate_icon() -> std::path::PathBuf {
-        use std::io::Write;
-        let tree = resvg::usvg::Tree::from_data(
-            include_bytes!("assets/logo.svg"),
-            &resvg::usvg::Options::default(),
-        )
-        .expect("Logo SVG is valid");
-        let mut images = Vec::new();
-        for size in [16u32, 24, 32, 48, 64, 128, 256] {
-            let mut pixels =
-                resvg::tiny_skia::Pixmap::new(size, size).expect("Icon dimensions are valid");
-            resvg::render(
-                &tree,
-                resvg::tiny_skia::Transform::from_scale(size as f32 / 128.0, size as f32 / 128.0),
-                &mut pixels.as_mut(),
+    fn build_brand() -> serde_json::Value {
+        println!("cargo:rerun-if-changed=brand/brand.json");
+        let brand: serde_json::Value =
+            serde_json::from_str(include_str!("brand/brand.json")).expect("Valid brand metadata");
+        assert_eq!(
+            brand["confirmed"], true,
+            "Unconfirmed brand cannot be packaged"
+        );
+        for field in [
+            "app_name",
+            "display_name_zh_cn",
+            "publisher",
+            "tagline",
+            "tagline_zh_cn",
+            "description",
+            "executable",
+            "release_name",
+            "audio_asset",
+            "shortcut",
+            "install_receipt",
+            "homepage",
+            "repository",
+            "repository_slug",
+        ] {
+            let value = brand[field]
+                .as_str()
+                .expect("Brand metadata must be a string");
+            assert!(
+                !value.is_empty() && !value.contains(['\r', '\n']),
+                "Invalid brand metadata"
             );
-            images.push((
-                size,
-                pixels.encode_png().expect("Icon PNG encoding succeeds"),
-            ));
+            println!(
+                "cargo:rustc-env=SOVELYX_{}={value}",
+                field.to_ascii_uppercase()
+            );
         }
-        let path =
-            std::path::PathBuf::from(std::env::var_os("OUT_DIR").expect("Cargo provides OUT_DIR"))
-                .join("maccanvas.ico");
-        let mut file = std::fs::File::create(&path).expect("Can create the generated icon");
-        file.write_all(&[0, 0, 1, 0, images.len() as u8, 0])
-            .expect("Can write icon header");
-        let mut offset = 6 + images.len() as u32 * 16;
-        for (size, image) in &images {
-            let dimension = if *size == 256 { 0 } else { *size as u8 };
-            file.write_all(&[dimension, dimension, 0, 0, 1, 0, 32, 0])
-                .expect("Can write icon entry");
-            file.write_all(&(image.len() as u32).to_le_bytes())
-                .expect("Can write icon length");
-            file.write_all(&offset.to_le_bytes())
-                .expect("Can write icon offset");
-            offset += image.len() as u32;
-        }
-        for (_, image) in images {
-            file.write_all(&image).expect("Can write icon image");
-        }
-        path
+        println!(
+            "cargo:rustc-env=SOVELYX_UPDATES_READY={}",
+            brand["updates_ready"]
+                .as_bool()
+                .expect("Explicit update policy")
+        );
+        brand
     }
 }

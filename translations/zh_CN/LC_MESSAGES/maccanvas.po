@@ -1,0 +1,2358 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgctxt "ui"
+msgid "   OUT "
+msgstr "   出站 "
+
+msgctxt "ui"
+msgid "  -  Apple encrypted session"
+msgstr "  -  Apple 加密会话"
+
+msgctxt "ui"
+msgid "  -  SSH / SFTP"
+msgstr "  -  SSH / SFTP"
+
+msgctxt "ui"
+msgid " Socket cleanup also reported: {error}"
+msgstr " 清理套接字时还报告：{error}"
+
+msgctxt "ui"
+msgid " in"
+msgstr " 入站"
+
+msgctxt "ui"
+msgid " is ready"
+msgstr " 已就绪"
+
+msgctxt "ui"
+msgid " saved Macs"
+msgstr " 台已保存的 Mac"
+
+msgctxt "ui"
+msgid " to "
+msgstr " 到 "
+
+msgctxt "ui"
+msgid " · Fork development build"
+msgstr " · 开发测试版本"
+
+msgctxt "ui"
+msgid "+ Add Mac"
+msgstr "+ 添加 Mac"
+
+msgctxt "ui"
+msgid "+ Add another Mac"
+msgstr "+ 添加另一台 Mac"
+
+msgctxt "ui"
+msgid ". Uses the encrypted session; no SSH login is required."
+msgstr "。使用当前加密会话，无需 SSH 登录。"
+
+msgctxt "ui"
+msgid "0 = less CPU, potentially more traffic. 9 = more CPU, potentially fewer bytes. This is a server hint, not a bitrate."
+msgstr "0 表示较低 CPU 用量、可能增加流量；9 表示较高 CPU 用量、可能减少流量。这是服务端压缩提示，不是码率。"
+
+msgctxt "ui"
+msgid "0 FPS"
+msgstr "0 FPS"
+
+msgctxt "ui"
+msgid "0.0 kbps"
+msgstr "0.0 kbps"
+
+msgctxt "ui"
+msgid "100% of Fit"
+msgstr "Fit 的 100%"
+
+msgctxt "ui"
+msgid "125% of Fit"
+msgstr "Fit 的 125%"
+
+msgctxt "ui"
+msgid "150% of Fit"
+msgstr "Fit 的 150%"
+
+msgctxt "ui"
+msgid "175% of Fit"
+msgstr "Fit 的 175%"
+
+msgctxt "ui"
+msgid "200% of Fit"
+msgstr "Fit 的 200%"
+
+msgctxt "ui"
+msgid "@false00"
+msgstr "@false00"
+
+msgctxt "ui"
+msgid "A connection is already active"
+msgstr "已有活动连接"
+
+msgctxt "ui"
+msgid "A little closer to your Mac."
+msgstr "远程连接，触手可及。"
+
+msgctxt "ui"
+msgid "A moment closer."
+msgstr "正在连接你的 Mac…"
+
+msgctxt "ui"
+msgid "A native Windows window is required"
+msgstr "需要原生 Windows 窗口"
+
+msgctxt "ui"
+msgid "A new version is available. The download will be verified before installation. Saved Macs and logins stay."
+msgstr "有新版本可用，安装前会校验下载文件；已保存的 Mac 和登录信息会保留。"
+
+msgctxt "ui"
+msgid "A previous file worker is still stopping"
+msgstr "上一个文件任务仍在停止"
+
+msgctxt "ui"
+msgid "ABOUT & UPDATES"
+msgstr "关于与更新"
+
+msgctxt "ui"
+msgid "AGPL-3.0 license"
+msgstr "AGPL-3.0 许可证"
+
+msgctxt "ui"
+msgid "About"
+msgstr "关于"
+
+msgctxt "ui"
+msgid "About MacCanvas"
+msgstr "关于应用"
+
+msgctxt "ui"
+msgid "Actual Size (1:1 physical pixels)"
+msgstr "实际大小（物理像素 1:1）"
+
+msgctxt "ui"
+msgid "Adaptive bitrate is the default. A manual ceiling requests your chosen Mbps from the Mac; static screens and encoder limits can lower the actual rate, and bursts may exceed it. Compression, JPEG quality and the VNC bandwidth target do not apply. Apply reconnects when changing transports, HEVC presets or the bitrate ceiling; saved logins require Windows Hello again."
+msgstr "默认使用自适应码率。手动上限向 Mac 请求指定 Mbps；静止画面和编码器限制可能降低实际码率，突发流量可能超过上限。此模式不使用 VNC 压缩、JPEG 质量或带宽目标。更换传输方式、HEVC 预设或码率上限后会重新连接；已保存登录可能需要再次进行 Windows Hello 验证。"
+
+msgctxt "ui"
+msgid "Adaptive video bitrate"
+msgstr "自适应视频码率"
+
+msgctxt "ui"
+msgid "Add Your First Mac"
+msgstr "添加第一台 Mac"
+
+msgctxt "ui"
+msgid "Add a Mac"
+msgstr "添加 Mac"
+
+msgctxt "ui"
+msgid "Add your first Mac to get started."
+msgstr "添加你的第一台 Mac，开始使用。"
+
+msgctxt "ui"
+msgid "Allow file transfers in this session"
+msgstr "允许本会话传输文件"
+
+msgctxt "ui"
+msgid "Also delete saved credentials"
+msgstr "同时删除保存的凭据"
+
+msgctxt "ui"
+msgid "Apple HEVC uses encrypted control and SRTP video. Standard VNC traffic is not encrypted; use a trusted network or VPN for remote access."
+msgstr "Apple HEVC 使用加密控制通道和 SRTP 视频。标准 VNC 流量不加密；远程访问请使用可信网络或 VPN。"
+
+msgctxt "ui"
+msgid "Apple High Performance HEVC/H.265 at up to 30 FPS. Lower stream and decoding load than 60 FPS; preserves the Mac's physical desktop. Requires Mac account login and UDP on the VNC port and the next port. A native decoder is bundled; no codec extension is needed. Apply reconnects automatically when needed. Use Clipboard for encrypted text sharing."
+msgstr "Apple 高性能 HEVC/H.265，最高 30 FPS。相较 60 FPS，传输与解码负载更低，保留 Mac 物理桌面。需要使用 Mac 账户登录，并允许 VNC 端口及下一个端口的 UDP 通信。已内置原生解码器，无需安装解码扩展。应用设置时会在需要时自动重连。可使用剪贴板面板进行加密文本共享。"
+
+msgctxt "ui"
+msgid "Application update notification"
+msgstr "应用更新通知"
+
+msgctxt "ui"
+msgid "Apply"
+msgstr "应用"
+
+msgctxt "ui"
+msgid "Audio codec installed."
+msgstr "音频组件已安装。"
+
+msgctxt "ui"
+msgid "Audio installation stopped unexpectedly"
+msgstr "音频安装意外停止"
+
+msgctxt "ui"
+msgid "Audio is available with HEVC."
+msgstr "音频适用于 HEVC 连接。"
+
+msgctxt "ui"
+msgid "Audio playback"
+msgstr "音频播放"
+
+msgctxt "ui"
+msgid "Audio uses an optional, separately licensed AAC converter. Enabling audio downloads and verifies it from the official release. No system codec extension is installed."
+msgstr "音频使用单独许可的可选 AAC 转换器。启用音频时会从正式发布源下载并校验组件，不安装系统编解码扩展。"
+
+msgctxt "ui"
+msgid "Audio volume"
+msgstr "音量"
+
+msgctxt "ui"
+msgid "Audio volume must be between 0 and 100"
+msgstr "音量必须在 0 到 100 之间"
+
+msgctxt "ui"
+msgid "Audio: {error}"
+msgstr "音频：{error}"
+
+msgctxt "ui"
+msgid "Authentication, password protection and automatic reconnection are configured per Mac. Choose Edit on a device card."
+msgstr "每台 Mac 的认证、密码保护和自动重连分别配置。请在设备卡片中选择“编辑”。"
+
+msgctxt "ui"
+msgid "Auto (lossless VNC)"
+msgstr "自动（无损 VNC）"
+
+msgctxt "ui"
+msgid "Auto (lossless)"
+msgstr "自动（无损）"
+
+msgctxt "ui"
+msgid "Auto Sync Clipboard"
+msgstr "自动同步剪贴板"
+
+msgctxt "ui"
+msgid "Auto sync text limit must be 1–1048576 UTF-8 bytes"
+msgstr "自动同步文本上限须为 1～1048576 个 UTF-8 字节"
+
+msgctxt "ui"
+msgid "Automatic (no target)"
+msgstr "自动（无目标）"
+
+msgctxt "ui"
+msgid "Automatic clipboard preferences are too large"
+msgstr "自动剪贴板配置过大"
+
+msgctxt "ui"
+msgid "Automatic means no bandwidth target. A manual target spaces screen requests based on received bytes; bursts can exceed it. Apply reconnects automatically when switching to or from HEVC. Other VNC changes apply live."
+msgstr "自动模式不设置带宽目标。手动目标根据接收字节调整画面请求间隔，突发流量仍可能超出。切换到 HEVC 或从 HEVC 切出会自动重连；其他 VNC 设置即时应用。"
+
+msgctxt "ui"
+msgid "Automatically reconnect after an interrupted session"
+msgstr "会话中断后自动重连"
+
+msgctxt "ui"
+msgid "BASIC INFORMATION"
+msgstr "基本信息"
+
+msgctxt "ui"
+msgid "BUILD DETAILS"
+msgstr "构建信息"
+
+msgctxt "ui"
+msgid "Back to quality"
+msgstr "返回画质设置"
+
+msgctxt "ui"
+msgid "Bandwidth target Mbps"
+msgstr "带宽目标 Mbps"
+
+msgctxt "ui"
+msgid "Bandwidth target must be 0.1-1000 Mbps"
+msgstr "带宽目标须为 0.1～1000 Mbps"
+
+msgctxt "ui"
+msgid "Built by "
+msgstr "构建者："
+
+msgctxt "ui"
+msgid "Built: "
+msgstr "构建时间："
+
+msgctxt "ui"
+msgid "CLIPBOARD"
+msgstr "剪贴板"
+
+msgctxt "ui"
+msgid "CONNECTION"
+msgstr "连接"
+
+msgctxt "ui"
+msgid "CREDENTIAL PROTECTION"
+msgstr "凭据保护"
+
+msgctxt "ui"
+msgid "Cancel"
+msgstr "取消"
+
+msgctxt "ui"
+msgid "Cancel operation"
+msgstr "取消操作"
+
+msgctxt "ui"
+msgid "Cancel transfer"
+msgstr "取消传输"
+
+msgctxt "ui"
+msgid "Cancelling and cleaning up temporary files..."
+msgstr "正在取消并清理临时文件…"
+
+msgctxt "ui"
+msgid "Cancelling native file transfer…"
+msgstr "正在取消原生文件传输…"
+
+msgctxt "ui"
+msgid "Cannot encode automatic clipboard preferences"
+msgstr "无法编码自动剪贴板配置"
+
+msgctxt "ui"
+msgid "Cannot open the Mac folder \"{path}\". {error}"
+msgstr "无法打开 Mac 文件夹“{path}”。{error}"
+
+msgctxt "ui"
+msgid "Center"
+msgstr "居中"
+
+msgctxt "ui"
+msgid "Center display view"
+msgstr "居中显示画面"
+
+msgctxt "ui"
+msgid "Check updates"
+msgstr "检查更新"
+
+msgctxt "ui"
+msgid "Checking for updates on launch..."
+msgstr "正在检查更新…"
+
+msgctxt "ui"
+msgid "Checking the latest official release..."
+msgstr "正在检查最新正式版本…"
+
+msgctxt "ui"
+msgid "Checking…"
+msgstr "正在检查…"
+
+msgctxt "ui"
+msgid "Checks for updates on every launch."
+msgstr "每次启动时检查更新。"
+
+msgctxt "ui"
+msgid "Chinese"
+msgstr "简体中文"
+
+msgctxt "ui"
+msgid "Choose Windows destination…"
+msgstr "选择 Windows 保存位置…"
+
+msgctxt "ui"
+msgid "Choose a saved Mac or add a new connection."
+msgstr "选择已保存的 Mac，或添加新连接。"
+
+msgctxt "ui"
+msgid "Choose a supported compression method"
+msgstr "请选择支持的压缩方式"
+
+msgctxt "ui"
+msgid "Choose a supported login method"
+msgstr "请选择支持的登录方式"
+
+msgctxt "ui"
+msgid "Choose file…"
+msgstr "选择文件…"
+
+msgctxt "ui"
+msgid "Choose folder…"
+msgstr "选择文件夹…"
+
+msgctxt "ui"
+msgid "Clear"
+msgstr "清除"
+
+msgctxt "ui"
+msgid "Clear search"
+msgstr "清除搜索"
+
+msgctxt "ui"
+msgid "Clipboard"
+msgstr "剪贴板"
+
+msgctxt "ui"
+msgid "Clipboard image worker failed"
+msgstr "剪贴板图像任务失败"
+
+msgctxt "ui"
+msgid "Clipboard sharing"
+msgstr "剪贴板共享"
+
+msgctxt "ui"
+msgid "Clipboard: {error}"
+msgstr "剪贴板：{error}"
+
+msgctxt "ui"
+msgid "Close"
+msgstr "关闭"
+
+msgctxt "ui"
+msgid "Close connection editor"
+msgstr "关闭连接编辑器"
+
+msgctxt "ui"
+msgid "Close display settings"
+msgstr "关闭显示设置"
+
+msgctxt "ui"
+msgid "Close licenses"
+msgstr "关闭许可证"
+
+msgctxt "ui"
+msgid "CoRRE (legacy)"
+msgstr "CoRRE（旧式）"
+
+msgctxt "ui"
+msgid "CoRRE: compact RRE subrectangles. A legacy low-CPU choice for small simple regions; poor for modern photo-heavy desktops."
+msgstr "CoRRE：紧凑的 RRE 子矩形，适合小型简单区域，CPU 占用较低；不适合包含大量照片的现代桌面。"
+
+msgctxt "ui"
+msgid "Commit: "
+msgstr "提交："
+
+msgctxt "ui"
+msgid "Compare methods & bandwidth estimates"
+msgstr "比较编码方式与带宽估算"
+
+msgctxt "ui"
+msgid "Compare this fingerprint on the Mac before trusting it. A changed key is always blocked. No saved password is read or sent before the key is accepted."
+msgstr "信任前请在 Mac 上核对指纹。密钥变化会被阻止。接受密钥前不会读取或发送已保存密码。"
+
+msgctxt "ui"
+msgid "Completed file transfer location"
+msgstr "文件传输完成位置"
+
+msgctxt "ui"
+msgid "Compression and JPEG quality must be between 0 and 9"
+msgstr "压缩强度和 JPEG 质量须在 0～9 之间"
+
+msgctxt "ui"
+msgid "Compression effort"
+msgstr "压缩强度"
+
+msgctxt "ui"
+msgid "Compression effort: "
+msgstr "压缩强度："
+
+msgctxt "ui"
+msgid "Compression, explained"
+msgstr "压缩方式说明"
+
+msgctxt "ui"
+msgid "Confirm saving this password, or choose Do not save"
+msgstr "请确认保存密码，或选择不保存"
+
+msgctxt "ui"
+msgid "Connect"
+msgstr "连接"
+
+msgctxt "ui"
+msgid "Connect SSH first"
+msgstr "请先连接 SSH"
+
+msgctxt "ui"
+msgid "Connect securely"
+msgstr "安全连接"
+
+msgctxt "ui"
+msgid "Connect to Mac"
+msgstr "连接 Mac"
+
+msgctxt "ui"
+msgid "Connect to a Mac first"
+msgstr "请先连接 Mac"
+
+msgctxt "ui"
+msgid "Connect to a Mac to manage clipboard sharing from the toolbar."
+msgstr "连接 Mac 后，可在工具栏管理剪贴板共享。"
+
+msgctxt "ui"
+msgid "Connect to your Mac first"
+msgstr "请先连接你的 Mac"
+
+msgctxt "ui"
+msgid "Connect to your Mac's screen first"
+msgstr "请先连接 Mac 桌面"
+
+msgctxt "ui"
+msgid "Connect with HEVC before retrying audio"
+msgstr "请使用 HEVC 连接后重试音频"
+
+msgctxt "ui"
+msgid "Connect with the new password to change a saved login"
+msgstr "更改已保存的登录时，请使用新密码连接"
+
+msgctxt "ui"
+msgid "Connected"
+msgstr "已连接"
+
+msgctxt "ui"
+msgid "Connected Mac: "
+msgstr "已连接的 Mac："
+
+msgctxt "ui"
+msgid "Connected to {0} ({1})"
+msgstr "已连接到 {0}（{1}）"
+
+msgctxt "ui"
+msgid "Connected to {0} ({server_name})"
+msgstr "已连接到 {0}（{server_name}）"
+
+msgctxt "ui"
+msgid "Connected to {host} ({name})"
+msgstr "已连接到 {host}（{name}）"
+
+msgctxt "ui"
+msgid "Connected — automatic text sync active"
+msgstr "已连接——自动文本同步已启用"
+
+msgctxt "ui"
+msgid "Connecting…"
+msgstr "正在连接…"
+
+msgctxt "ui"
+msgid "Connection error: {error}"
+msgstr "连接错误：{error}"
+
+msgctxt "ui"
+msgid "Connection failed"
+msgstr "连接失败"
+
+msgctxt "ui"
+msgid "Connection interrupted. Reconnecting in {0}s (attempt {attempt}); Cancel to stop."
+msgstr "连接中断，将在 {0} 秒后重连（第 {attempt} 次）；可取消以停止。"
+
+msgctxt "ui"
+msgid "Connection interrupted: {error}"
+msgstr "连接中断：{error}"
+
+msgctxt "ui"
+msgid "Connection status indicator"
+msgstr "连接状态指示器"
+
+msgctxt "ui"
+msgid "Consolas"
+msgstr "Consolas"
+
+msgctxt "ui"
+msgid "Copy Mac text"
+msgstr "复制 Mac 文本"
+
+msgctxt "ui"
+msgid "Could not check for updates. {error}"
+msgstr "无法检查更新。{error}"
+
+msgctxt "ui"
+msgid "Could not finish the update. {error}"
+msgstr "无法完成更新。{error}"
+
+msgctxt "ui"
+msgid "Could not refresh application shortcuts. {error}"
+msgstr "无法刷新应用快捷方式。{error}"
+
+msgctxt "ui"
+msgid "Could not remove the saved login"
+msgstr "无法移除保存的登录"
+
+msgctxt "ui"
+msgid "Could not start clipboard worker: {error}"
+msgstr "无法启动剪贴板任务：{error}"
+
+msgctxt "ui"
+msgid "Could not start file worker"
+msgstr "无法启动文件任务"
+
+msgctxt "ui"
+msgid "Credential and connection status: "
+msgstr "凭据与连接状态："
+
+msgctxt "ui"
+msgid "Credential protection"
+msgstr "凭据保护方式"
+
+msgctxt "ui"
+msgid "Ctrl shortcuts act as Command"
+msgstr "将 Ctrl 快捷键映射为 Command"
+
+msgctxt "ui"
+msgid "Ctrl+V sends Windows text when pasting into your Mac. Incoming Mac text can replace your Windows clipboard while the viewer is active. Clipboard contents are never logged."
+msgstr "在 Mac 中粘贴时，Ctrl+V 会发送 Windows 文本。查看器处于活动状态时，Mac 文本可更新 Windows 剪贴板。不会记录剪贴板内容。"
+
+msgctxt "ui"
+msgid "DISPLAY & QUALITY"
+msgstr "显示与画质"
+
+msgctxt "ui"
+msgid "Default: Apple High Performance HEVC/H.265 at up to 60 FPS. Smoother motion with higher decoding and bandwidth use. Uses the same physical Mac desktop, encrypted control and SRTP video, with native decoding and software fallback. Requires a compatible Mac, Mac account login and UDP on both media ports. Apply reconnects automatically when needed."
+msgstr "默认使用 Apple 高性能 HEVC/H.265，最高 60 FPS，动作更流畅，解码与带宽用量较高。使用相同 Mac 桌面、加密控制和 SRTP 视频，并提供原生解码与软件回退。需要兼容的 Mac、Mac 账户登录及两个媒体端口的 UDP；必要时应用设置会自动重连。"
+
+msgctxt "ui"
+msgid "Default: HEVC / H.265 at up to 60 FPS, with adaptive bitrate."
+msgstr "默认：HEVC / H.265，最高 60 FPS，自适应码率。"
+
+msgctxt "ui"
+msgid "Default: HEVC / H.265, adaptive bitrate, up to 60 FPS."
+msgstr "默认：HEVC / H.265，自适应码率，最高 60 FPS。"
+
+msgctxt "ui"
+msgid "Device details are saved; the password is not persisted."
+msgstr "保存设备信息，不保存密码。"
+
+msgctxt "ui"
+msgid "Device details saved. Connect once to verify and save a new password."
+msgstr "设备信息已保存。请连接一次以验证并保存新密码。"
+
+msgctxt "ui"
+msgid "Device name"
+msgstr "设备名称"
+
+msgctxt "ui"
+msgid "Disconnect"
+msgstr "断开连接"
+
+msgctxt "ui"
+msgid "Disconnect SSH"
+msgstr "断开 SSH"
+
+msgctxt "ui"
+msgid "Disconnect before changing this Mac's details."
+msgstr "请先断开连接，再修改此 Mac 的信息。"
+
+msgctxt "ui"
+msgid "Disconnect from the Mac and wait for SSH cleanup before updating and restarting"
+msgstr "更新重启前请断开 Mac，并等待 SSH 清理完成"
+
+msgctxt "ui"
+msgid "Disconnect when you're ready to install and restart. Your saved Macs and logins will stay."
+msgstr "准备安装并重启时，请先断开连接。已保存的 Mac 和登录信息会保留。"
+
+msgctxt "ui"
+msgid "Dismiss"
+msgstr "忽略"
+
+msgctxt "ui"
+msgid "Display"
+msgstr "显示"
+
+msgctxt "ui"
+msgid "Display preference device limit reached"
+msgstr "显示偏好设备数量已达上限"
+
+msgctxt "ui"
+msgid "Display preferences exceed the size limit"
+msgstr "显示偏好超过大小限制"
+
+msgctxt "ui"
+msgid "Display scale"
+msgstr "显示缩放"
+
+msgctxt "ui"
+msgid "Display scaling"
+msgstr "显示缩放设置"
+
+msgctxt "ui"
+msgid "Display: {error}"
+msgstr "显示：{error}"
+
+msgctxt "ui"
+msgid "Done"
+msgstr "完成"
+
+msgctxt "ui"
+msgid "Download complete in a new folder at the chosen location. Existing files were not replaced."
+msgstr "已下载到所选位置的新文件夹，未覆盖已有文件。"
+
+msgctxt "ui"
+msgid "Downloading and verifying the audio codec..."
+msgstr "正在下载并校验音频组件…"
+
+msgctxt "ui"
+msgid "Downloading audio..."
+msgstr "正在下载音频组件…"
+
+msgctxt "ui"
+msgid "Downloading to the selected Windows folder…"
+msgstr "正在下载到所选 Windows 文件夹…"
+
+msgctxt "ui"
+msgid "Downloading {0}%..."
+msgstr "正在下载 {0}%…"
+
+msgctxt "ui"
+msgid "Downloads are saved in a new folder. Existing files are not replaced. Links are unsupported; each transfer is limited to 256 MiB."
+msgstr "下载会保存到新文件夹，不覆盖已有文件。不支持链接；单次传输上限为 256 MiB。"
+
+msgctxt "ui"
+msgid "Drag to pan"
+msgstr "拖动平移"
+
+msgctxt "ui"
+msgid "Duplicate SSH host-key endpoint"
+msgstr "SSH 主机密钥端点重复"
+
+msgctxt "ui"
+msgid "Duplicate machine identifier"
+msgstr "设备标识重复"
+
+msgctxt "ui"
+msgid "Edit Mac"
+msgstr "编辑 Mac"
+
+msgctxt "ui"
+msgid "Edit Mac connection"
+msgstr "编辑 Mac 连接"
+
+msgctxt "ui"
+msgid "Enable audio"
+msgstr "启用音频"
+
+msgctxt "ui"
+msgid "Enable native Apple sharing (clipboard and files)"
+msgstr "启用原生 Apple 共享（剪贴板与文件）"
+
+msgctxt "ui"
+msgid "Enable native sharing, file transfers and the selected direction first"
+msgstr "请先启用原生共享、文件传输和所选方向"
+
+msgctxt "ui"
+msgid "Enabling or retrying audio reconnects an active HEVC stream automatically. Saved logins require Windows Hello again."
+msgstr "启用或重试音频会自动重新连接当前 HEVC 会话。已保存登录可能需要再次进行 Windows Hello 验证。"
+
+msgctxt "ui"
+msgid "Encrypted Apple clipboard: establishing baseline"
+msgstr "加密 Apple 剪贴板：正在建立基线"
+
+msgctxt "ui"
+msgid "Encrypted SFTP. No files are automatically opened or replaced."
+msgstr "加密 SFTP，不会自动打开或覆盖文件。"
+
+msgctxt "ui"
+msgid "Encrypted SSH clipboard (optional fallback)"
+msgstr "加密 SSH 剪贴板（可选备用方式）"
+
+msgctxt "ui"
+msgid "English"
+msgstr "English"
+
+msgctxt "ui"
+msgid "Enter a Mac folder path to browse."
+msgstr "输入 Mac 文件夹路径以浏览。"
+
+msgctxt "ui"
+msgid "Enter a bandwidth target in Mbps, for example 10 or 0.5"
+msgstr "请输入 Mbps 带宽目标，例如 10 或 0.5"
+
+msgctxt "ui"
+msgid "Enter a host/IP and a separate port (1-65535)"
+msgstr "请输入主机/IP，并单独填写端口（1～65535）"
+
+msgctxt "ui"
+msgid "Enter a password"
+msgstr "输入密码"
+
+msgctxt "ui"
+msgid "Enter a password without NUL characters"
+msgstr "请输入不含 NUL 字符的密码"
+
+msgctxt "ui"
+msgid "Enter an HEVC bitrate in Mbps, for example 25 or 0.5"
+msgstr "请输入 HEVC 码率（Mbps），例如 25 或 0.5"
+
+msgctxt "ui"
+msgid "Enter an absolute Mac path without dot components"
+msgstr "请输入不含 . 或 .. 段的 Mac 绝对路径"
+
+msgctxt "ui"
+msgid "Enter an existing absolute Mac folder. Each upload creates a new transfer folder inside it."
+msgstr "输入已存在的 Mac 绝对目录。每次上传会在其中新建传输文件夹。"
+
+msgctxt "ui"
+msgid "Enter different credentials"
+msgstr "使用其他凭据"
+
+msgctxt "ui"
+msgid "Enter the password again before changing the address, port or login method. Existing credentials will not be sent to a different endpoint."
+msgstr "更改地址、端口或登录方式前，请重新输入密码。原凭据不会发送到其他端点。"
+
+msgctxt "ui"
+msgid "Enter the password for this device"
+msgstr "请输入此设备的密码"
+
+msgctxt "ui"
+msgid "Enter the password to change credential protection"
+msgstr "更改凭据保护方式前，请输入密码"
+
+msgctxt "ui"
+msgid "Enter the password to configure this login"
+msgstr "请先输入密码以配置此登录"
+
+msgctxt "ui"
+msgid "Enter your Mac password once to enable quick connection"
+msgstr "请先输入一次 Mac 密码，以启用快速连接"
+
+msgctxt "ui"
+msgid "Error — disable VNC sharing before starting automatic SSH sync"
+msgstr "错误——启用自动 SSH 同步前，请关闭 VNC 共享"
+
+msgctxt "ui"
+msgid "Error — {error}"
+msgstr "错误——{error}"
+
+msgctxt "ui"
+msgid "Exit full screen"
+msgstr "退出全屏"
+
+msgctxt "ui"
+msgid "Experimental Apple clipboard — disabled"
+msgstr "实验性 Apple 剪贴板——已禁用"
+
+msgctxt "ui"
+msgid "FPS counts unique desktop images submitted for display, not monitor refreshes. An idle desktop correctly reads 0 FPS. Traffic measures VNC, HEVC/audio SRTP and SSH payloads in bits/s, excluding TCP/UDP/VPN overhead."
+msgstr "FPS 统计提交显示的不同桌面帧，不是显示器刷新次数。静止桌面显示 0 FPS 属于正常情况。流量统计包括 VNC、HEVC/音频 SRTP 和 SSH 载荷，单位为 bit/s，不包括 TCP/UDP/VPN 开销。"
+
+msgctxt "ui"
+msgid "File"
+msgstr "文件"
+
+msgctxt "ui"
+msgid "File (size unavailable)"
+msgstr "文件（大小不可用）"
+
+msgctxt "ui"
+msgid "File data uploaded; file URLs queued on encrypted control — verify by pasting on the Mac"
+msgstr "文件数据已上传，文件地址已通过加密通道发送；请在 Mac 上粘贴确认。"
+
+msgctxt "ui"
+msgid "File download: {error}"
+msgstr "文件下载：{error}"
+
+msgctxt "ui"
+msgid "File staging cache exceeds 1 GiB"
+msgstr "文件暂存缓存超过 1 GiB"
+
+msgctxt "ui"
+msgid "File transfer"
+msgstr "文件传输"
+
+msgctxt "ui"
+msgid "File transfer cancelled"
+msgstr "文件传输已取消"
+
+msgctxt "ui"
+msgid "File transfer completed by the Mac; open the selected folder. No clipboard publication was attempted."
+msgstr "Mac 已完成文件传输，请打开所选目录。本次未改动剪贴板。"
+
+msgctxt "ui"
+msgid "File transfer: {error}"
+msgstr "文件传输：{error}"
+
+msgctxt "ui"
+msgid "File transfer: {message}"
+msgstr "文件传输：{message}"
+
+msgctxt "ui"
+msgid "File upload: {error}"
+msgstr "文件上传：{error}"
+
+msgctxt "ui"
+msgid "File worker failed"
+msgstr "文件任务失败"
+
+msgctxt "ui"
+msgid "Files"
+msgstr "文件"
+
+msgctxt "ui"
+msgid "Finish or cancel the current connection before applying stream settings"
+msgstr "应用串流设置前，请完成或取消当前连接"
+
+msgctxt "ui"
+msgid "Finish the application update before connecting"
+msgstr "连接前请先完成应用更新"
+
+msgctxt "ui"
+msgid "Fit to Window"
+msgstr "适应窗口"
+
+msgctxt "ui"
+msgid "Folder"
+msgstr "文件夹"
+
+msgctxt "ui"
+msgid "For a trusted PC. Programs running as your Windows user may access these credentials. Quick mode adds no separate hardware protection."
+msgstr "适用于可信电脑。以当前 Windows 用户运行的程序可能访问凭据；快速模式没有额外硬件保护。"
+
+msgctxt "ui"
+msgid "Frame queue is unavailable"
+msgstr "画面队列不可用"
+
+msgctxt "ui"
+msgid "Frame rate limit"
+msgstr "帧率上限"
+
+msgctxt "ui"
+msgid "Full screen"
+msgstr "全屏"
+
+msgctxt "ui"
+msgid "GENERAL"
+msgstr "通用"
+
+msgctxt "ui"
+msgid "GPU fit"
+msgstr "GPU 适应窗口"
+
+msgctxt "ui"
+msgid "GitHub profile"
+msgstr "GitHub 主页"
+
+msgctxt "ui"
+msgid "Go"
+msgstr "前往"
+
+msgctxt "ui"
+msgid "HEVC / H.265"
+msgstr "HEVC / H.265"
+
+msgctxt "ui"
+msgid "HEVC / H.265 - 30 FPS"
+msgstr "HEVC / H.265 - 30 FPS"
+
+msgctxt "ui"
+msgid "HEVC / H.265 - 60 FPS"
+msgstr "HEVC / H.265 - 60 FPS"
+
+msgctxt "ui"
+msgid "HEVC / H.265 - 60 FPS (default)"
+msgstr "HEVC / H.265 - 60 FPS（默认）"
+
+msgctxt "ui"
+msgid "HEVC bitrate (Mbps)"
+msgstr "HEVC 码率（Mbps）"
+
+msgctxt "ui"
+msgid "HEVC bitrate Mbps"
+msgstr "HEVC 码率 Mbps"
+
+msgctxt "ui"
+msgid "HEVC bitrate must be between 0.000001 and 4294.967295 Mbps"
+msgstr "HEVC 码率须为 0.000001～4294.967295 Mbps"
+
+msgctxt "ui"
+msgid "HEVC requires Mac account login. Choose a lossless VNC mode in Quality to use a classic VNC password."
+msgstr "HEVC 需要 Mac 账户登录。使用 VNC 密码时，请在画质中选择无损 VNC 模式。"
+
+msgctxt "ui"
+msgid "HEVC supports the experimental encrypted Apple clipboard; SSH is optional."
+msgstr "HEVC 支持实验性的 Apple 加密剪贴板，可选用 SSH。"
+
+msgctxt "ui"
+msgid "HEVC uses Apple's High Performance transport, not an RFB rectangle encoding"
+msgstr "HEVC 使用 Apple 高性能通道，不使用 RFB 矩形编码"
+
+msgctxt "ui"
+msgid "HEVC video is adaptive by default, with an optional custom bitrate ceiling. Use the live traffic meter: static screens and encoder limits can lower the actual rate. 60 FPS generally costs more bandwidth and CPU than 30 FPS; VNC rectangle-compression ratios do not apply."
+msgstr "HEVC 默认自适应码率，也可自定义码率上限。请参考实时流量：静态画面和编码器限制会使实际码率降低。60 FPS 通常比 30 FPS 占用更多带宽和 CPU；VNC 矩形压缩比不适用于此模式。"
+
+msgctxt "ui"
+msgid "Hextile (lossless)"
+msgstr "Hextile（无损）"
+
+msgctxt "ui"
+msgid "Hextile: small lossless tiles with solid-color subrectangles. Low CPU for simple desktops; images and video often approach Raw bandwidth."
+msgstr "Hextile：无损小图块与纯色子矩形。简单桌面下 CPU 占用较低；图像和视频的带宽通常接近 Raw。"
+
+msgctxt "ui"
+msgid "Host or IP address"
+msgstr "主机名或 IP 地址"
+
+msgctxt "ui"
+msgid "I authorize saving this password with the selected protection"
+msgstr "我授权按所选保护方式保存此密码"
+
+msgctxt "ui"
+msgid "IN "
+msgstr "入站 "
+
+msgctxt "ui"
+msgid "Illustration: {0} - {1}, assuming {low}x - {high}x size reduction."
+msgstr "示例：{0}～{1}，假定体积缩小 {low}～{high} 倍。"
+
+msgctxt "ui"
+msgid "Independent Rust + Slint viewer. Thanks to the TigerVNC, RealVNC, TightVNC, and original VNC authors for their work on remote desktop protocols."
+msgstr "独立的 Rust + Slint 查看器。感谢 TigerVNC、RealVNC、TightVNC 和原始 VNC 作者对远程桌面协议的贡献。"
+
+msgctxt "ui"
+msgid "Installing replaces this test build. A verified backup is kept for rollback."
+msgstr "安装会替换此测试版本，并保留已验证的备份用于回滚。"
+
+msgctxt "ui"
+msgid "Invalid Apple authentication key"
+msgstr "Apple 认证密钥无效"
+
+msgctxt "ui"
+msgid "Invalid DH integer"
+msgstr "DH 整数无效"
+
+msgctxt "ui"
+msgid "Invalid DH modulus"
+msgstr "DH 模数无效"
+
+msgctxt "ui"
+msgid "Invalid DH public key"
+msgstr "DH 公钥无效"
+
+msgctxt "ui"
+msgid "Invalid SSH host-key fingerprint"
+msgstr "SSH 主机密钥指纹无效"
+
+msgctxt "ui"
+msgid "Invalid VNC authentication key"
+msgstr "VNC 认证密钥无效"
+
+msgctxt "ui"
+msgid "Invalid automatic clipboard preferences"
+msgstr "自动剪贴板配置无效"
+
+msgctxt "ui"
+msgid "Invalid device identity"
+msgstr "设备标识无效"
+
+msgctxt "ui"
+msgid "Invalid display preferences"
+msgstr "显示偏好无效"
+
+msgctxt "ui"
+msgid "Invalid display zoom or pan"
+msgstr "显示缩放或平移值无效"
+
+msgctxt "ui"
+msgid "JPEG quality"
+msgstr "JPEG 质量"
+
+msgctxt "ui"
+msgid "JPEG quality: "
+msgstr "JPEG 质量："
+
+msgctxt "ui"
+msgid "KEYBOARD & SHORTCUTS"
+msgstr "键盘与快捷键"
+
+msgctxt "ui"
+msgid "Keep Mac"
+msgstr "保留 Mac"
+
+msgctxt "ui"
+msgid "Keep the Mac connection open while using SSH"
+msgstr "使用 SSH 时请保持 Mac 连接"
+
+msgctxt "ui"
+msgid "Keep this window open. MacCanvas will restart when ready."
+msgstr "请保持此窗口打开，应用将在就绪后重启。"
+
+msgctxt "ui"
+msgid "Keep this window open. The application will restart when ready."
+msgstr "请保持窗口打开，应用就绪后将重新启动。"
+
+msgctxt "ui"
+msgid "LOCAL DISPLAY SCALE"
+msgstr "本地显示缩放"
+
+msgctxt "ui"
+msgid "LOCAL SECURITY AUDIT"
+msgstr "本地安全审计"
+
+msgctxt "ui"
+msgid "Lanczos fit"
+msgstr "Lanczos 适应窗口"
+
+msgctxt "ui"
+msgid "Language"
+msgstr "语言"
+
+msgctxt "ui"
+msgid "Language preference: {error}"
+msgstr "语言偏好设置：{error}"
+
+msgctxt "ui"
+msgid "Later"
+msgstr "稍后"
+
+msgctxt "ui"
+msgid "Link or special file - not followed"
+msgstr "链接或特殊文件——不跟随"
+
+msgctxt "ui"
+msgid "Links and special files cannot be received"
+msgstr "无法接收链接或特殊文件"
+
+msgctxt "ui"
+msgid "Listening on encrypted Apple control — copy new text or a image"
+msgstr "正在监听加密 Apple 控制通道，请复制新的文本或图像"
+
+msgctxt "ui"
+msgid "Listening on encrypted Apple control — copy new text or an image"
+msgstr "正在监听加密 Apple 控制通道，请复制新的文本或图像"
+
+msgctxt "ui"
+msgid "Live FPS: "
+msgstr "实时 FPS："
+
+msgctxt "ui"
+msgid "Login account does not match the selected device"
+msgstr "登录账户与所选设备不匹配"
+
+msgctxt "ui"
+msgid "Login method"
+msgstr "登录方式"
+
+msgctxt "ui"
+msgid "Lossless VNC: prefer ZRLE, then Tight and legacy fallbacks. The Mac chooses an offered encoding; the live label shows what it actually sends. Use this for Macs or networks that do not support HEVC."
+msgstr "无损 VNC：优先使用 ZRLE，其次为 Tight 和旧版兼容编码。Mac 从提供的编码中选择，实时标签显示实际编码。适用于不支持 HEVC 的 Mac 或网络。"
+
+msgctxt "ui"
+msgid "Mac account"
+msgstr "Mac 账户"
+
+msgctxt "ui"
+msgid "Mac account password"
+msgstr "Mac 账户密码"
+
+msgctxt "ui"
+msgid "Mac account short username"
+msgstr "Mac 账户短用户名"
+
+msgctxt "ui"
+msgid "Mac account · Manual"
+msgstr "Mac 账户 · 手动登录"
+
+msgctxt "ui"
+msgid "Mac account · Windows Hello"
+msgstr "Mac 账户 · Windows Hello"
+
+msgctxt "ui"
+msgid "Mac address"
+msgstr "Mac 地址"
+
+msgctxt "ui"
+msgid "Mac audio"
+msgstr "Mac 音频"
+
+msgctxt "ui"
+msgid "Mac destination directory"
+msgstr "Mac 保存目录"
+
+msgctxt "ui"
+msgid "Mac folder"
+msgstr "Mac 文件夹"
+
+msgctxt "ui"
+msgid "Mac folder "
+msgstr "Mac 文件夹 "
+
+msgctxt "ui"
+msgid "Mac item "
+msgstr "Mac 项目 "
+
+msgctxt "ui"
+msgid "Mac login requires a username and password, each below 64 UTF-8 bytes"
+msgstr "Mac 登录需要用户名和密码，每项均小于 64 个 UTF-8 字节"
+
+msgctxt "ui"
+msgid "Mac mini"
+msgstr "Mac mini"
+
+msgctxt "ui"
+msgid "Mac password"
+msgstr "Mac 密码"
+
+msgctxt "ui"
+msgid "Mac plain text is now on the Windows clipboard."
+msgstr "Mac 纯文本已复制到 Windows 剪贴板。"
+
+msgctxt "ui"
+msgid "Mac refused upload"
+msgstr "Mac 拒绝上传"
+
+msgctxt "ui"
+msgid "Mac rejected the transfer"
+msgstr "Mac 拒绝了传输"
+
+msgctxt "ui"
+msgid "Mac session changed — rearming native clipboard"
+msgstr "Mac 会话发生变化，正在重新启用原生剪贴板"
+
+msgctxt "ui"
+msgid "Mac source file or folder"
+msgstr "Mac 源文件或文件夹"
+
+msgctxt "ui"
+msgid "Mac stopped upload"
+msgstr "Mac 停止了上传"
+
+msgctxt "ui"
+msgid "Mac system audio - 48 kHz stereo"
+msgstr "Mac 系统音频——48 kHz 立体声"
+
+msgctxt "ui"
+msgid "Mac username"
+msgstr "Mac 用户名"
+
+msgctxt "ui"
+msgid "Mac → Windows"
+msgstr "Mac → Windows"
+
+msgctxt "ui"
+msgid "Mac → Windows image received over encrypted Apple control"
+msgstr "已通过加密 Apple 控制通道接收 Mac 图像"
+
+msgctxt "ui"
+msgid "Mac → Windows received over encrypted Apple control"
+msgstr "已通过加密 Apple 控制通道从 Mac 接收"
+
+msgctxt "ui"
+msgid "Mac → Windows rich text received over encrypted Apple control"
+msgstr "已通过加密 Apple 控制通道接收 Mac 富文本"
+
+msgctxt "ui"
+msgid "Mac: "
+msgstr "Mac："
+
+msgctxt "ui"
+msgid "MacCanvas"
+msgstr "Sovelyx Desk"
+
+msgctxt "ui"
+msgid "MacCanvas "
+msgstr "Sovelyx Desk "
+
+msgctxt "ui"
+msgid "MacCanvas audio installer window closed"
+msgstr "音频安装窗口已关闭"
+
+msgctxt "ui"
+msgid "MacCanvas update notification"
+msgstr "应用更新通知"
+
+msgctxt "ui"
+msgid "Machine name"
+msgstr "设备名称"
+
+msgctxt "ui"
+msgid "Machine name must be 1-100 characters"
+msgstr "设备名称须为 1～100 个字符"
+
+msgctxt "ui"
+msgid "Manual"
+msgstr "手动登录"
+
+msgctxt "ui"
+msgid "Maximum FPS"
+msgstr "最高 FPS"
+
+msgctxt "ui"
+msgid "Maximum update rate must be 1-120"
+msgstr "最高更新帧率须为 1～120"
+
+msgctxt "ui"
+msgid "Missing audit directory"
+msgstr "缺少审计目录"
+
+msgctxt "ui"
+msgid "Missing display preferences directory"
+msgstr "缺少显示偏好目录"
+
+msgctxt "ui"
+msgid "Missing settings directory"
+msgstr "缺少设置目录"
+
+msgctxt "ui"
+msgid "More actions for "
+msgstr "更多操作："
+
+msgctxt "ui"
+msgid "Mute Mac audio"
+msgstr "静音 Mac 音频"
+
+msgctxt "ui"
+msgid "Mute playback"
+msgstr "静音播放"
+
+msgctxt "ui"
+msgid "My Macs"
+msgstr "我的 Mac"
+
+msgctxt "ui"
+msgid "NVIDIA NVDEC"
+msgstr "NVIDIA NVDEC"
+
+msgctxt "ui"
+msgid "Native Apple clipboard (experimental, no SSH)"
+msgstr "原生 Apple 剪贴板（实验性，无需 SSH）"
+
+msgctxt "ui"
+msgid "Native clipboard: unsupported, oversized or invalid image/text; contents unchanged"
+msgstr "原生剪贴板：图像或文本不受支持、过大或无效；内容未更改。"
+
+msgctxt "ui"
+msgid "Native error: {error}"
+msgstr "原生共享错误：{error}"
+
+msgctxt "ui"
+msgid "Native experiment: {reason}; inspect clipboard.apple logs (no SSH fallback)"
+msgstr "原生实验功能：{reason}；请查看 clipboard.apple 日志（不回退到 SSH）。"
+
+msgctxt "ui"
+msgid "Native file transfer failed or timed out; clipboard unchanged. Retry by copying again."
+msgstr "原生文件传输失败或超时，剪贴板未改变。请确认 Mac 目录存在且可写后重试。"
+
+msgctxt "ui"
+msgid "Native file transfer: {error}"
+msgstr "原生文件传输：{error}"
+
+msgctxt "ui"
+msgid "Native files: {0} / {1} KiB (copy only)"
+msgstr "原生文件：{0} / {1} KiB（仅复制）"
+
+msgctxt "ui"
+msgid "New connection"
+msgstr "新建连接"
+
+msgctxt "ui"
+msgid "No Macs match this search."
+msgstr "没有匹配的 Mac。"
+
+msgctxt "ui"
+msgid "No active Apple session"
+msgstr "没有活动的 Apple 会话"
+
+msgctxt "ui"
+msgid "No active connection"
+msgstr "没有活动连接"
+
+msgctxt "ui"
+msgid "No host-key approval is pending"
+msgstr "没有待处理的主机密钥授权"
+
+msgctxt "ui"
+msgid "No newer published version found ({0})."
+msgstr "没有更新的正式版本（{0}）。"
+
+msgctxt "ui"
+msgid "Not a file"
+msgstr "不是文件"
+
+msgctxt "ui"
+msgid "On the Mac, run:"
+msgstr "在 Mac 上运行："
+
+msgctxt "ui"
+msgid "On your Mac: System Settings > General > Sharing > Remote Login. Allow your Mac account."
+msgstr "在 Mac 上打开：系统设置 > 通用 > 共享 > 远程登录，并允许你的 Mac 账户。"
+
+msgctxt "ui"
+msgid "Open"
+msgstr "打开"
+
+msgctxt "ui"
+msgid "Open "
+msgstr "打开 "
+
+msgctxt "ui"
+msgid "Open Files or Clipboard from an active Mac connection"
+msgstr "请在已连接的 Mac 中打开文件或剪贴板面板"
+
+msgctxt "ui"
+msgid "Open Source Licenses"
+msgstr "开源许可证"
+
+msgctxt "ui"
+msgid "Open an accessible Mac folder before sending a file"
+msgstr "发送文件前，请先打开有权限访问的 Mac 文件夹"
+
+msgctxt "ui"
+msgid "Open log folder"
+msgstr "打开日志文件夹"
+
+msgctxt "ui"
+msgid "Operation cancelled"
+msgstr "操作已取消"
+
+msgctxt "ui"
+msgid "Optional new file name on the Mac"
+msgstr "可选：Mac 上的新文件名"
+
+msgctxt "ui"
+msgid "Original display preferences were preserved: {error}"
+msgstr "原始显示偏好已保留：{error}"
+
+msgctxt "ui"
+msgid "Pan mode: dragging moves only the local view. Turn Pan off to click or drag on the Mac."
+msgstr "平移模式：拖动只移动本地画面。关闭平移后，才能在 Mac 上点击或拖动。"
+
+msgctxt "ui"
+msgid "Pan on"
+msgstr "平移已开启"
+
+msgctxt "ui"
+msgid "Pan on · Stop panning"
+msgstr "平移已开启 · 停止平移"
+
+msgctxt "ui"
+msgid "Pan view down"
+msgstr "向下平移画面"
+
+msgctxt "ui"
+msgid "Pan view left"
+msgstr "向左平移画面"
+
+msgctxt "ui"
+msgid "Pan view right"
+msgstr "向右平移画面"
+
+msgctxt "ui"
+msgid "Pan view up"
+msgstr "向上平移画面"
+
+msgctxt "ui"
+msgid "Password"
+msgstr "密码"
+
+msgctxt "ui"
+msgid "Password has an invalid size"
+msgstr "密码长度无效"
+
+msgctxt "ui"
+msgid "Password required"
+msgstr "需要密码"
+
+msgctxt "ui"
+msgid "Password saved"
+msgstr "密码已保存"
+
+msgctxt "ui"
+msgid "Password saving is disabled"
+msgstr "已禁用密码保存"
+
+msgctxt "ui"
+msgid "Paste Windows text"
+msgstr "粘贴 Windows 文本"
+
+msgctxt "ui"
+msgid "Paused — SSH disconnected"
+msgstr "已暂停——SSH 已断开"
+
+msgctxt "ui"
+msgid "Paused — Windows clipboard is busy or text is unsupported"
+msgstr "已暂停——Windows 剪贴板忙或文本不受支持"
+
+msgctxt "ui"
+msgid "Paused — Windows session is locked or inactive"
+msgstr "已暂停——Windows 会话已锁定或不活动"
+
+msgctxt "ui"
+msgid "Paused — automatic sharing is off"
+msgstr "已暂停——自动共享已关闭"
+
+msgctxt "ui"
+msgid "Paused — choose a synchronization direction"
+msgstr "已暂停——请选择同步方向"
+
+msgctxt "ui"
+msgid "Paused — connect SSH securely to resume"
+msgstr "已暂停——请安全连接 SSH 后恢复"
+
+msgctxt "ui"
+msgid "Paused — disabled, disconnected or Windows session locked"
+msgstr "已暂停——已禁用、已断开或 Windows 会话锁定"
+
+msgctxt "ui"
+msgid "Paused — native Apple clipboard selected"
+msgstr "已暂停——已选择原生 Apple 剪贴板"
+
+msgctxt "ui"
+msgid "Picture & connection"
+msgstr "画质与连接"
+
+msgctxt "ui"
+msgid "Planning illustration, not benchmarks: {width} x {height}, 30 updates/s, 10% of pixels changing each time. Raw is {0}. The ranges use the explicit example ratios below; real usage depends on content, the Mac, and motion. Video/noise can exceed them. Idle screens use almost no pixel traffic."
+msgstr "规划示例，并非性能测试：{width} × {height}，每秒更新 30 次，每次 10% 的像素变化。Raw 流量为 {0}。范围使用下方明确列出的示例压缩比；实际用量取决于内容、Mac 和动态变化。视频或噪点可能超出范围，空闲画面几乎没有像素流量。"
+
+msgctxt "ui"
+msgid "Playback follows your Windows output device. These controls do not change the Mac's volume. No microphone audio is captured or sent."
+msgstr "音频跟随 Windows 输出设备。此处不改变 Mac 音量；不会采集或发送麦克风音频。"
+
+msgctxt "ui"
+msgid "Playback volume"
+msgstr "播放音量"
+
+msgctxt "ui"
+msgid "Port"
+msgstr "端口"
+
+msgctxt "ui"
+msgid "Port must be between 1 and 65535"
+msgstr "端口须在 1～65535 之间"
+
+msgctxt "ui"
+msgid "Product homepage"
+msgstr "产品主页"
+
+msgctxt "ui"
+msgid "Publisher: "
+msgstr "发布者："
+
+msgctxt "ui"
+msgid "Quality"
+msgstr "画质"
+
+msgctxt "ui"
+msgid "Quick Connect"
+msgstr "快速连接"
+
+msgctxt "ui"
+msgid "Quick Connect saves your password with your approval. Windows Hello verifies each saved-password read. Manual never saves a password. Passwords stay in Windows Credential Manager."
+msgstr "快速连接经授权保存密码；Windows Hello 在每次读取保存密码时验证身份；手动模式不保存密码。密码保存在 Windows 凭据管理器中。"
+
+msgctxt "ui"
+msgid "Quick connect"
+msgstr "快速连接"
+
+msgctxt "ui"
+msgid "RRE (legacy)"
+msgstr "RRE（旧式）"
+
+msgctxt "ui"
+msgid "RRE: lossless background colors and colored rectangles. Useful for legacy flat-color screens; photos can be larger than Raw."
+msgstr "RRE：无损背景色与彩色矩形，适合旧式纯色画面；照片数据量可能超过 Raw。"
+
+msgctxt "ui"
+msgid "Raw (uncompressed)"
+msgstr "Raw（不压缩）"
+
+msgctxt "ui"
+msgid "Raw: no pixel compression and the lowest compression CPU cost. Best only on fast trusted links; full-frame 4K motion can require several gigabits per second."
+msgstr "Raw：不压缩像素，压缩所需 CPU 最少。仅适合高速可信网络；全画面 4K 动态内容可能需要数 Gbps 带宽。"
+
+msgctxt "ui"
+msgid "Ready to connect"
+msgstr "等待连接"
+
+msgctxt "ui"
+msgid "Receive"
+msgstr "接收"
+
+msgctxt "ui"
+msgid "Receive "
+msgstr "接收 "
+
+msgctxt "ui"
+msgid "Receive from Mac"
+msgstr "从 Mac 接收"
+
+msgctxt "ui"
+msgid "Refresh"
+msgstr "刷新"
+
+msgctxt "ui"
+msgid "Reject"
+msgstr "拒绝"
+
+msgctxt "ui"
+msgid "Releases"
+msgstr "发布版本"
+
+msgctxt "ui"
+msgid "Remote desktop"
+msgstr "远程桌面"
+
+msgctxt "ui"
+msgid "Remove Mac"
+msgstr "移除 Mac"
+
+msgctxt "ui"
+msgid "Remove Mac…"
+msgstr "移除 Mac…"
+
+msgctxt "ui"
+msgid "Remove this saved Mac?"
+msgstr "移除此已保存的 Mac？"
+
+msgctxt "ui"
+msgid "Repair connection preferences before deleting this device"
+msgstr "删除此设备前，请修复连接偏好"
+
+msgctxt "ui"
+msgid "Reset display to Fit"
+msgstr "恢复适应窗口"
+
+msgctxt "ui"
+msgid "Restart needed"
+msgstr "需要重启"
+
+msgctxt "ui"
+msgid "Restart required"
+msgstr "需要重启"
+
+msgctxt "ui"
+msgid "Restore defaults"
+msgstr "恢复默认"
+
+msgctxt "ui"
+msgid "Retry"
+msgstr "重试"
+
+msgctxt "ui"
+msgid "Retry audio"
+msgstr "重试音频"
+
+msgctxt "ui"
+msgid "SECURITY & CREDENTIALS"
+msgstr "安全与凭据"
+
+msgctxt "ui"
+msgid "SSH Mac password"
+msgstr "SSH Mac 密码"
+
+msgctxt "ui"
+msgid "SSH Mac username"
+msgstr "SSH Mac 用户名"
+
+msgctxt "ui"
+msgid "SSH SHA-256 fingerprint"
+msgstr "SSH SHA-256 指纹"
+
+msgctxt "ui"
+msgid "SSH connected. Enter a folder this account can access."
+msgstr "SSH 已连接，请输入此账户可访问的文件夹。"
+
+msgctxt "ui"
+msgid "SSH connected. Showing {0}."
+msgstr "SSH 已连接，当前目录：{0}。"
+
+msgctxt "ui"
+msgid "SSH disconnected."
+msgstr "SSH 已断开。"
+
+msgctxt "ui"
+msgid "SSH host"
+msgstr "SSH 主机"
+
+msgctxt "ui"
+msgid "SSH host verified. Reading your Mac folder..."
+msgstr "SSH 主机已验证，正在读取 Mac 文件夹…"
+
+msgctxt "ui"
+msgid "SSH is already connected or connecting"
+msgstr "SSH 已连接或正在连接"
+
+msgctxt "ui"
+msgid "SSH is shared by file transfer and clipboard."
+msgstr "文件传输与剪贴板共用 SSH。"
+
+msgctxt "ui"
+msgid "SSH operation context is unavailable"
+msgstr "SSH 操作上下文不可用"
+
+msgctxt "ui"
+msgid "SSH operation error: "
+msgstr "SSH 操作错误："
+
+msgctxt "ui"
+msgid "SSH port"
+msgstr "SSH 端口"
+
+msgctxt "ui"
+msgid "SSH port must be 1-65535"
+msgstr "SSH 端口须为 1～65535"
+
+msgctxt "ui"
+msgid "Save"
+msgstr "保存"
+
+msgctxt "ui"
+msgid "Save & Connect"
+msgstr "保存并连接"
+
+msgctxt "ui"
+msgid "Save & Connect verifies the new password before saving it securely."
+msgstr "保存并连接会先验证新密码，再安全保存。"
+
+msgctxt "ui"
+msgid "Save keeps device details. Use Save & Connect to verify a new login."
+msgstr "保存仅更新设备信息。验证新登录请使用“保存并连接”。"
+
+msgctxt "ui"
+msgid "Save machine"
+msgstr "保存设备"
+
+msgctxt "ui"
+msgid "Saved credentials were removed. Enter them manually."
+msgstr "保存的凭据已移除，请手动输入。"
+
+msgctxt "ui"
+msgid "Saved for quick connection"
+msgstr "已保存，支持快速连接"
+
+msgctxt "ui"
+msgid "Saved login does not match this device"
+msgstr "保存的登录与此设备不匹配"
+
+msgctxt "ui"
+msgid "Saved password has an invalid size"
+msgstr "保存的密码长度无效"
+
+msgctxt "ui"
+msgid "Saved password is not UTF-8"
+msgstr "保存的密码不是 UTF-8 编码"
+
+msgctxt "ui"
+msgid "Saved passwords remain hidden. Hello mode requires approval; if unavailable, enter the password manually."
+msgstr "保存的密码始终隐藏。Hello 模式需授权；若不可用，可手动输入密码。"
+
+msgctxt "ui"
+msgid "Saved username is invalid"
+msgstr "保存的用户名无效"
+
+msgctxt "ui"
+msgid "Search by name or address"
+msgstr "按名称或地址搜索"
+
+msgctxt "ui"
+msgid "Search saved Macs"
+msgstr "搜索已保存的 Mac"
+
+msgctxt "ui"
+msgid "Secure randomness failed: {error}"
+msgstr "安全随机数生成失败：{error}"
+
+msgctxt "ui"
+msgid "Secure randomness produced an invalid exponent"
+msgstr "安全随机数生成了无效指数"
+
+msgctxt "ui"
+msgid "Security audit: {error}"
+msgstr "安全审计：{error}"
+
+msgctxt "ui"
+msgid "Security logging failed. Connections are disabled until MacCanvas is restarted. {error}"
+msgstr "安全日志失败，重启应用前将禁用连接。{error}"
+
+msgctxt "ui"
+msgid "Security logging failed. Connections are disabled until Sovelyx Desk is restarted. {error}"
+msgstr "安全日志记录失败。请重启 Sovelyx Desk 后再连接。{error}"
+
+msgctxt "ui"
+msgid "Select a machine first"
+msgstr "请先选择设备"
+
+msgctxt "ui"
+msgid "Send Windows text"
+msgstr "发送 Windows 文本"
+
+msgctxt "ui"
+msgid "Send a file..."
+msgstr "发送文件…"
+
+msgctxt "ui"
+msgid "Send to Mac"
+msgstr "发送到 Mac"
+
+msgctxt "ui"
+msgid "Set up Windows Hello in Windows Settings, or enter your Mac credentials manually instead of using the saved password."
+msgstr "请在 Windows 设置中配置 Windows Hello，或手动输入 Mac 凭据。"
+
+msgctxt "ui"
+msgid "Settings"
+msgstr "设置"
+
+msgctxt "ui"
+msgid "Settings file is too large"
+msgstr "设置文件过大"
+
+msgctxt "ui"
+msgid "Settings: {error}"
+msgstr "设置：{error}"
+
+msgctxt "ui"
+msgid "Share plain-text clipboard over VNC"
+msgstr "通过 VNC 共享纯文本剪贴板"
+
+msgctxt "ui"
+msgid "Shares new plain-text copies, including potentially sensitive text, in the background. Default: off. SSH must match the Mac desktop account."
+msgstr "在后台共享新复制的纯文本，可能包含敏感信息。默认关闭。SSH 账户须与 Mac 桌面账户一致。"
+
+msgctxt "ui"
+msgid "Sharp scaling. A familiar cursor. Your whole desktop."
+msgstr "清晰缩放，熟悉的光标，完整的桌面。"
+
+msgctxt "ui"
+msgid "Show FPS"
+msgstr "显示 FPS"
+
+msgctxt "ui"
+msgid "Show live FPS counter"
+msgstr "显示实时 FPS"
+
+msgctxt "ui"
+msgid "Single files only. Existing files are never replaced. Uploads are verified by reading them back before the final file is created."
+msgstr "仅支持单文件，不覆盖已有文件。上传完成后会读回校验，再创建最终文件。"
+
+msgctxt "ui"
+msgid "Source code"
+msgstr "对应版本源码"
+
+msgctxt "ui"
+msgid "Source: "
+msgstr "源码："
+
+msgctxt "ui"
+msgid "Source: bluemoonandy/maccanvas · GitHub"
+msgstr "来源：bluemoonandy/maccanvas · GitHub"
+
+msgctxt "ui"
+msgid "Sovelyx Desk updates are not published yet. Automatic downloads and installation are disabled."
+msgstr "Sovelyx Desk 尚未发布更新，自动下载与安装已停用。"
+
+msgctxt "ui"
+msgid "Standard VNC does not carry audio. Choose HEVC / H.265 in Quality to hear your Mac."
+msgstr "标准 VNC 不传输音频。请在画质设置中选择 HEVC / H.265 以播放 Mac 音频。"
+
+msgctxt "ui"
+msgid "Standard VNC offers CopyRect and a Raw fallback; the Mac may ignore compression/JPEG hints. HEVC uses Apple's separate High Performance transport with encrypted control, SRTP video and optional audio. Video decoding is bundled; audio uses a separate converter. Mac account login and UDP on the VNC port and the next port are required. H.264 playback is not supported."
+msgstr "标准 VNC 提供 CopyRect 与 Raw 回退；Mac 可能忽略压缩或 JPEG 提示。HEVC 使用独立的高性能通道，包含加密控制、SRTP 视频及可选音频。视频解码已内置，音频使用独立转换器。需要 Mac 账户登录，并开放 VNC 端口及其下一个端口的 UDP。不支持 H.264 播放。"
+
+msgctxt "ui"
+msgid "Standard VNC: Latin-1 compatibility mode."
+msgstr "标准 VNC：Latin-1 兼容模式。"
+
+msgctxt "ui"
+msgid "Standard VNC: Latin-1 text only. Use SSH for other Unicode characters."
+msgstr "标准 VNC 仅支持 Latin-1 文本，其他 Unicode 字符可使用 SSH。"
+
+msgctxt "ui"
+msgid "Starting the verified download..."
+msgstr "正在启动已验证的下载…"
+
+msgctxt "ui"
+msgid "Status: "
+msgstr "状态："
+
+msgctxt "ui"
+msgid "Stop local panning"
+msgstr "停止本地平移"
+
+msgctxt "ui"
+msgid "Stream quality"
+msgstr "画质设置"
+
+msgctxt "ui"
+msgid "Streaming mode"
+msgstr "串流模式"
+
+msgctxt "ui"
+msgid "Switching to {0}..."
+msgstr "正在切换到 {0}…"
+
+msgctxt "ui"
+msgid "Sync files and folders (experimental, copy only)"
+msgstr "同步文件与文件夹（实验性，仅复制）"
+
+msgctxt "ui"
+msgid "Syncing — encrypted plain text"
+msgstr "正在同步加密纯文本"
+
+msgctxt "ui"
+msgid "System Default"
+msgstr "跟随系统"
+
+msgctxt "ui"
+msgid "Target (Mbps)"
+msgstr "目标（Mbps）"
+
+msgctxt "ui"
+msgid "Target: "
+msgstr "目标："
+
+msgctxt "ui"
+msgid "Text limit (UTF-8 bytes)"
+msgstr "文本上限（UTF-8 字节数）"
+
+msgctxt "ui"
+msgid "Text/HTML/RTF: 1 MiB each. Images: up to 3840×2160 pixels; PNG transfer under 4 MiB. Single-page 8-bit TIFF is converted. File/folder sync is a separate opt-in below."
+msgstr "文本、HTML、RTF 各上限 1 MiB；图像最大 3840×2160，PNG 小于 4 MiB。支持转换单页 8 位 TIFF。文件与文件夹同步需另行启用。"
+
+msgctxt "ui"
+msgid "The Mac supplied an invalid or weak DH modulus"
+msgstr "Mac 提供的 DH 模数无效或强度不足"
+
+msgctxt "ui"
+msgid "The SSH approval request is no longer active"
+msgstr "SSH 授权请求已失效"
+
+msgctxt "ui"
+msgid "The Windows file name cannot be represented as UTF-8"
+msgstr "Windows 文件名无法表示为 UTF-8"
+
+msgctxt "ui"
+msgid "The active Mac is unavailable"
+msgstr "当前 Mac 不可用"
+
+msgctxt "ui"
+msgid "The active connection cannot be restarted"
+msgstr "无法重新启动当前连接"
+
+msgctxt "ui"
+msgid "The active connection profile is unavailable"
+msgstr "当前连接配置不可用"
+
+msgctxt "ui"
+msgid "The connection window is no longer available"
+msgstr "连接窗口不再可用"
+
+msgctxt "ui"
+msgid "The existing host key cannot be replaced from an approval prompt"
+msgstr "不能在授权提示中替换已有主机密钥"
+
+msgctxt "ui"
+msgid "The interrupted connection cannot be restarted"
+msgstr "无法重新启动已中断的连接"
+
+msgctxt "ui"
+msgid "The interrupted connection profile is unavailable"
+msgstr "已中断连接的配置不可用"
+
+msgctxt "ui"
+msgid "The new version is installed, but could not restart: {error}. Close and reopen MacCanvas."
+msgstr "新版本已安装，但无法重启：{error}。请关闭并重新打开应用。"
+
+msgctxt "ui"
+msgid "The new version is installed, but could not restart: {error}. Close and reopen Sovelyx Desk."
+msgstr "新版本已安装，但无法重新启动：{error}。请关闭并重新打开 Sovelyx Desk。"
+
+msgctxt "ui"
+msgid "The selected Mac no longer exists"
+msgstr "所选 Mac 已不存在"
+
+msgctxt "ui"
+msgid "The selected file is no longer in this folder"
+msgstr "所选文件已不在此文件夹中"
+
+msgctxt "ui"
+msgid "The selected machine no longer exists"
+msgstr "所选设备已不存在"
+
+msgctxt "ui"
+msgid "Theme and motion follow Windows automatically."
+msgstr "主题和动效自动跟随 Windows。"
+
+msgctxt "ui"
+msgid "This credential store does not support connection policies"
+msgstr "此凭据存储不支持连接策略"
+
+msgctxt "ui"
+msgid "This folder is empty."
+msgstr "此文件夹为空。"
+
+msgctxt "ui"
+msgid "This password is used only for this SSH connection and is not saved."
+msgstr "此密码仅用于当前 SSH 连接，不会保存。"
+
+msgctxt "ui"
+msgid "Tight (lossless)"
+msgstr "Tight（无损）"
+
+msgctxt "ui"
+msgid "Tight + JPEG"
+msgstr "Tight + JPEG"
+
+msgctxt "ui"
+msgid "Tight + JPEG (lossy)"
+msgstr "Tight + JPEG（有损）"
+
+msgctxt "ui"
+msgid "Tight + JPEG: may compress photographs and motion more efficiently. JPEG quality 0-9 trades clarity for smaller updates; text or images can show artifacts. The Mac may ignore this hint."
+msgstr "Tight + JPEG：可能更有效地压缩照片和动态内容。JPEG 质量 0–9 在清晰度与数据量之间取舍，文本或图像可能出现失真。Mac 可能忽略此提示。"
+
+msgctxt "ui"
+msgid "Tight lossless"
+msgstr "Tight 无损"
+
+msgctxt "ui"
+msgid "Tight lossless: deflate with palette and gradient filters. Excellent for text and flat-color apps. More encoding CPU; no JPEG artifacts."
+msgstr "Tight 无损：使用调色板和渐变滤镜的 deflate 压缩。适合文本与纯色应用，编码 CPU 占用较高，无 JPEG 失真。"
+
+msgctxt "ui"
+msgid "Toggle connections sidebar"
+msgstr "切换设备侧栏"
+
+msgctxt "ui"
+msgid "Toggle local pan"
+msgstr "切换本地平移"
+
+msgctxt "ui"
+msgid "Trust key & continue"
+msgstr "信任密钥并继续"
+
+msgctxt "ui"
+msgid "Try another name or address. Your saved Macs are still here."
+msgstr "请尝试其他名称或地址。已保存的 Mac 仍会保留。"
+
+msgctxt "ui"
+msgid "UTF-8 negotiated: Unicode plain text is available."
+msgstr "已协商 UTF-8，可共享 Unicode 纯文本。"
+
+msgctxt "ui"
+msgid "Unicode clipboard uses this SSH account's logged-in Mac desktop. No images, rich text, or clipboard contents are logged."
+msgstr "Unicode 剪贴板使用此 SSH 账户登录的 Mac 桌面，不记录图像、富文本或剪贴板内容。"
+
+msgctxt "ui"
+msgid "Unsupported Apple DH key length or generator"
+msgstr "不支持的 Apple DH 密钥长度或生成元"
+
+msgctxt "ui"
+msgid "Unsupported settings version or too many machines"
+msgstr "不支持的设置版本，或设备数量过多"
+
+msgctxt "ui"
+msgid "Up"
+msgstr "上一级"
+
+msgctxt "ui"
+msgid "Up to 16 roots / 256 MiB per batch. Keep this app open until pasting finishes. Files are staged in Mac /tmp and a private Windows temporary folder. Mac /tmp copies remain until system cleanup; links are not supported. Turn off this option to cancel."
+msgstr "每批最多 16 个根项目、256 MiB。粘贴完成前请保持应用打开。文件暂存在 Mac /tmp 和 Windows 私有临时文件夹；Mac 临时副本由系统清理。不支持链接。关闭此选项可取消。"
+
+msgctxt "ui"
+msgid "Update & restart"
+msgstr "更新并重启"
+
+msgctxt "ui"
+msgid "Update Password"
+msgstr "更新密码"
+
+msgctxt "ui"
+msgid "Update check"
+msgstr "更新检查"
+
+msgctxt "ui"
+msgid "Update recovery: {error}"
+msgstr "更新恢复：{error}"
+
+msgctxt "ui"
+msgid "Update source: bluemoonandy/maccanvas on GitHub. Upstream packages cannot be installed by this updater."
+msgstr "更新源为 GitHub 上的自有 Fork，禁止安装上游发布包。"
+
+msgctxt "ui"
+msgid "Update: {error}"
+msgstr "更新：{error}"
+
+msgctxt "ui"
+msgid "Updating MacCanvas"
+msgstr "正在更新应用"
+
+msgctxt "ui"
+msgid "Updating application"
+msgstr "正在更新应用"
+
+msgctxt "ui"
+msgid "Upload file name"
+msgstr "上传文件名"
+
+msgctxt "ui"
+msgid "Uploading to the selected Mac folder…"
+msgstr "正在上传到所选 Mac 文件夹…"
+
+msgctxt "ui"
+msgid "Upstream author: "
+msgstr "上游作者："
+
+msgctxt "ui"
+msgid "Upstream project"
+msgstr "上游项目"
+
+msgctxt "ui"
+msgid "Use a manual HEVC bitrate ceiling"
+msgstr "手动设置 HEVC 码率上限"
+
+msgctxt "ui"
+msgid "Use a manual bandwidth target"
+msgstr "手动设置带宽目标"
+
+msgctxt "ui"
+msgid "Use compression/quality 0-9, 1-120 FPS, and a bandwidth target of 0.1-1000 Mbps (or Automatic)."
+msgstr "压缩/质量须为 0～9，帧率须为 1～120 FPS，带宽目标须为 0.1～1000 Mbps（或自动）。"
+
+msgctxt "ui"
+msgid "Use existing saved login"
+msgstr "使用已保存的登录"
+
+msgctxt "ui"
+msgid "Use saved Mac login (Windows Hello required)"
+msgstr "使用已保存 Mac 登录（需要 Windows Hello）"
+
+msgctxt "ui"
+msgid "Use the HEVC bitrate ceiling instead of the VNC request-bandwidth target"
+msgstr "请使用 HEVC 码率上限，而非 VNC 请求带宽目标"
+
+msgctxt "ui"
+msgid "Use the Pan button to drag the enlarged view, or use the arrow buttons above. Saved separately for each Mac."
+msgstr "使用“平移”拖动放大画面，或使用上方方向按钮。设置按 Mac 分别保存。"
+
+msgctxt "ui"
+msgid "Use the encrypted SSH controls in Clipboard while using HEVC"
+msgstr "HEVC 模式下请使用剪贴板面板中的加密 SSH 控件"
+
+msgctxt "ui"
+msgid "Uses the current encrypted HEVC connection. New text, HTML/RTF and image copies sync in the selected directions. Remote Login and a second authentication are not used."
+msgstr "使用当前加密的 HEVC 连接，同步所选方向的新文本、HTML/RTF 和图像。无需远程登录或二次认证。"
+
+msgctxt "ui"
+msgid "VNC clipboard traffic is not encrypted. Use a VPN. Files, images, and rich text are not shared."
+msgstr "VNC 剪贴板流量不加密，请使用 VPN。不共享文件、图像或富文本。"
+
+msgctxt "ui"
+msgid "VNC password"
+msgstr "VNC 密码"
+
+msgctxt "ui"
+msgid "VNC password uses standard VNC video. Apple HEVC requires Mac account authentication."
+msgstr "VNC 密码使用标准 VNC 视频；Apple HEVC 需要 Mac 账户认证。"
+
+msgctxt "ui"
+msgid "VNC password · Manual"
+msgstr "VNC 密码 · 手动登录"
+
+msgctxt "ui"
+msgid "VNC port"
+msgstr "VNC 端口"
+
+msgctxt "ui"
+msgid "VNC protocol error: {error}"
+msgstr "VNC 协议错误：{error}"
+
+msgctxt "ui"
+msgid "Verification was not approved. No saved password was read and no connection was opened."
+msgstr "未获得验证授权，未读取保存的密码或发起连接。"
+
+msgctxt "ui"
+msgid "Verify this Mac's SSH host key"
+msgstr "验证此 Mac 的 SSH 主机密钥"
+
+msgctxt "ui"
+msgid "Verify to connect with MacCanvas credentials"
+msgstr "请验证以使用保存的凭据连接"
+
+msgctxt "ui"
+msgid "Verify with Windows Hello if prompted."
+msgstr "如有提示，请通过 Windows Hello 验证。"
+
+msgctxt "ui"
+msgid "Verifying SSH..."
+msgstr "正在验证 SSH…"
+
+msgctxt "ui"
+msgid "Verifying and connecting..."
+msgstr "正在验证并连接…"
+
+msgctxt "ui"
+msgid "Verifying and replacing the executable..."
+msgstr "正在验证并替换程序…"
+
+msgctxt "ui"
+msgid "Verifying the Mac's SSH identity before using credentials..."
+msgstr "正在验证 Mac 的 SSH 身份，然后才会使用凭据…"
+
+msgctxt "ui"
+msgid "Version "
+msgstr "版本 "
+
+msgctxt "ui"
+msgid "Wait for the current file transfer to finish or cancel it"
+msgstr "请等待当前文件传输完成，或先取消它"
+
+msgctxt "ui"
+msgid "Wait for the current installation to finish"
+msgstr "请等待当前安装完成"
+
+msgctxt "ui"
+msgid "Wait for the current operation or cancel it first"
+msgstr "请等待当前操作完成，或先取消"
+
+msgctxt "ui"
+msgid "Wait for the previous SSH connection to close"
+msgstr "请等待上一个 SSH 连接关闭"
+
+msgctxt "ui"
+msgid "Wait for the previous connections to finish closing"
+msgstr "请等待之前的连接关闭"
+
+msgctxt "ui"
+msgid "Waiting for Mac audio..."
+msgstr "正在等待 Mac 音频…"
+
+msgctxt "ui"
+msgid "Waiting for pixels"
+msgstr "正在等待画面"
+
+msgctxt "ui"
+msgid "Waiting for the Mac..."
+msgstr "正在等待 Mac…"
+
+msgctxt "ui"
+msgid "Windows Credential Manager: {error}"
+msgstr "Windows 凭据管理器：{error}"
+
+msgctxt "ui"
+msgid "Windows Hello"
+msgstr "Windows Hello"
+
+msgctxt "ui"
+msgid "Windows Hello authorizes every saved-password read. You can enter the password manually if Hello is unavailable."
+msgstr "Windows Hello 在每次读取保存密码时授权；若不可用，可手动输入密码。"
+
+msgctxt "ui"
+msgid "Windows Hello protected"
+msgstr "Windows Hello 保护"
+
+msgctxt "ui"
+msgid "Windows Hello: {error}"
+msgstr "Windows Hello：{error}"
+
+msgctxt "ui"
+msgid "Windows clipboard is busy or unavailable"
+msgstr "Windows 剪贴板忙或不可用"
+
+msgctxt "ui"
+msgid "Windows content queued; waiting for the encrypted connection to finish writing."
+msgstr "Windows 内容已排队，正在等待加密连接完成写入。"
+
+msgctxt "ui"
+msgid "Windows content written to the encrypted Mac connection. Paste on the Mac to verify acceptance."
+msgstr "已向加密 Mac 连接发送 Windows 内容，请在 Mac 上粘贴以确认接收。"
+
+msgctxt "ui"
+msgid "Windows did not return a local app-data folder"
+msgstr "Windows 未返回本地应用数据目录"
+
+msgctxt "ui"
+msgid "Windows has no plain text on the clipboard"
+msgstr "Windows 剪贴板中没有纯文本"
+
+msgctxt "ui"
+msgid "Windows plain text is now on the Mac clipboard. Paste it in your Mac app."
+msgstr "Windows 纯文本已发送到 Mac 剪贴板，请在 Mac 应用中粘贴。"
+
+msgctxt "ui"
+msgid "Windows returned an invalid credential"
+msgstr "Windows 返回了无效凭据"
+
+msgctxt "ui"
+msgid "Windows → Mac"
+msgstr "Windows → Mac"
+
+msgctxt "ui"
+msgid "Your Mac"
+msgstr "你的 Mac"
+
+msgctxt "ui"
+msgid "Your Mac, beautifully in view."
+msgstr "你的 Mac，尽在眼前。"
+
+msgctxt "ui"
+msgid "Your Mac, within reach."
+msgstr "远程连接，触手可及。"
+
+msgctxt "ui"
+msgid "Your Mac. Your Windows screen."
+msgstr "你的 Mac，呈现在 Windows 屏幕。"
+
+msgctxt "ui"
+msgid "Your Macs, one click away."
+msgstr "一键连接你的 Mac。"
+
+msgctxt "ui"
+msgid "Your macOS account"
+msgstr "你的 macOS 账户"
+
+msgctxt "ui"
+msgid "Your saved login stays locked in Windows Credential Manager. Approve Windows Hello after SSH host verification."
+msgstr "登录信息保存在 Windows 凭据管理器中。SSH 主机验证后，请授权 Windows Hello。"
+
+msgctxt "ui"
+msgid "ZRLE (lossless)"
+msgstr "ZRLE（无损）"
+
+msgctxt "ui"
+msgid "ZRLE: lossless compressed tiles. Sharp text and a good desktop default; more CPU than Raw. Noise and video can still use substantial bandwidth."
+msgstr "ZRLE：无损图块压缩，文字清晰，适合作为桌面默认编码，CPU 占用高于 Raw。噪点和视频仍可能占用较多带宽。"
+
+msgctxt "ui"
+msgid "Zlib (lossless)"
+msgstr "Zlib（无损）"
+
+msgctxt "ui"
+msgid "Zlib: lossless deflate over pixel data. Simple and broadly compatible; more CPU and usually less efficient than ZRLE or Tight."
+msgstr "Zlib：对像素数据进行无损 deflate 压缩，简单且兼容性广；CPU 占用较高，通常不如 ZRLE 或 Tight 高效。"
+
+msgctxt "ui"
+msgid "Zoom enlarges the fitted view and may crop the edges. It does not change the Mac resolution. Actual Size maps one decoded pixel to one Windows physical pixel."
+msgstr "缩放会放大适应窗口后的画面，并可能裁剪边缘，不改变 Mac 分辨率。实际大小表示一个解码像素对应一个 Windows 物理像素。"
+
+msgctxt "ui"
+msgid "cancelled"
+msgstr "已取消"
+
+msgctxt "ui"
+msgid "cancelled or Windows session locked"
+msgstr "已取消，或 Windows 会话已锁定"
+
+msgctxt "ui"
+msgid "connection closed"
+msgstr "连接已关闭"
+
+msgctxt "ui"
+msgid "curl.red"
+msgstr "curl.red"
+
+msgctxt "ui"
+msgid "encrypted file send timed out"
+msgstr "加密文件发送超时"
+
+msgctxt "ui"
+msgid "file send acknowledgement timed out"
+msgstr "文件发送确认超时"
+
+msgctxt "ui"
+msgid "file send authorization expired"
+msgstr "文件传输授权已过期"
+
+msgctxt "ui"
+msgid "source changed or cannot be read"
+msgstr "源文件已更改或无法读取"
+
+msgctxt "ui"
+msgid "transfer timed out"
+msgstr "传输超时"
+
+msgctxt "ui"
+msgid "v"
+msgstr "v"
+
+msgctxt "ui"
+msgid "{0}  |  {1}  |  Up to {2} updates/s"
+msgstr "{0}  |  {1}  |  最高 {2} 次更新/秒"
+
+msgctxt "ui"
+msgid "{0} HEVC ceiling"
+msgstr "{0} HEVC 码率上限"
+

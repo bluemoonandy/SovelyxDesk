@@ -1,0 +1,15 @@
+export global UiText {
+    in property <int> revision: 0;
+    in property <bool> chinese: false;
+    pure callback translate(string, int) -> string;
+    public pure function message(source: string) -> string { return self.translate(source, self.revision); }
+}
+export global Branding {
+    in property <string> app-name;
+    in property <string> chinese-name;
+    in property <string> publisher;
+    in property <string> tagline;
+    in property <string> chinese-tagline;
+    out property <string> display-name: UiText.chinese ? self.chinese-name : self.app-name;
+    out property <string> slogan: UiText.chinese ? self.chinese-tagline : self.tagline;
+}

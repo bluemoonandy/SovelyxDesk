@@ -85,6 +85,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--executable", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--language", default="en", choices=["en", "zh-CN"])
     args = parser.parse_args()
     fixture = SessionFixture()
     worker = threading.Thread(target=fixture.run, daemon=True)
@@ -92,9 +93,9 @@ if __name__ == "__main__":
     try:
         subprocess.run([
             "pwsh", "-NoProfile", "-File", str(Path(__file__).with_name("Capture-Readme.ps1")),
-            "-Executable", args.executable, "-OutputDirectory", args.output,
+            "-Language", args.language, "-Executable", args.executable, "-OutputDirectory", args.output,
             "-PreviewTheme", "light", "-DeviceCount", "6", "-SessionPort", str(fixture.port),
-        ], check=True, timeout=120)
+        ], check=True, timeout=180)
         if fixture.error:
             raise fixture.error
     finally:

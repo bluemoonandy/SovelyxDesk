@@ -1,6 +1,7 @@
 mod display_preferences;
 mod display_ui;
 mod files_ui;
+mod locale_ui;
 mod login_ui;
 mod native_clipboard;
 mod window_preferences;
@@ -1315,7 +1316,7 @@ fn tick_updates(app: &App, state: &Rc<RefCell<State>>) -> Result<()> {
                                 app.set_update_available(false);
                                 state.updater.restart_required = true;
                                 app.set_update_restart_required(true);
-                                app.set_update_status(format!("The new version is installed, but could not restart: {error}. Close and reopen MacCanvas.").into());
+                                app.set_update_status(format!("The new version is installed, but could not restart: {error}. Close and reopen Sovelyx Desk.").into());
                                 app.set_update_banner(true);
                             }
                         }
@@ -1360,6 +1361,7 @@ pub fn run(
     data_directory: Option<PathBuf>,
     preview_theme: Option<bool>,
     preview_update: bool,
+    language: Option<maccanvas::i18n::Preference>,
     audit: Scope,
 ) -> Result<()> {
     let restart_data_directory = data_directory.clone();
@@ -1376,6 +1378,23 @@ pub fn run(
         Err(error) => (Default::default(), Some(error)),
     };
     let app = App::new().map_err(|error| Error::Display(error.to_string()))?;
+    locale_ui::initialize(&app, &directory, language);
+    app.set_brand_updates_ready(maccanvas::brand::UPDATES_READY);
+    app.set_license_text(
+        concat!(
+            include_str!("../LICENSE"),
+            "\n\n",
+            include_str!("../THIRD_PARTY_NOTICES.txt")
+        )
+        .into(),
+    );
+    let license_app = app.as_weak();
+    app.on_show_licenses(move || {
+        if let Some(app) = license_app.upgrade() {
+            app.set_about_open(false);
+            app.set_licenses_open(true);
+        }
+    });
     let placement_path = directory.join("ui-window-v1.json");
     let placement = Rc::new(RefCell::new(window_preferences::Placement::load(
         &placement_path,
@@ -1434,7 +1453,9 @@ pub fn run(
     if preview_update {
         updater.preview_available()?;
     }
-    if preview_theme.is_none() && !(cfg!(debug_assertions) && preview_update) {
+    if !maccanvas::brand::UPDATES_READY {
+        app.set_update_status(maccanvas::brand::UPDATES_UNAVAILABLE.into());
+    } else if preview_theme.is_none() && !(cfg!(debug_assertions) && preview_update) {
         updater.check(&audit)?;
     } else {
         app.set_update_status("Checks for updates on every launch.".into());
@@ -1706,6 +1727,10 @@ pub fn run(
     let check_state = state.clone();
     app.on_check_updates(move || {
         let Some(app) = weak.upgrade() else { return };
+        if !maccanvas::brand::UPDATES_READY {
+            app.set_update_status(maccanvas::brand::UPDATES_UNAVAILABLE.into());
+            return;
+        }
         let mut state = check_state.borrow_mut();
         if state.updater.release.is_some() && !state.updater.checking && !state.updater.installing {
             app.set_update_banner(true);
@@ -2560,7 +2585,7 @@ pub fn run(
                         state.connection_credentials = None;
                         app.set_connecting(false);
                         state.files.stop(&app);
-                        let mut message = format!("Security logging failed. Connections are disabled until MacCanvas is restarted. {error}");
+                        let mut message = format!("Security logging failed. Connections are disabled until Sovelyx Desk is restarted. {error}");
                         if let Err(error) = closed { message.push_str(&format!(" Socket cleanup also reported: {error}")); }
                         app.set_audit_error(message.clone().into());
                         notify(&app, Error::Audit(message));

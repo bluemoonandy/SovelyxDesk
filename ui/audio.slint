@@ -1,3 +1,4 @@
+import { UiText, Branding } from "i18n.slint";
 import { GlassTheme, GlassPanel, Button, CheckBox, Slider } from "glass.slint";
 
 export component AudioOverlay inherits Rectangle {
@@ -25,24 +26,24 @@ export component AudioOverlay inherits Rectangle {
             VerticalLayout {
                 padding: 26px; spacing: 16px;
                 HorizontalLayout {
-                    Text { text: "Mac audio"; color: GlassTheme.ink; font-size: 23px; font-weight: 700; }
-                    Button { text: "Done"; clicked => { root.close(); } }
+                    Text { text: @tr("ui" => "Mac audio"); color: GlassTheme.ink; font-size: 23px; font-weight: 700; }
+                    Button { text: @tr("ui" => "Done"); clicked => { root.close(); } }
                 }
-                Text { text: root.connected && !root.supported ? "Standard VNC does not carry audio. Choose HEVC / H.265 in Quality to hear your Mac." : root.status; color: GlassTheme.accent; font-size: 13px; wrap: word-wrap; }
+                Text { text: UiText.message(root.connected && !root.supported ? @tr("ui" => "Standard VNC does not carry audio. Choose HEVC / H.265 in Quality to hear your Mac.") : root.status); color: GlassTheme.accent; font-size: 13px; wrap: word-wrap; }
                 if root.missing || root.installing : VerticalLayout {
                     spacing: 12px;
-                    Text { text: "Audio uses an optional, separately licensed AAC converter. Enabling audio downloads and verifies it from the official release. No system codec extension is installed."; color: GlassTheme.muted; font-size: 12px; wrap: word-wrap; }
-                    Button { text: root.installing ? "Downloading audio..." : "Enable audio"; primary: true; enabled: !root.installing; clicked => { root.install(); } }
+                    Text { text: @tr("ui" => "Audio uses an optional, separately licensed AAC converter. Enabling audio downloads and verifies it from the official release. No system codec extension is installed."); color: GlassTheme.muted; font-size: 12px; wrap: word-wrap; }
+                    Button { text: UiText.message(root.installing ? @tr("ui" => "Downloading audio...") : @tr("ui" => "Enable audio")); primary: true; enabled: !root.installing; clicked => { root.install(); } }
                 }
-                CheckBox { text: "Mute playback"; accessible-label: "Mute Mac audio"; checked <=> root.muted; enabled: !root.connected || root.supported; toggled => { root.changed(); } }
+                CheckBox { text: @tr("ui" => "Mute playback"); accessible-label: @tr("ui" => "Mute Mac audio"); checked <=> root.muted; enabled: !root.connected || root.supported; toggled => { root.changed(); } }
                 HorizontalLayout {
-                    Text { text: "Playback volume"; color: GlassTheme.ink; font-size: 13px; vertical-alignment: center; }
-                    Slider { accessible-label: "Audio volume"; minimum: 0; maximum: 100; step: 1; value <=> root.volume; enabled: !root.connected || root.supported; changed => { root.changed(); } }
-                    Text { text: round(root.volume) + "%"; color: GlassTheme.muted; font-size: 12px; vertical-alignment: center; min-width: 40px; }
+                    Text { text: @tr("ui" => "Playback volume"); color: GlassTheme.ink; font-size: 13px; vertical-alignment: center; }
+                    Slider { accessible-label: @tr("ui" => "Audio volume"); minimum: 0; maximum: 100; step: 1; value <=> root.volume; enabled: !root.connected || root.supported; changed => { root.changed(); } }
+                    Text { text: UiText.message(round(root.volume) + "%"); color: GlassTheme.muted; font-size: 12px; vertical-alignment: center; min-width: 40px; }
                 }
-                Text { text: "Playback follows your Windows output device. These controls do not change the Mac's volume. No microphone audio is captured or sent."; color: GlassTheme.muted; font-size: 12px; wrap: word-wrap; }
-                if root.connected && root.supported && !root.missing : Button { text: "Retry audio"; enabled: !root.installing; clicked => { root.retry(); } }
-                Text { text: "Enabling or retrying audio reconnects an active HEVC stream automatically. Saved logins require Windows Hello again."; color: GlassTheme.muted; font-size: 11px; wrap: word-wrap; }
+                Text { text: @tr("ui" => "Playback follows your Windows output device. These controls do not change the Mac's volume. No microphone audio is captured or sent."); color: GlassTheme.muted; font-size: 12px; wrap: word-wrap; }
+                if root.connected && root.supported && !root.missing : Button { text: @tr("ui" => "Retry audio"); enabled: !root.installing; clicked => { root.retry(); } }
+                Text { text: @tr("ui" => "Enabling or retrying audio reconnects an active HEVC stream automatically. Saved logins require Windows Hello again."); color: GlassTheme.muted; font-size: 11px; wrap: word-wrap; }
             }
         }
     }

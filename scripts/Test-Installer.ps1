@@ -29,14 +29,14 @@ function Set-Fixture([string]$Version, [byte]$Marker) {
     $script:binary[152] = 0x0b; $script:binary[153] = 0x02
     $script:binary[300] = $Marker
     $script:hash = Get-MacCanvasHash $script:binary
-    $script:checksums = [Text.Encoding]::UTF8.GetBytes("$script:hash  MacCanvas-windows-x64.exe`n$('a' * 64)  MacCanvas-audio-windows-x64.exe`n")
+    $script:checksums = [Text.Encoding]::UTF8.GetBytes("$script:hash  SovelyxDesk.exe`n$('a' * 64)  SovelyxDesk-audio-windows-x64.exe`n")
     $base = "https://github.com/bluemoonandy/maccanvas/releases/download/$Version"
     $script:release = [pscustomobject]@{
         tag_name = $Version; draft = $false; prerelease = $false
         assets = @(
-            [pscustomobject]@{ name = 'MacCanvas-windows-x64.exe'; size = $script:binary.Length; digest = "sha256:$script:hash"; browser_download_url = "$base/MacCanvas-windows-x64.exe" }
+            [pscustomobject]@{ name = 'SovelyxDesk.exe'; size = $script:binary.Length; digest = "sha256:$script:hash"; browser_download_url = "$base/SovelyxDesk.exe" }
             [pscustomobject]@{ name = 'SHA256SUMS.txt'; size = $script:checksums.Length; digest = "sha256:$(Get-MacCanvasHash $script:checksums)"; browser_download_url = "$base/SHA256SUMS.txt" }
-            [pscustomobject]@{ name = 'MacCanvas-audio-windows-x64.exe'; size = 1024; digest = "sha256:$('a' * 64)"; browser_download_url = "$base/MacCanvas-audio-windows-x64.exe" }
+            [pscustomobject]@{ name = 'SovelyxDesk-audio-windows-x64.exe'; size = 1024; digest = "sha256:$('a' * 64)"; browser_download_url = "$base/SovelyxDesk-audio-windows-x64.exe" }
         )
     }
 }
@@ -47,7 +47,7 @@ function Receive-MacCanvasBytes($Client, [uri]$Uri, [long]$Maximum) {
         return ,[Text.Encoding]::UTF8.GetBytes(($script:release | ConvertTo-Json -Depth 8))
     }
     if ($Uri.AbsolutePath.EndsWith('/SHA256SUMS.txt')) { return ,$script:checksums }
-    if ($Uri.AbsolutePath.EndsWith('/MacCanvas-windows-x64.exe')) { return ,$script:binary }
+    if ($Uri.AbsolutePath.EndsWith('/SovelyxDesk.exe')) { return ,$script:binary }
     throw 'Unexpected fixture network request'
 }
 
@@ -59,8 +59,8 @@ $null = [IO.Directory]::CreateDirectory($unrelated)
 $menuDirectory = Join-Path $root 'Start menu'
 $desktopDirectory = Join-Path $root 'Desktop'
 function Get-MacCanvasShortcutPaths {
-    Join-Path $menuDirectory 'MacCanvas.lnk'
-    Join-Path $desktopDirectory 'MacCanvas.lnk'
+    Join-Path $menuDirectory 'Sovelyx Desk.lnk'
+    Join-Path $desktopDirectory 'Sovelyx Desk.lnk'
 }
 $shortcutPaths = @(Get-MacCanvasShortcutPaths)
 try {
@@ -72,11 +72,11 @@ try {
     }
     Assert-MacCanvasUrl ([uri]'https://release-assets.githubusercontent.com/file')
     Assert-Test $true 'accept HTTPS GitHub asset host'
-    Assert-Throws { Get-MacCanvasChecksum (('a' * 64) + '  MacCanvas-windows-x64.exe' + "`n" + ('b' * 64) + '  MacCanvas-windows-x64.exe') 'MacCanvas-windows-x64.exe' } 'reject duplicate checksums'
+    Assert-Throws { Get-MacCanvasChecksum (('a' * 64) + '  SovelyxDesk.exe' + "`n" + ('b' * 64) + '  SovelyxDesk.exe') 'SovelyxDesk.exe' } 'reject duplicate checksums'
     Set-Fixture 'v0.1.0' 1
     $foreign = ($script:release | ConvertTo-Json -Depth 8 | ConvertFrom-Json)
-    $foreign.assets[0].browser_download_url = 'https://github.com/false00/maccanvas/releases/download/v0.1.0/MacCanvas-windows-x64.exe'
-    Assert-Throws { Get-MacCanvasAsset $foreign 'MacCanvas-windows-x64.exe' 104857600 } 'installer rejects upstream viewer assets'
+    $foreign.assets[0].browser_download_url = 'https://github.com/false00/maccanvas/releases/download/v0.1.0/SovelyxDesk.exe'
+    Assert-Throws { Get-MacCanvasAsset $foreign 'SovelyxDesk.exe' 104857600 } 'installer rejects upstream viewer assets'
     Assert-MacCanvasExecutable $script:binary
     Assert-Test $true 'accept x64 PE32+ fixture without executing it'
     $script:binary[132] = 0
@@ -93,7 +93,7 @@ try {
     Assert-Test ($again.Version -ceq 'v0.1.0') 'repeat install succeeds'
     $oldHash = $script:hash
     Set-Fixture 'v0.1.1' 2
-    $receiptLock = [IO.File]::Open((Join-Path $managed '.maccanvas-install.json'), [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+    $receiptLock = [IO.File]::Open((Join-Path $managed '.sovelyx-desk-install.json'), [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
     try { Assert-Throws { Install-MacCanvas -Version latest -InstallDirectory $managed -NoLaunch -NoShortcut } 'receipt lock triggers safe rollback' }
     finally { $receiptLock.Dispose() }
     Assert-Test ((Get-FileHash -LiteralPath $first.Executable).Hash -ieq $oldHash) 'failed upgrade preserves previous executable'
@@ -153,8 +153,8 @@ try {
     Assert-Test (Test-Path -LiteralPath $shortcutPaths[1]) 'uninstall preserves a shortcut pointing elsewhere'
 } finally {
     foreach ($path in @(
-        (Join-Path $managed 'MacCanvas.exe'),
-        (Join-Path $managed '.maccanvas-install.json'),
+        (Join-Path $managed 'SovelyxDesk.exe'),
+        (Join-Path $managed '.sovelyx-desk-install.json'),
         (Join-Path $unrelated 'keep.txt'),
         $shortcutPaths[0],
         $shortcutPaths[1]

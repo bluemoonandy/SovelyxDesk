@@ -25,7 +25,7 @@ use crate::error::Result;
 
 use super::failed;
 
-const DESCRIPTION: &str = "Windows VNC viewer for macOS";
+const DESCRIPTION: &str = crate::brand::DESCRIPTION;
 
 pub(super) fn paths() -> Result<[PathBuf; 2]> {
     let mut paths = Vec::new();
@@ -39,7 +39,7 @@ pub(super) fn paths() -> Result<[PathBuf; 2]> {
         if !path.is_absolute() {
             return Err(failed("Windows could not locate a shortcut folder"));
         }
-        paths.push(path.join("MacCanvas.lnk"));
+        paths.push(path.join(crate::brand::SHORTCUT));
     }
     Ok([paths.remove(0), paths.remove(0)])
 }
@@ -82,7 +82,7 @@ impl Links {
                 && !same_path(&target(link)?, executable)?
             {
                 return Err(failed(format!(
-                    "Existing MacCanvas shortcut points elsewhere; it was not overwritten: {}",
+                    "Existing Sovelyx Desk shortcut points elsewhere; it was not overwritten: {}",
                     path.display()
                 )));
             }

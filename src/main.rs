@@ -8,10 +8,19 @@ fn start() -> Result<(), Box<dyn std::error::Error>> {
     let mut data_directory = None;
     let mut preview_theme = None;
     let mut preview_update = false;
+    let mut language = None;
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
+            "--language" if language.is_none() => {
+                language = Some(match arguments.next().as_deref() {
+                    Some("system") => maccanvas::i18n::Preference::System,
+                    Some("zh-CN" | "zh_CN" | "zh") => maccanvas::i18n::Preference::Chinese,
+                    Some("en") => maccanvas::i18n::Preference::English,
+                    _ => return Err("Use --language system, zh-CN or en".into()),
+                });
+            }
             "--version" => {
-                println!("MacCanvas {}", maccanvas::VERSION);
+                println!("{} {}", maccanvas::brand::APP_NAME, maccanvas::VERSION);
                 return Ok(());
             }
             "--licenses" => {
@@ -26,7 +35,7 @@ fn start() -> Result<(), Box<dyn std::error::Error>> {
                 println!(
                     "{}",
                     serde_json::json!({
-                        "version": maccanvas::VERSION, "asset": audio_codec_tool::ASSET,
+                        "version": maccanvas::VERSION, "asset": maccanvas::brand::AUDIO_ASSET,
                         "sha256": audio_codec_tool::SHA256, "size": audio_codec_tool::size(),
                     })
                 );
@@ -52,7 +61,7 @@ fn start() -> Result<(), Box<dyn std::error::Error>> {
             }
             "--help" | "-h" => {
                 println!(
-                    "MacCanvas {}\n\nUsage: maccanvas.exe [--data-dir DIRECTORY]\n       maccanvas.exe --version\n       maccanvas.exe --licenses\n       maccanvas.exe --audio-component-info\n       maccanvas.exe --video-info\n       maccanvas.exe --verify-log FILE [FILE...]\n\nPasswords are entered in the window, never on the command line.",
+                    "Sovelyx Desk {}\n\nUsage: SovelyxDesk.exe [--data-dir DIRECTORY] [--language system|zh-CN|en]\n       SovelyxDesk.exe --version\n       SovelyxDesk.exe --licenses\n       SovelyxDesk.exe --audio-component-info\n       SovelyxDesk.exe --video-info\n       SovelyxDesk.exe --verify-log FILE [FILE...]\n\nPasswords are entered in the window, never on the command line.",
                     maccanvas::VERSION
                 );
                 return Ok(());
@@ -120,7 +129,13 @@ fn start() -> Result<(), Box<dyn std::error::Error>> {
         }
         previous_hook(info);
     }));
-    let result = app::run(data_directory, preview_theme, preview_update, scope.clone());
+    let result = app::run(
+        data_directory,
+        preview_theme,
+        preview_update,
+        language,
+        scope.clone(),
+    );
     scope.critical("application.stopped", if result.is_ok() { maccanvas::audit::Level::Info } else { maccanvas::audit::Level::Error },
         serde_json::json!({"event.outcome": if result.is_ok() { "success" } else { "failure" }, "error.type": result.as_ref().err().map(maccanvas::audit::error_type)}))?;
     guard.shutdown()?;
@@ -141,7 +156,11 @@ fn main() {
         )
     });
     if let Err(error) = start() {
-        eprintln!("MacCanvas: {error}");
+        eprintln!(
+            "{}: {}",
+            maccanvas::brand::APP_NAME,
+            maccanvas::i18n::text(&error.to_string())
+        );
         if !terminal {
             unsafe {
                 use windows::{
@@ -150,8 +169,8 @@ fn main() {
                 };
                 MessageBoxW(
                     None,
-                    &HSTRING::from(error.to_string()),
-                    &HSTRING::from("MacCanvas"),
+                    &HSTRING::from(maccanvas::i18n::text(&error.to_string())),
+                    &HSTRING::from(maccanvas::brand::APP_NAME),
                     MB_ICONERROR | MB_OK,
                 );
             }

@@ -1,3 +1,16 @@
+# Sovelyx Desk / Sovelyx 远程桌面
+
+Your Mac, within reach. / 远程连接，触手可及。
+
+Independent Sovelyx fork of MacCanvas by @false00, licensed under AGPL-3.0-or-later.
+Brand metadata: `brand/brand.json`. Portable Windows application: `SovelyxDesk.exe`.
+Language: Settings → General → Language (System Default / 简体中文 / English).
+Existing MacCanvas data and Windows Credential Manager identities are preserved.
+The product page `https://sovelyx.com/desk` is planned; automatic downloads and installation are disabled until branded releases are ready.
+See `reports/p3-brand-i18n.md` for compatibility, validation and rollback details.
+
+The following upstream project/build documentation is retained for attribution and technical reference.
+
 <img src="assets/logo.svg" align="right" width="72" alt="MacCanvas screen-and-canvas logo">
 
 # MacCanvas

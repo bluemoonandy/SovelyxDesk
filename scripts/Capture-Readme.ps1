@@ -8,7 +8,8 @@ param(
     [ValidateSet(0,1,2,3,6)][int]$DeviceCount = 2,
     [int]$WindowWidth = 0,
     [int]$WindowHeight = 0,
-    [int]$SessionPort = 0
+    [int]$SessionPort = 0,
+    [ValidateSet("en", "zh-CN")][string]$Language = "en"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,7 +44,7 @@ public static class MacCanvasScreenshot {
             if (owner == processId && IsWindowVisible(h)) {
                 var name = new StringBuilder(128);
                 GetWindowText(h, name, 128);
-                if (name.ToString() == "MacCanvas") { found = h; return false; }
+                if (name.Length > 0) { found = h; return false; }
             }
             return true;
         }, IntPtr.Zero);
@@ -71,7 +72,7 @@ elseif ($DeviceCount -ge 3) {
 [IO.File]::WriteAllText((Join-Path $temporary 'settings.json'), ($settings | ConvertTo-Json -Depth 8))
 $start = [Diagnostics.ProcessStartInfo]::new()
 $start.FileName = (Resolve-Path -LiteralPath $Executable).Path
-$start.Arguments = "--data-dir `"$temporary`""
+$start.Arguments = "--language $Language --data-dir `"$temporary`""
 if ($PreviewTheme -ne 'auto') { $start.Arguments += " --preview-theme $PreviewTheme" }
 $start.EnvironmentVariables['SLINT_SCALE_FACTOR'] = $ScaleFactor
 $start.UseShellExecute = $false
@@ -79,6 +80,18 @@ $start.CreateNoWindow = $true
 $start.RedirectStandardError = $true
 $process = [Diagnostics.Process]::Start($start)
 $handle = [IntPtr]::Zero
+
+$script:UiLanguage = $Language
+$script:UiCatalog = Get-Content -LiteralPath (Join-Path $root 'translations\zh_CN.json') -Encoding UTF8 -Raw | ConvertFrom-Json
+function Ui-Text([string]$Text) {
+    if ($script:UiLanguage -eq 'en') { return $Text }
+    $entry = $script:UiCatalog.PSObject.Properties[$Text]
+    if ($null -ne $entry) { return [string]$entry.Value }
+    foreach ($prefix in @('More actions for ', 'Mac: ')) {
+        if ($Text.StartsWith($prefix)) { return ([string]$script:UiCatalog.PSObject.Properties[$prefix].Value) + $Text.Substring($prefix.Length) }
+    }
+    return $Text
+}
 
 function Capture-OwnedWindow([string]$Destination) {
     $rectangle = [MacCanvasScreenshot+Rect]::new()
@@ -114,11 +127,11 @@ try {
     Start-Sleep -Seconds 1
     $images = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $root 'docs\images' }
     $null = [IO.Directory]::CreateDirectory($images)
-    $suffix = "-$PreviewTheme-$ScaleFactor-$DeviceCount-${WindowWidth}x${WindowHeight}"
+    $suffix = "-$Language-$PreviewTheme-$ScaleFactor-$DeviceCount-${WindowWidth}x${WindowHeight}"
     Capture-OwnedWindow (Join-Path $images "connections$suffix.png")
     $window = [Windows.Automation.AutomationElement]::FromHandle($handle)
     function Find-Control([string]$Name) {
-        $condition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $Name)
+        $condition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text $Name))
         $deadline = [DateTime]::UtcNow.AddSeconds(5)
         do {
             $element = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
@@ -128,7 +141,7 @@ try {
         return $element
     }
     function Invoke-Control([string]$Name) {
-        $nameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $Name)
+        $nameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text $Name))
         $typeCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button)
         $condition = [Windows.Automation.AndCondition]::new($nameCondition, $typeCondition)
         $deadline = [DateTime]::UtcNow.AddSeconds(5)
@@ -145,7 +158,7 @@ try {
         Start-Sleep -Milliseconds 250
     }
     function Set-Control([string]$Name, [string]$Value) {
-        $nameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $Name)
+        $nameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text $Name))
         $editCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Edit)
         $comboCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ComboBox)
         $typeCondition = [Windows.Automation.OrCondition]::new($editCondition, $comboCondition)
@@ -157,10 +170,12 @@ try {
             $choices = switch ($Name) {
                 'Login method' { @('Mac account', 'VNC password') }
                 'Credential protection' { @('Quick Connect', 'Windows Hello', 'Manual') }
+                'Language' { @('System Default', '简体中文', 'English') }
                 'Display scale' { @('Fit to Window', 'Actual Size (1:1 physical pixels)', '100% of Fit', '125% of Fit', '150% of Fit', '175% of Fit', '200% of Fit') }
                 default { throw "No fixture choices for combo: $Name" }
             }
             $index = [Array]::IndexOf($choices, $Value)
+            $Value = if ($Name -eq 'Language' -and $Value -eq 'English') { 'English' } else { Ui-Text $Value }
             if ($index -lt 0) { throw "Unknown combo value: $Value" }
             $control.SetFocus()
             Start-Sleep -Milliseconds 150
@@ -192,7 +207,7 @@ try {
     if ($DeviceCount -gt 0) {
         $cardCondition = [Windows.Automation.AndCondition]::new(
             [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Group),
-            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac: Studio Mac mini')
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'Mac: Studio Mac mini'))
         )
         $card = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $cardCondition)
         if ($null -eq $card) { throw 'Device card was not published.' }
@@ -220,11 +235,20 @@ try {
     Capture-OwnedWindow (Join-Path $images "new-mac-account$suffix.png")
     Set-Control 'Mac password' 'fixture'
     Set-Control 'Login method' 'VNC password'
-    $usernameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac username')
+    $usernameCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'Mac username'))
     if ($null -ne $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $usernameCondition)) { throw 'VNC password form exposed a Mac username.' }
     Capture-OwnedWindow (Join-Path $images "new-vnc-password$suffix.png")
     Invoke-Control 'Close connection editor'
+    $searchBefore = (Find-Control 'Search saved Macs').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
     Invoke-Control 'Settings'
+    $opposite = if ($script:UiLanguage -eq 'en') { '简体中文' } else { 'English' }
+    Set-Control 'Language' $opposite
+    $script:UiLanguage = if ($script:UiLanguage -eq 'en') { 'zh-CN' } else { 'en' }
+    Start-Sleep -Milliseconds 300
+    Capture-OwnedWindow (Join-Path $images "language-switched$suffix.png")
+    Set-Control 'Language' $(if ($Language -eq 'en') { 'English' } else { '简体中文' })
+    $script:UiLanguage = $Language
+    Start-Sleep -Milliseconds 300
     Capture-OwnedWindow (Join-Path $images "settings$suffix.png")
     Invoke-Control 'Close'
     if ($DeviceCount -lt 2) {
@@ -233,28 +257,29 @@ try {
     }
     $buttonCondition = [Windows.Automation.AndCondition]::new(
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button),
-        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'More actions for Studio Mac mini')
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'More actions for Studio Mac mini'))
     )
     $details = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
     if ($null -eq $details) { throw 'Saved-machine details button was not found.' }
     Invoke-Control 'More actions for Studio Mac mini'
     Invoke-Control 'Edit Mac'
     Start-Sleep -Milliseconds 400
-    $passwordCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac password')
+    $passwordCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'Mac password'))
     if ($null -ne $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $passwordCondition)) {
         throw 'Saved-login details exposed a password control.'
     }
-    $helloCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Windows Hello protected')
+    $helloCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'Windows Hello protected'))
     if ($null -eq $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $helloCondition)) {
         throw 'Legacy Windows Hello protection is not visible.'
     }
     if ($true) { Capture-OwnedWindow (Join-Path $images "saved-login$suffix.png") }
-    $allCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Close connection editor')
+    $allCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'Close connection editor'))
     $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $allCondition).
         GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
     Start-Sleep -Milliseconds 150
+    if ((Find-Control 'Search saved Macs').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne $searchBefore) { throw 'Language switching cleared the search input.' }
     if ($DeviceCount -lt 4 -and $SessionPort -eq 0) { Write-Output 'Compact device layout and saved-password non-disclosure: PASS'; return }
-    $searchCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Search saved Macs')
+    $searchCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'Search saved Macs'))
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
     do {
         $search = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $searchCondition)
@@ -264,7 +289,7 @@ try {
     $search.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue('MacBook')
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
     $buttonCondition = [Windows.Automation.AndCondition]::new(
-        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'More actions for MacBook Pro'),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'More actions for MacBook Pro')),
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button)
     )
     $groupCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Group)
@@ -272,15 +297,15 @@ try {
         $rows = $window.FindAll([Windows.Automation.TreeScope]::Descendants, $buttonCondition)
         # MacBook's button already exists before filtering. Wait for the old cards
         # to leave the tree so its queued Invoke cannot target a replaced row.
-        $cards = @($window.FindAll([Windows.Automation.TreeScope]::Descendants, $groupCondition) | Where-Object { ([string]$_.Current.Name).StartsWith('Mac: ') })
-        $filtered = $rows.Count -eq 1 -and $cards.Count -eq 1 -and $cards[0].Current.Name -ceq 'Mac: MacBook Pro'
+        $cards = @($window.FindAll([Windows.Automation.TreeScope]::Descendants, $groupCondition) | Where-Object { ([string]$_.Current.Name).StartsWith((Ui-Text 'Mac: ')) })
+        $filtered = $rows.Count -eq 1 -and $cards.Count -eq 1 -and $cards[0].Current.Name -ceq (Ui-Text 'Mac: MacBook Pro')
         if (-not $filtered) { Start-Sleep -Milliseconds 50 }
     } while (-not $filtered -and [DateTime]::UtcNow -lt $deadline)
     if (-not $filtered) { throw 'Filtered device list did not publish one stable device row.' }
     $details = $rows.Item(0)
     Invoke-Control 'More actions for MacBook Pro'
     Invoke-Control 'Edit Mac'
-    $addressCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Mac address')
+    $addressCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'Mac address'))
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
     do {
         $address = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $addressCondition)
@@ -301,7 +326,7 @@ try {
         Capture-OwnedWindow (Join-Path $images "connecting$suffix.png")
         $deadline = [DateTime]::UtcNow.AddSeconds(15)
         do {
-            $failureCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Connection failed')
+            $failureCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'Connection failed'))
             $failure = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $failureCondition)
             if ($null -eq $failure) { Start-Sleep -Milliseconds 100 }
         } while ($null -eq $failure -and [DateTime]::UtcNow -lt $deadline)
@@ -312,6 +337,22 @@ try {
         $null = Find-Control 'Disconnect'
         Start-Sleep -Seconds 1
         Capture-OwnedWindow (Join-Path $images "connected$suffix.png")
+        foreach ($panel in @(@('Stream quality','quality','Close'), @('Clipboard sharing','clipboard','Done'), @('File transfer','files','Done'), @('Audio playback','audio','Done'), @('About','about','Done'))) {
+            Invoke-Control $panel[0]
+            Capture-OwnedWindow (Join-Path $images "$($panel[1])$suffix.png")
+            Invoke-Control $panel[2]
+        }
+        Invoke-Control 'Settings'
+        Set-Control 'Language' $(if ($Language -eq 'en') { '简体中文' } else { 'English' })
+        $script:UiLanguage = if ($Language -eq 'en') { 'zh-CN' } else { 'en' }
+        Invoke-Control 'Close'
+        Find-Control 'Disconnect' | Out-Null
+        Capture-OwnedWindow (Join-Path $images "connected-language-switched$suffix.png")
+        Invoke-Control 'Settings'
+        Set-Control 'Language' $(if ($Language -eq 'en') { 'English' } else { '简体中文' })
+        $script:UiLanguage = $Language
+        Invoke-Control 'Close'
+
         Invoke-Control 'Display scaling'
         Set-Control 'Display scale' '150% of Fit'
         Invoke-Control 'Pan view right'
@@ -341,7 +382,7 @@ try {
         Invoke-Control 'Full screen'
         Capture-OwnedWindow (Join-Path $images "fullscreen$suffix.png")
         Invoke-Control 'Display scaling'
-        if ((Find-Control 'Display scale').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne '150% of Fit') { throw 'Fullscreen did not retain the display mode.' }
+        if ((Find-Control 'Display scale').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne (Ui-Text '150% of Fit')) { throw 'Fullscreen did not retain the display mode.' }
         Set-Control 'Display scale' 'Actual Size (1:1 physical pixels)'
         Invoke-Control 'Reset display to Fit'
         Invoke-Control 'Close display settings'

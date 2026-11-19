@@ -34,8 +34,8 @@ use serde_json::json;
 pub(crate) mod http;
 mod shortcuts;
 
-const REPOSITORY: &str = "bluemoonandy/maccanvas";
-const ASSET: &str = "MacCanvas-windows-x64.exe";
+const REPOSITORY: &str = crate::brand::REPOSITORY_SLUG;
+const ASSET: &str = crate::brand::EXECUTABLE;
 const MAX_EXE: u64 = 100 * 1024 * 1024;
 const MAX_METADATA: u64 = 256 * 1024;
 
@@ -45,7 +45,7 @@ fn failed(error: impl std::fmt::Display) -> Error {
 
 fn recovery(error: impl std::fmt::Display) -> Error {
     Error::UpdateRecovery(format!(
-        "{error} Close and reopen MacCanvas before retrying."
+        "{error} Close and reopen Sovelyx Desk before retrying."
     ))
 }
 
@@ -166,6 +166,9 @@ fn parse_catalog(bytes: &[u8], current: &str) -> Result<Option<Release>> {
 }
 
 pub fn check() -> Result<Option<Release>> {
+    if !crate::brand::UPDATES_READY {
+        return Ok(None);
+    }
     let mut bytes = Vec::new();
     http::download(
         &format!("https://api.github.com/repos/{REPOSITORY}/releases?per_page=20"),
@@ -245,14 +248,14 @@ fn read_receipt(executable: &Path) -> Result<Option<Receipt>> {
     let path = executable
         .parent()
         .ok_or_else(|| failed("Application has no parent directory"))?
-        .join(".maccanvas-install.json");
+        .join(crate::brand::INSTALL_RECEIPT);
     match fs::metadata(&path) {
         Ok(metadata) => {
             if metadata.len() > 4096
                 || !executable
                     .file_name()
                     .and_then(|name| name.to_str())
-                    .is_some_and(|name| name.eq_ignore_ascii_case("MacCanvas.exe"))
+                    .is_some_and(|name| name.eq_ignore_ascii_case(crate::brand::EXECUTABLE))
             {
                 return Err(failed(
                     "The managed installation receipt does not match this executable",
@@ -302,7 +305,7 @@ fn maintain_shortcuts_at(
             &executable
                 .parent()
                 .ok_or_else(|| failed("Application has no parent directory"))?
-                .join(".maccanvas-install.json"),
+                .join(crate::brand::INSTALL_RECEIPT),
             &receipt,
         )?;
     }
@@ -340,7 +343,7 @@ fn install_at(
         .parent()
         .ok_or_else(|| failed("Application has no parent directory"))?;
     let old_hash = file_hash(executable)?;
-    let receipt_path = parent.join(".maccanvas-install.json");
+    let receipt_path = parent.join(crate::brand::INSTALL_RECEIPT);
     let receipt = read_receipt(executable)?;
     let backup = tempfile::Builder::new()
         .prefix(".maccanvas-rollback-")
@@ -420,7 +423,7 @@ impl UpdateLock {
         if result != WAIT_OBJECT_0 && result != WAIT_ABANDONED {
             unsafe { CloseHandle(handle) }.map_err(failed)?;
             return Err(failed(
-                "Another MacCanvas process is already installing an update",
+                "Another Sovelyx Desk process is already installing an update",
             ));
         }
         Ok(Self(handle))
@@ -536,7 +539,7 @@ pub fn validate_candidate(executable: &Path, version: &Version) -> Result<()> {
         .ok_or_else(|| failed("Update version output is unavailable"))?
         .take(8192)
         .read_to_string(&mut output)?;
-    if !status.success() || output.trim() != format!("MacCanvas {version}") {
+    if !status.success() || output.trim() != format!("{} {version}", crate::brand::APP_NAME) {
         return Err(failed(
             "The verified update could not report its expected version. Nothing was replaced.",
         ));
@@ -573,6 +576,9 @@ impl Updater {
         }
     }
     pub fn check(&mut self, scope: &Scope) -> Result<()> {
+        if !crate::brand::UPDATES_READY {
+            return Ok(());
+        }
         if self.checking || self.installing || self.restart_required {
             return Ok(());
         }
@@ -618,9 +624,12 @@ impl Updater {
     }
 
     pub fn install(&mut self, scope: &Scope) -> Result<()> {
+        if !crate::brand::UPDATES_READY {
+            return Err(failed(crate::brand::UPDATES_UNAVAILABLE));
+        }
         if self.installing || self.restart_required {
             return Err(failed(
-                "An update is already installing or MacCanvas needs a restart",
+                "An update is already installing or Sovelyx Desk needs a restart",
             ));
         }
         let release = self
@@ -682,8 +691,13 @@ mod tests {
         bytes[132..134].copy_from_slice(&[0x64, 0x86]);
         bytes[152..154].copy_from_slice(&[0x0b, 0x02]);
         let release = Release {
-            version: Version::new(9, 0, 0), tag: "v9.0.0".into(), size: bytes.len() as u64,
-            sha256: format!("{:x}", Sha256::digest(&bytes)), url: "https://github.com/bluemoonandy/maccanvas/releases/download/v9.0.0/MacCanvas-windows-x64.exe".into(),
+            version: Version::new(9, 0, 0),
+            tag: "v9.0.0".into(),
+            size: bytes.len() as u64,
+            sha256: format!("{:x}", Sha256::digest(&bytes)),
+            url:
+                "https://github.com/bluemoonandy/maccanvas/releases/download/v9.0.0/SovelyxDesk.exe"
+                    .into(),
         };
         (bytes, release)
     }
@@ -801,9 +815,9 @@ mod tests {
     fn updates_managed_receipt_and_preserves_uninstall_compatibility() {
         for shortcuts in [None, Some(true), Some(false)] {
             let directory = tempfile::tempdir().unwrap();
-            let executable = directory.path().join("MacCanvas.exe");
+            let executable = directory.path().join(crate::brand::EXECUTABLE);
             let staged = directory.path().join("staged.exe");
-            let receipt = directory.path().join(".maccanvas-install.json");
+            let receipt = directory.path().join(crate::brand::INSTALL_RECEIPT);
             fs::write(&executable, b"old fixture").unwrap();
             write_receipt(
                 &receipt,
@@ -833,7 +847,7 @@ mod tests {
         let directory = tempfile::tempdir().unwrap();
         let executable = directory.path().join("maccanvas.exe");
         let staged = directory.path().join("staged.exe");
-        let receipt = directory.path().join(".maccanvas-install.json");
+        let receipt = directory.path().join(crate::brand::INSTALL_RECEIPT);
         fs::write(&executable, b"old fixture").unwrap();
         write_receipt(
             &receipt,
@@ -858,8 +872,8 @@ mod tests {
     #[test]
     fn failed_replacement_restores_the_original_receipt() {
         let directory = tempfile::tempdir().unwrap();
-        let executable = directory.path().join("MacCanvas.exe");
-        let receipt_path = directory.path().join(".maccanvas-install.json");
+        let executable = directory.path().join(crate::brand::EXECUTABLE);
+        let receipt_path = directory.path().join(crate::brand::INSTALL_RECEIPT);
         fs::write(&executable, b"old fixture").unwrap();
         let old_hash = file_hash(&executable).unwrap();
         write_receipt(
@@ -888,7 +902,7 @@ mod tests {
     #[test]
     fn failure_after_renaming_the_old_executable_restores_a_runnable_path() {
         let directory = tempfile::tempdir().unwrap();
-        let executable = directory.path().join("MacCanvas.exe");
+        let executable = directory.path().join(crate::brand::EXECUTABLE);
         fs::write(&executable, b"old fixture").unwrap();
         let (_, release) = fixture();
         assert!(
@@ -905,8 +919,8 @@ mod tests {
     fn managed_startup_repairs_shortcuts_and_migrates_legacy_installs() {
         for policy in [None, Some(true)] {
             let directory = tempfile::tempdir().unwrap();
-            let executable = directory.path().join("MacCanvas.exe");
-            let receipt_path = directory.path().join(".maccanvas-install.json");
+            let executable = directory.path().join(crate::brand::EXECUTABLE);
+            let receipt_path = directory.path().join(crate::brand::INSTALL_RECEIPT);
             let paths = [
                 directory.path().join("Start menu").join("MacCanvas.lnk"),
                 directory.path().join("Desktop").join("MacCanvas.lnk"),
@@ -952,14 +966,14 @@ mod tests {
     #[test]
     fn startup_preserves_portable_and_shortcut_free_installs() {
         let directory = tempfile::tempdir().unwrap();
-        let executable = directory.path().join("MacCanvas.exe");
+        let executable = directory.path().join(crate::brand::EXECUTABLE);
         fs::write(&executable, b"not executed").unwrap();
         assert_eq!(
             maintain_shortcuts_at(&executable, || panic!("Portable copies have no shortcuts"))
                 .unwrap(),
             None
         );
-        let receipt_path = directory.path().join(".maccanvas-install.json");
+        let receipt_path = directory.path().join(crate::brand::INSTALL_RECEIPT);
         for policy in [None, Some(false)] {
             write_receipt(
                 &receipt_path,

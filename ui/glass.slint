@@ -1,3 +1,4 @@
+import { UiText, Branding } from "i18n.slint";
 export global GlassTheme {
     in-out property <bool> dark: false;
     in-out property <bool> motion: true;
@@ -74,7 +75,7 @@ export component Button inherits Rectangle {
             colorize: root.foreground; accessible-role: none;
         }
         if root.text != "" : Text {
-            text: root.text; color: root.foreground;
+            text: UiText.message(root.text); color: root.foreground;
             font-size: 13px; font-weight: root.primary ? 600 : 500;
             horizontal-alignment: center; vertical-alignment: center; accessible-role: none;
         }
@@ -141,7 +142,7 @@ export component CheckBox inherits Rectangle {
     }
     label := Text {
         x: 27px; width: max(0px, root.width - 27px); height: parent.height;
-        text: root.text; color: GlassTheme.ink; font-size: 13px;
+        text: UiText.message(root.text); color: GlassTheme.ink; font-size: 13px;
         vertical-alignment: center; wrap: word-wrap; accessible-role: none;
     }
     TouchArea {
