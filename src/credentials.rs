@@ -477,7 +477,10 @@ impl ConsentVerifier for WindowsHello {
         let operation: IAsyncOperation<UserConsentVerificationResult> = unsafe {
             verifier.RequestVerificationForWindowAsync(
                 window,
-                &HSTRING::from("Verify to connect with MacCanvas credentials"),
+                &HSTRING::from(format!(
+                    "Verify to connect with {} credentials",
+                    crate::brand::APP_NAME
+                )),
             )
         }
         .map_err(|error| Error::Consent(error.to_string()))?;

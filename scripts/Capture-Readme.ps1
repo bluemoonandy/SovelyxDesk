@@ -239,7 +239,8 @@ try {
     if ($null -ne $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $usernameCondition)) { throw 'VNC password form exposed a Mac username.' }
     Capture-OwnedWindow (Join-Path $images "new-vnc-password$suffix.png")
     Invoke-Control 'Close connection editor'
-    $searchBefore = (Find-Control 'Search saved Macs').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
+    if ($DeviceCount -ge 4) { Set-Control 'Search saved Macs' 'language-input-preserved' }
+    $searchBefore = 'language-input-preserved' 
     Invoke-Control 'Settings'
     $opposite = if ($script:UiLanguage -eq 'en') { '简体中文' } else { 'English' }
     Set-Control 'Language' $opposite
@@ -251,6 +252,10 @@ try {
     Start-Sleep -Milliseconds 300
     Capture-OwnedWindow (Join-Path $images "settings$suffix.png")
     Invoke-Control 'Close'
+    if ($DeviceCount -ge 4) {
+        if ((Find-Control 'Search saved Macs').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne $searchBefore) { throw 'Language switching cleared the search input.' }
+        Invoke-Control 'Clear search'
+    }
     if ($DeviceCount -lt 2) {
         Write-Output 'Empty/single-device, form and compact layout checks: PASS'
         return
@@ -277,7 +282,6 @@ try {
     $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $allCondition).
         GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
     Start-Sleep -Milliseconds 150
-    if ((Find-Control 'Search saved Macs').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne $searchBefore) { throw 'Language switching cleared the search input.' }
     if ($DeviceCount -lt 4 -and $SessionPort -eq 0) { Write-Output 'Compact device layout and saved-password non-disclosure: PASS'; return }
     $searchCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, (Ui-Text 'Search saved Macs'))
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
