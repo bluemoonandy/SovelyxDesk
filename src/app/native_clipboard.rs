@@ -2,6 +2,7 @@
 use super::*;
 use maccanvas::clipboard::{
     apple::{Command as NativeCommand, Event as NativeEvent},
+    diagnostics::{self, Record as DiagnosticRecord},
     native,
 };
 use sha2::{Digest, Sha256};
@@ -208,6 +209,8 @@ pub(super) struct Bridge {
     staged: Vec<maccanvas::clipboard::filecopy::StagedFiles>,
     file_echo: Option<[u8; 32]>,
     changed: Instant,
+    diagnostic_started: Instant,
+    diagnostics: diagnostics::Tracker,
 }
 impl Default for Bridge {
     fn default() -> Self {
@@ -230,6 +233,8 @@ impl Default for Bridge {
             staged: Vec::new(),
             file_echo: None,
             changed: Instant::now(),
+            diagnostic_started: Instant::now(),
+            diagnostics: diagnostics::Tracker::default(),
         }
     }
 }
@@ -285,7 +290,96 @@ pub(super) fn wire(app: &App, state: Rc<RefCell<State>>) {
         }
     });
 }
+fn diagnostic_record(state: &State, mut record: DiagnosticRecord) -> Result<()> {
+    record.attributes["session.generation"] = json!(state.generation);
+    record.attributes["clipboard.epoch"] = json!(state.native_clipboard.epoch);
+    let scope = state
+        .session
+        .as_ref()
+        .map(Session::scope)
+        .unwrap_or(&state.audit);
+    scope.event(
+        record.name,
+        if record.warning {
+            Level::Warn
+        } else {
+            Level::Info
+        },
+        record.attributes,
+    )
+}
+fn diagnostic_stage(
+    state: &mut State,
+    stage: &'static str,
+    sequence: u32,
+    progress: bool,
+) -> Result<()> {
+    let now = state
+        .native_clipboard
+        .diagnostic_started
+        .elapsed()
+        .as_millis() as u64;
+    if let Some(record) = state
+        .native_clipboard
+        .diagnostics
+        .stage(now, stage, sequence, progress)
+    {
+        diagnostic_record(state, record)?;
+    }
+    Ok(())
+}
+fn diagnostic_error(state: &State, error: &Error, stage: &'static str) -> Result<()> {
+    // No error text: third-party errors may contain a path or clipboard-derived data.
+    let code = match error {
+        Error::Io(e) => e.raw_os_error(),
+        _ => None,
+    };
+    diagnostic_record(
+        state,
+        DiagnosticRecord {
+            name: "clipboard.apple.bridge_error",
+            warning: true,
+            attributes: json!({"clipboard.stage":stage,"error.type":maccanvas::audit::error_type(error),"error.code":code}),
+        },
+    )
+}
 pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
+    let result = tick_inner(app, state);
+    if let Err(error) = &result {
+        if !matches!(error, Error::Audit(_)) {
+            diagnostic_error(state, error, "bridge_tick")?;
+        }
+    }
+    let bridge = &mut state.native_clipboard;
+    let now = bridge.diagnostic_started.elapsed().as_millis() as u64;
+    if bridge.diagnostics.due(now) {
+        let observed = diagnostics::State {
+            generation: state.generation,
+            epoch: bridge.epoch,
+            connected: app.get_connected(),
+            hevc: state.session.as_ref().is_some_and(Session::uses_hevc),
+            enabled: app.get_native_clipboard_enabled(),
+            interactive: bridge.interactive,
+            send: app.get_native_clipboard_send(),
+            receive: app.get_native_clipboard_receive(),
+            paused: bridge.paused,
+            baseline: bridge.baseline,
+            pending: bridge.pending.is_some(),
+            capture_busy: bridge.image_task.is_some(),
+            worker_slot_busy: IMAGE_BUSY.load(std::sync::atomic::Ordering::Acquire),
+            file_busy: bridge.file_task.is_some(),
+            remote_dirty: bridge.remote_dirty,
+        };
+        for record in bridge
+            .diagnostics
+            .observe(now, observed, native::sequence())
+        {
+            diagnostic_record(state, record)?;
+        }
+    }
+    result
+}
+fn tick_inner(app: &App, state: &mut State) -> Result<()> {
     let id = state.connection_profile.as_ref().map(|p| p.id);
     if let Some(id) = id
         && state.native_clipboard.profile != Some(id)
@@ -349,6 +443,7 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
         state.native_clipboard.remote_dirty = false;
         state.native_clipboard.file_echo = None;
         state.native_clipboard.configured = Some(config);
+        diagnostic_stage(state, "configured", state.native_clipboard.sequence, true)?;
         if connected {
             post(
                 state,
@@ -413,33 +508,80 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
             .handle
             .join()
             .unwrap_or_else(|_| Err(Error::Clipboard("Clipboard image worker failed".into())));
-        if image_result_current(
+        let current_result = image_result_current(
             task.epoch,
             task.sequence,
             state.native_clipboard.epoch,
             native::sequence(),
             active && !state.native_clipboard.paused && !events.iter().any(|event| matches!(event, NativeEvent::Problem {epoch, reason: "request_rejected" | "fetch_timeout" | "echo_mismatch"} if *epoch==state.native_clipboard.epoch)),
-        ) && native::interactive_session()
-        {
+        ) && native::interactive_session();
+        if !current_result {
+            diagnostic_stage(state, "capture_result_discarded", task.sequence, false)?;
+        }
+        if current_result {
             match result {
                 Ok(ImageResult::Capture(Some(capture)))
                     if send && capture.sequence == task.sequence =>
                 {
+                    let (format, bytes) = match &capture.content {
+                        Pending::Text(text) => ("text", text.len()),
+                        Pending::Rich { rich, .. } => (
+                            "rich_text",
+                            rich.plain.as_ref().map_or(0, |text| text.len()),
+                        ),
+                        Pending::Image { png, .. } => ("png", png.len()),
+                        Pending::Files(paths) => ("files", paths.len()),
+                    };
+                    diagnostic_stage(state, "captured", capture.sequence, true)?;
+                    diagnostic_record(
+                        state,
+                        DiagnosticRecord {
+                            name: "clipboard.apple.captured",
+                            warning: false,
+                            attributes: json!({"clipboard.format":format,"clipboard.size":bytes,"clipboard.size_unit":if format=="files"{"items"}else{"bytes"},"clipboard.windows_sequence":capture.sequence}),
+                        },
+                    )?;
                     state.native_clipboard.sequence = capture.sequence;
-                    if (state.native_clipboard.hash==Some(capture.hash)||matches!(&capture.content,Pending::Files(_)))&&native::owns_clipboard(window_handle(app)?) {state.native_clipboard.pending=None;}
-                    else {state.native_clipboard.hash = Some(capture.hash);state.native_clipboard.pending = Some(capture.content);}
+                    if (state.native_clipboard.hash == Some(capture.hash)
+                        || matches!(&capture.content, Pending::Files(_)))
+                        && native::owns_clipboard(window_handle(app)?)
+                    {
+                        state.native_clipboard.pending = None;
+                        diagnostic_stage(state, "echo_suppressed", capture.sequence, false)?;
+                    } else {
+                        state.native_clipboard.hash = Some(capture.hash);
+                        state.native_clipboard.pending = Some(capture.content);
+                    }
                     state.native_clipboard.changed = Instant::now();
                 }
                 Ok(ImageResult::Capture(None)) if send => {
+                    diagnostic_stage(state, "capture_empty_or_unsupported", task.sequence, false)?;
                     state.native_clipboard.sequence = task.sequence;
                     state.native_clipboard.hash = None;
                     state.native_clipboard.pending = None;
                 }
-                Ok(ImageResult::ApplyRich {rich,hash}) if receive && state.native_clipboard.pending.is_none() && state.native_clipboard.file_task.is_none() && !state.native_clipboard.remote_dirty && (state.native_clipboard.sequence!=task.sequence||state.native_clipboard.hash!=Some(hash)) => {
-                    state.audit.event("clipboard.apple.apply_requested",Level::Info,json!({"clipboard.format":"rich_text","network.encrypted":true}))?;
-                    if let Some(written)=native::write_rich_if_sequence(window_handle(app)?,&rich,task.sequence)? {
-                        state.native_clipboard.sequence=written;state.native_clipboard.hash=Some(hash);state.clipboard.sent(written);
-                        app.set_native_clipboard_status("Mac → Windows rich text received over encrypted Apple control".into());
+                Ok(ImageResult::ApplyRich { rich, hash })
+                    if receive
+                        && state.native_clipboard.pending.is_none()
+                        && state.native_clipboard.file_task.is_none()
+                        && !state.native_clipboard.remote_dirty
+                        && (state.native_clipboard.sequence != task.sequence
+                            || state.native_clipboard.hash != Some(hash)) =>
+                {
+                    state.audit.event(
+                        "clipboard.apple.apply_requested",
+                        Level::Info,
+                        json!({"clipboard.format":"rich_text","network.encrypted":true}),
+                    )?;
+                    if let Some(written) =
+                        native::write_rich_if_sequence(window_handle(app)?, &rich, task.sequence)?
+                    {
+                        state.native_clipboard.sequence = written;
+                        state.native_clipboard.hash = Some(hash);
+                        state.clipboard.sent(written);
+                        app.set_native_clipboard_status(
+                            "Mac → Windows rich text received over encrypted Apple control".into(),
+                        );
                     }
                 }
                 Ok(ImageResult::Apply { png, dib, hash })
@@ -447,7 +589,8 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                         && state.native_clipboard.pending.is_none()
                         && state.native_clipboard.file_task.is_none()
                         && !state.native_clipboard.remote_dirty
-                        && (state.native_clipboard.sequence != task.sequence || state.native_clipboard.hash != Some(hash)) =>
+                        && (state.native_clipboard.sequence != task.sequence
+                            || state.native_clipboard.hash != Some(hash)) =>
                 {
                     state.audit.event("clipboard.apple.apply_requested", Level::Info, json!({"clipboard.format":"png","clipboard.image_bytes":png.len(),"network.encrypted":true}))?;
                     if let Some(written) = native::write_image_if_sequence(
@@ -464,7 +607,9 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                         );
                     }
                 }
-                Err(_) => {
+                Err(error) => {
+                    diagnostic_error(state, &error, "capture_or_conversion")?;
+                    diagnostic_stage(state, "capture_failed", task.sequence, false)?;
                     // Suppress repeated work on the same unsupported/malformed copy.
                     state.native_clipboard.sequence = task.sequence;
                     state.native_clipboard.pending = None;
@@ -649,11 +794,13 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                 );
             }
             NativeEvent::Problem { epoch, reason } if epoch == state.native_clipboard.epoch => {
+                state.native_clipboard.diagnostics.problem(reason);
                 if matches!(
                     reason,
                     "fetch_timeout" | "echo_mismatch" | "request_rejected"
                 ) {
                     state.native_clipboard.paused = true;
+                    diagnostic_stage(state, "paused", native::sequence(), false)?;
                 }
                 if reason == "request_rejected" {
                     // No sender acceptance: invalidate older reads instead of letting an
@@ -665,6 +812,16 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                 app.set_native_clipboard_status(format!("Native experiment: {reason}; inspect clipboard.apple logs (no SSH fallback)").into());
             }
             NativeEvent::Sent { epoch, written } if epoch == state.native_clipboard.epoch => {
+                diagnostic_stage(
+                    state,
+                    if written {
+                        "encrypted_socket_written"
+                    } else {
+                        "transport_queued"
+                    },
+                    native::sequence(),
+                    written,
+                )?;
                 app.set_native_clipboard_status(if written {
                     "Windows content written to the encrypted Mac connection. Paste on the Mac to verify acceptance."
                 } else {
@@ -693,6 +850,16 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
             image_task(state.native_clipboard.epoch, sequence, move || {
                 capture_native_with_retry(owner, file_enabled)
             })?;
+        diagnostic_stage(
+            state,
+            if state.native_clipboard.image_task.is_some() {
+                "capture_started"
+            } else {
+                "capture_slot_busy"
+            },
+            sequence,
+            state.native_clipboard.image_task.is_some(),
+        )?;
     }
 
     if send
@@ -723,6 +890,12 @@ pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
                         message,
                     },
                 },
+            )?;
+            diagnostic_stage(
+                state,
+                "send_submitted",
+                state.native_clipboard.sequence,
+                true,
             )?;
         }
     }

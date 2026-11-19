@@ -172,6 +172,8 @@ pub(super) fn run(
                         || (!matches!(&command, crate::clipboard::apple::Command::Configure { .. })
                             && !control.accepts_native(epoch))
                     {
+                        let (operation, epoch) = super::native_command_metadata(&command);
+                        request.audit.event("clipboard.apple.command_skipped",Level::Warn,json!({"session.generation":request.generation,"clipboard.operation":operation,"clipboard.epoch":epoch,"clipboard.reason":"writer_authorization_or_epoch_changed"}))?;
                         continue;
                     }
                     if let Err(error) = client.native_clipboard(command) {
@@ -242,6 +244,9 @@ pub(super) fn run(
             {
                 request.audit.event("clipboard.apple.control",Level::Info,json!({"clipboard.opcode":opcode,"clipboard.detail":detail,"clipboard.value":value,"clipboard.compressed_bytes":packed,"clipboard.uncompressed_bytes":unpacked,"network.encrypted":true}))?;
                 continue;
+            }
+            if let crate::clipboard::apple::Event::Sent { epoch, written } = &event {
+                request.audit.event("clipboard.apple.transport_write",Level::Info,json!({"session.generation":request.generation,"clipboard.epoch":epoch,"clipboard.socket_written":written,"clipboard.mac_paste_verified":false,"network.encrypted":true}))?;
             }
             if let crate::clipboard::apple::Event::Problem { reason, .. } = &event {
                 request.audit.event(

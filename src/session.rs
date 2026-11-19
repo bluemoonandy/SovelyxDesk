@@ -167,6 +167,17 @@ pub struct Session {
     streaming: StreamSettings,
 }
 
+fn native_command_metadata(command: &crate::clipboard::apple::Command) -> (&'static str, u64) {
+    use crate::clipboard::apple::Command;
+    match command {
+        Command::Configure { epoch, .. } => ("configure", *epoch),
+        Command::Fetch { epoch, .. } => ("fetch", *epoch),
+        Command::Send { epoch, .. } => ("send_text", *epoch),
+        Command::SendRich { epoch, .. } => ("send_rich", *epoch),
+        Command::SendImage { epoch, .. } => ("send_image", *epoch),
+        Command::SendFiles { epoch, .. } => ("send_files", *epoch),
+    }
+}
 enum WriterCommand {
     NativeFile {
         epoch: u64,
@@ -351,6 +362,7 @@ impl Session {
     }
 
     pub fn native_clipboard(&self, command: crate::clipboard::apple::Command) -> Result<()> {
+        let (diagnostic_operation, diagnostic_epoch) = native_command_metadata(&command);
         if !self.uses_hevc() {
             return Err(Error::Clipboard(
                 "Native Apple clipboard requires the encrypted HEVC connection".into(),
@@ -367,6 +379,7 @@ impl Session {
             | crate::clipboard::apple::Command::Send { epoch, .. }
                 if !self.control.accepts_native(*epoch) =>
             {
+                self.audit.event("clipboard.apple.command_skipped",Level::Warn,json!({"clipboard.operation":diagnostic_operation,"clipboard.epoch":diagnostic_epoch,"clipboard.reason":"authorization_or_epoch_changed"}))?;
                 return Ok(());
             }
             _ => (),
@@ -398,7 +411,7 @@ impl Session {
         self.audit.critical(
             "clipboard.apple.requested",
             Level::Info,
-            json!({"clipboard.operation":operation,"network.encrypted":true}),
+            json!({"clipboard.operation":operation,"clipboard.epoch":diagnostic_epoch,"network.encrypted":true}),
         )?;
         if matches!(&command, crate::clipboard::apple::Command::SendFiles { .. }) {
             return self
@@ -411,7 +424,9 @@ impl Session {
                     )
                 });
         }
-        self.post(WriterCommand::NativeClipboard(command))
+        let result = self.post(WriterCommand::NativeClipboard(command));
+        self.audit.event("clipboard.apple.command_queue",if result.is_ok(){Level::Info}else{Level::Warn},json!({"clipboard.operation":operation,"clipboard.epoch":diagnostic_epoch,"event.outcome":if result.is_ok(){"queued"}else{"failed"}}))?;
+        result
     }
     pub fn take_native_clipboard(&self) -> Result<Vec<crate::clipboard::apple::Event>> {
         Ok(self

@@ -1,4 +1,5 @@
 pub mod apple;
+pub mod diagnostics;
 pub mod filecopy;
 pub mod image;
 pub mod native;
