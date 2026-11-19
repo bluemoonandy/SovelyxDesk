@@ -345,10 +345,10 @@ fn diagnostic_error(state: &State, error: &Error, stage: &'static str) -> Result
 }
 pub(super) fn tick(app: &App, state: &mut State) -> Result<()> {
     let result = tick_inner(app, state);
-    if let Err(error) = &result {
-        if !matches!(error, Error::Audit(_)) {
-            diagnostic_error(state, error, "bridge_tick")?;
-        }
+    if let Err(error) = &result
+        && !matches!(error, Error::Audit(_))
+    {
+        diagnostic_error(state, error, "bridge_tick")?;
     }
     let bridge = &mut state.native_clipboard;
     let now = bridge.diagnostic_started.elapsed().as_millis() as u64;
