@@ -72,3 +72,5 @@ Display 缩放下拉框固定为 36 逻辑像素高，禁止垂直拉伸；不�
 ## 回滚
 
 退出 Sovelyx Desk 后重新使用保留的 `ede8bfc` MacCanvas 0.5.9 便携包及其音频组件。继续使用原 `%LOCALAPPDATA%\MacCanvas`，旧版本会忽略语言旁文件，无需删除/迁移设备或凭据；不要清空配置目录或 Windows Credential Manager。新版独立快捷方式如需移除，使用针对新版安装的卸载入口，不删除用户数据。不覆盖之前交付 ZIP，不合并 main。
+
+UI 截图脚本使用 PowerShell 7 的大小写敏感 JSON 词典（例如 CLIPBOARD 与 Clipboard 是不同的翻译键）；独立安装脚本仍兼容 Windows PowerShell 5.1，并保留 UTF-8 BOM。原生 Windows 文件选择框标题也走统一翻译，明确选择的是 Windows 本地文件或目录；不添加远程 Mac 目录枚举或 SSH 要求。版本、日期、提交与独立更新 API 地址均由品牌元数据入口提供。

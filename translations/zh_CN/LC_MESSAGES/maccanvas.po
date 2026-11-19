@@ -349,6 +349,18 @@ msgid "Choose Windows destination…"
 msgstr "选择 Windows 保存位置…"
 
 msgctxt "ui"
+msgid "Choose a Windows destination - existing files are not replaced"
+msgstr "选择 Windows 保存位置（不替换已有文件）"
+
+msgctxt "ui"
+msgid "Choose a Windows file to send"
+msgstr "选择要发送的 Windows 文件"
+
+msgctxt "ui"
+msgid "Choose a Windows folder for file transfer"
+msgstr "选择文件传输使用的 Windows 文件夹"
+
+msgctxt "ui"
 msgid "Choose a saved Mac or add a new connection."
 msgstr "选择已保存的 Mac，或添加新连接。"
 
@@ -2247,6 +2259,10 @@ msgstr "已向加密 Mac 连接发送 Windows 内容，请在 Mac 上粘贴以�
 msgctxt "ui"
 msgid "Windows did not return a local app-data folder"
 msgstr "Windows 未返回本地应用数据目录"
+
+msgctxt "ui"
+msgid "Windows file dialog: {error}"
+msgstr "Windows 文件选择框：{error}"
 
 msgctxt "ui"
 msgid "Windows has no plain text on the clipboard"

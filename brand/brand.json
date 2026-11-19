@@ -20,7 +20,13 @@
   "icon": "assets/brand/sovelyx-desk.png",
   "ico": "assets/brand/sovelyx-desk.ico",
   "legacy_data_directory": "MacCanvas",
-  "legacy_credential_prefixes": ["MacCanvas/profile/", "MacCanvas/login/v2/"],
+  "legacy_credential_prefixes": [
+    "MacCanvas/profile/",
+    "MacCanvas/login/v2/"
+  ],
   "upstream_author": "@false00",
-  "upstream_repository": "https://github.com/false00/maccanvas"
+  "upstream_repository": "https://github.com/false00/maccanvas",
+  "update_source": "https://api.github.com/repos/bluemoonandy/maccanvas/releases",
+  "product_version_source": "Cargo.toml package.version",
+  "build_commit_source": "git HEAD"
 }

@@ -1435,9 +1435,9 @@ pub fn run(
         }
     }
     app.set_editor_open(settings.profiles.is_empty());
-    app.set_app_version(maccanvas::VERSION.into());
-    app.set_build_date(maccanvas::BUILD_UTC.into());
-    app.set_build_revision(maccanvas::REVISION.into());
+    app.set_app_version(maccanvas::brand::PRODUCT_VERSION.into());
+    app.set_build_date(maccanvas::brand::BUILD_DATE.into());
+    app.set_build_revision(maccanvas::brand::BUILD_COMMIT.into());
     app.set_build_target(maccanvas::TARGET.into());
     app.set_build_compiler(maccanvas::RUSTC.into());
     app.set_author_name(maccanvas::AUTHOR.into());

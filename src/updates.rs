@@ -171,7 +171,7 @@ pub fn check() -> Result<Option<Release>> {
     }
     let mut bytes = Vec::new();
     http::download(
-        &format!("https://api.github.com/repos/{REPOSITORY}/releases?per_page=20"),
+        &format!("{}?per_page=20", crate::brand::UPDATE_SOURCE),
         MAX_METADATA,
         Duration::from_secs(20),
         &mut bytes,

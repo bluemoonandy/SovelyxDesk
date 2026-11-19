@@ -15,7 +15,7 @@ param(
 
     function Get-DeskBrand {
         return @'
-{"schema_version": 1, "confirmed": true, "app_name": "Sovelyx Desk", "display_name_zh_cn": "Sovelyx 远程桌面", "publisher": "Sovelyx", "tagline": "Your Mac, within reach.", "tagline_zh_cn": "远程连接，触手可及。", "description": "Remote access to your Mac from Windows", "executable": "SovelyxDesk.exe", "release_name": "Sovelyx-Desk-windows-x64", "audio_asset": "SovelyxDesk-audio-windows-x64.exe", "shortcut": "Sovelyx Desk.lnk", "install_receipt": ".sovelyx-desk-install.json", "homepage": "https://sovelyx.com/desk", "homepage_status": "planned", "repository": "https://github.com/bluemoonandy/maccanvas", "repository_slug": "bluemoonandy/maccanvas", "updates_ready": false, "icon": "assets/brand/sovelyx-desk.png", "ico": "assets/brand/sovelyx-desk.ico", "legacy_data_directory": "MacCanvas", "legacy_credential_prefixes": ["MacCanvas/profile/", "MacCanvas/login/v2/"], "upstream_author": "@false00", "upstream_repository": "https://github.com/false00/maccanvas"}
+{"schema_version": 1, "confirmed": true, "app_name": "Sovelyx Desk", "display_name_zh_cn": "Sovelyx 远程桌面", "publisher": "Sovelyx", "tagline": "Your Mac, within reach.", "tagline_zh_cn": "远程连接，触手可及。", "description": "Remote access to your Mac from Windows", "executable": "SovelyxDesk.exe", "release_name": "Sovelyx-Desk-windows-x64", "audio_asset": "SovelyxDesk-audio-windows-x64.exe", "shortcut": "Sovelyx Desk.lnk", "install_receipt": ".sovelyx-desk-install.json", "homepage": "https://sovelyx.com/desk", "homepage_status": "planned", "repository": "https://github.com/bluemoonandy/maccanvas", "repository_slug": "bluemoonandy/maccanvas", "updates_ready": false, "icon": "assets/brand/sovelyx-desk.png", "ico": "assets/brand/sovelyx-desk.ico", "legacy_data_directory": "MacCanvas", "legacy_credential_prefixes": ["MacCanvas/profile/", "MacCanvas/login/v2/"], "upstream_author": "@false00", "upstream_repository": "https://github.com/false00/maccanvas", "update_source": "https://api.github.com/repos/bluemoonandy/maccanvas/releases", "product_version_source": "Cargo.toml package.version", "build_commit_source": "git HEAD"}
 '@ | ConvertFrom-Json
     }
 
@@ -228,7 +228,7 @@ param(
         $client = New-MacCanvasClient
         try {
             $endpoint = if ($Version -eq 'latest') { 'latest' } else { "tags/$Version" }
-            $metadata = Receive-MacCanvasBytes $client ([uri]"https://api.github.com/repos/bluemoonandy/maccanvas/releases/$endpoint") 262144
+            $metadata = Receive-MacCanvasBytes $client ([uri]"$((Get-DeskBrand).update_source)/$endpoint") 262144
             $release = [Text.Encoding]::UTF8.GetString($metadata) | ConvertFrom-Json
             if ($release.draft -or $release.prerelease -or $release.tag_name -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$' -or
                 ($Version -ne 'latest' -and $release.tag_name -cne $Version)) {

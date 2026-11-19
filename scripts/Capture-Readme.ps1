@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+﻿#Requires -Version 7.0
 [CmdletBinding()]
 param(
     [string]$Executable = '',
@@ -82,13 +82,12 @@ $process = [Diagnostics.Process]::Start($start)
 $handle = [IntPtr]::Zero
 
 $script:UiLanguage = $Language
-$script:UiCatalog = Get-Content -LiteralPath (Join-Path $root 'translations\zh_CN.json') -Encoding UTF8 -Raw | ConvertFrom-Json
+$script:UiCatalog = Get-Content -LiteralPath (Join-Path $root 'translations\zh_CN.json') -Encoding UTF8 -Raw | ConvertFrom-Json -AsHashtable
 function Ui-Text([string]$Text) {
     if ($script:UiLanguage -eq 'en') { return $Text }
-    $entry = $script:UiCatalog.PSObject.Properties[$Text]
-    if ($null -ne $entry) { return [string]$entry.Value }
+    if ($script:UiCatalog.Contains($Text)) { return [string]$script:UiCatalog[$Text] }
     foreach ($prefix in @('More actions for ', 'Mac: ')) {
-        if ($Text.StartsWith($prefix)) { return ([string]$script:UiCatalog.PSObject.Properties[$prefix].Value) + $Text.Substring($prefix.Length) }
+        if ($Text.StartsWith($prefix)) { return ([string]$script:UiCatalog[$prefix]) + $Text.Substring($prefix.Length) }
     }
     return $Text
 }

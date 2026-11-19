@@ -349,6 +349,18 @@ msgid "Choose Windows destination…"
 msgstr "Choose Windows destination…"
 
 msgctxt "ui"
+msgid "Choose a Windows destination - existing files are not replaced"
+msgstr "Choose a Windows destination - existing files are not replaced"
+
+msgctxt "ui"
+msgid "Choose a Windows file to send"
+msgstr "Choose a Windows file to send"
+
+msgctxt "ui"
+msgid "Choose a Windows folder for file transfer"
+msgstr "Choose a Windows folder for file transfer"
+
+msgctxt "ui"
 msgid "Choose a saved Mac or add a new connection."
 msgstr "Choose a saved Mac or add a new connection."
 
@@ -2247,6 +2259,10 @@ msgstr "Windows content written to the encrypted Mac connection. Paste on the Ma
 msgctxt "ui"
 msgid "Windows did not return a local app-data folder"
 msgstr "Windows did not return a local app-data folder"
+
+msgctxt "ui"
+msgid "Windows file dialog: {error}"
+msgstr "Windows file dialog: {error}"
 
 msgctxt "ui"
 msgid "Windows has no plain text on the clipboard"

@@ -13,6 +13,10 @@ pub const INSTALL_RECEIPT: &str = env!("SOVELYX_INSTALL_RECEIPT");
 pub const HOMEPAGE: &str = env!("SOVELYX_HOMEPAGE");
 pub const REPOSITORY: &str = env!("SOVELYX_REPOSITORY");
 pub const REPOSITORY_SLUG: &str = env!("SOVELYX_REPOSITORY_SLUG");
+pub const UPDATE_SOURCE: &str = env!("SOVELYX_UPDATE_SOURCE");
+pub const PRODUCT_VERSION: &str = crate::VERSION;
+pub const BUILD_COMMIT: &str = crate::REVISION;
+pub const BUILD_DATE: &str = crate::BUILD_UTC;
 pub const UPDATES_READY: bool = matches!(env!("SOVELYX_UPDATES_READY").as_bytes(), b"true");
 pub const UPDATES_UNAVAILABLE: &str = "Sovelyx Desk updates are not published yet. Automatic downloads and installation are disabled.";
 

@@ -62,13 +62,13 @@ fn show(owner: isize, name: Option<&str>, folder: bool) -> Result<Option<PathBuf
     }
     unsafe { dialog.SetOptions(options) }.map_err(failed)?;
     unsafe {
-        dialog.SetTitle(&HSTRING::from(if folder {
-            "Choose a local folder for native file transfer"
+        dialog.SetTitle(&HSTRING::from(crate::i18n::text(if folder {
+            "Choose a Windows folder for file transfer"
         } else if name.is_some() {
-            "Receive a new file - existing files are not replaced"
+            "Choose a Windows destination - existing files are not replaced"
         } else {
-            "Send a file to this Mac folder"
-        }))
+            "Choose a Windows file to send"
+        })))
     }
     .map_err(failed)?;
     if let Some(name) = name {
