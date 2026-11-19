@@ -60,7 +60,7 @@ Display 缩放下拉框固定为 36 逻辑像素高，禁止垂直拉伸；不�
 - Windows CI 执行 locked 测试、真实 Windows 剪贴板测试、Clippy、安装回滚与快捷方式归属检查、自替换预检、Release 及资源/导入检查。
 - UIA 在英文和中文下检查设备、新增/编辑、已存 Hello 保护不泄露密码、错误重试、连接、画质、剪贴板、文件、音频、Display、About、设置、全屏与缩放；连接前后切换语言，核对已有输入和连接请求计数。中英文覆盖 100%、125%、150%、200% 软件缩放。截图由 Windows CI 捕获，不能替代实际 2.8K/4K 显示器视觉验收。
 - 本机为 macOS，无用户那台 Windows 笔记本的实机访问。Windows Hello 人机验证、真实保存凭据、HEVC/NVDEC/D3D11 性能、跨屏 DPI、任务栏/Alt+Tab 和 Explorer 图标缓存仍需实机确认。合成会话使用标准 VNC，不伪装 HEVC 实测。
-- Windows 文件属性中的 CompanyName 为 Sovelyx；未配置代码签名证书，不能据此声称 Windows 已验证发布者签名。产品网页尚未部署。
+- Windows 文件属性中的 CompanyName 为 Sovelyx；未配置代码签名证书，不能据此声称 Windows 已验证发布者签名。产品网页上线状态未验证，本轮没有部署网站。
 
 ## 许可交付清单
 

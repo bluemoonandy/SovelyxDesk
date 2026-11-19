@@ -162,7 +162,11 @@ try {
         $comboCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ComboBox)
         $typeCondition = [Windows.Automation.OrCondition]::new($editCondition, $comboCondition)
         $condition = [Windows.Automation.AndCondition]::new($nameCondition, $typeCondition)
-        $control = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
+        $deadline = [DateTime]::UtcNow.AddSeconds(5)
+        do {
+            $control = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
+            if ($null -eq $control) { Start-Sleep -Milliseconds 50 }
+        } while ($null -eq $control -and [DateTime]::UtcNow -lt $deadline)
         if ($null -eq $control) { throw "Editable control not found: $Name" }
         if ($control.Current.ControlType -eq [Windows.Automation.ControlType]::ComboBox) {
             # Cupertino ComboBox does not apply UIA SetValue; use its public arrow-key interaction.
@@ -411,6 +415,14 @@ try {
             Write-Output ("UI fixture control: {0}; count: {1}" -f $label, $matches.Count)
         }
     }
+    if ($null -ne $window) {
+        foreach ($element in $window.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)) {
+            if ($element.Current.ControlType -eq [Windows.Automation.ControlType]::ComboBox -or $element.Current.Name -in @('Language','语言')) {
+                Write-Output ("UI combo diagnostic: name={0}; type={1}; offscreen={2}; bounds={3}" -f $element.Current.Name,$element.Current.ControlType.ProgrammaticName,$element.Current.IsOffscreen,$element.Current.BoundingRectangle)
+            }
+        }
+    }
+    Write-Output $_.ScriptStackTrace
     Write-Output $_.ToString()
     throw
 } finally {

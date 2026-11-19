@@ -61,6 +61,13 @@ jobs:
         run: |
           cargo build --locked
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Export UI diagnostic executable
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: Sovelyx-Desk-UI-debug-${{ github.sha }}
+          path: target/x86_64-pc-windows-msvc/debug/maccanvas.exe
+          retention-days: 7
+          if-no-files-found: error
       - name: Verify login UI themes and scale factors
         shell: pwsh
         run: |
