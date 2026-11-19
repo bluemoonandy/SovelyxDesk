@@ -1,0 +1,1672 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Sovelyx Desk 0.5.10\n"
+"POT-Creation-Date: 2026-11-19 13:23+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: ui/about.slint:11
+msgctxt "ui"
+msgid "@false00"
+msgstr ""
+
+#: ui/about.slint:34
+msgctxt "ui"
+msgid "Version "
+msgstr ""
+
+#: ui/about.slint:36 ui/files.slint:78 ui/audio.slint:30 ui/app.slint:779
+#: ui/about.slint:36 ui/files.slint:78 ui/audio.slint:30 ui/app.slint:779 ui/native-files.slint:31
+msgctxt "ui"
+msgid "Done"
+msgstr ""
+
+#: ui/about.slint:42
+msgctxt "ui"
+msgid "Publisher: "
+msgstr ""
+
+#: ui/about.slint:43
+msgctxt "ui"
+msgid "Upstream author: "
+msgstr ""
+
+#: ui/about.slint:45
+msgctxt "ui"
+msgid "Upstream project"
+msgstr ""
+
+#: ui/about.slint:46
+msgctxt "ui"
+msgid "Product homepage"
+msgstr ""
+
+#: ui/about.slint:53
+msgctxt "ui"
+msgid "BUILD DETAILS"
+msgstr ""
+
+#: ui/about.slint:54
+msgctxt "ui"
+msgid "Built: "
+msgstr ""
+
+#: ui/about.slint:55
+msgctxt "ui"
+msgid "Source: "
+msgstr ""
+
+#: ui/about.slint:56
+msgctxt "ui"
+msgid "Target: "
+msgstr ""
+
+#: ui/about.slint:61
+msgctxt "ui"
+msgid "Source code"
+msgstr ""
+
+#: ui/about.slint:62
+msgctxt "ui"
+msgid "Releases"
+msgstr ""
+
+#: ui/about.slint:63 ui/app.slint:778
+msgctxt "ui"
+msgid "Open Source Licenses"
+msgstr ""
+
+#: ui/about.slint:65
+msgctxt "ui"
+msgid ""
+"Independent Rust + Slint viewer. Thanks to the TigerVNC, RealVNC, TightVNC, "
+"and original VNC authors for their work on remote desktop protocols."
+msgstr ""
+
+#: ui/about.slint:66
+msgctxt "ui"
+msgid "LOCAL SECURITY AUDIT"
+msgstr ""
+
+#: ui/about.slint:68
+msgctxt "ui"
+msgid "Open log folder"
+msgstr ""
+
+#: ui/files.slint:75
+msgctxt "ui"
+msgid "Clipboard"
+msgstr ""
+
+#: ui/files.slint:75 ui/native-files.slint:30
+msgctxt "ui"
+msgid "Files"
+msgstr ""
+
+#: ui/files.slint:76
+msgctxt "ui"
+msgid "  -  Apple encrypted session"
+msgstr ""
+
+#: ui/files.slint:76
+msgctxt "ui"
+msgid "  -  SSH / SFTP"
+msgstr ""
+
+#: ui/files.slint:86
+msgctxt "ui"
+msgid "SSH operation error: "
+msgstr ""
+
+#: ui/files.slint:89
+msgctxt "ui"
+msgid "Share plain-text clipboard over VNC"
+msgstr ""
+
+#: ui/files.slint:91
+msgctxt "ui"
+msgid ""
+"Ctrl+V sends Windows text when pasting into your Mac. Incoming Mac text can "
+"replace your Windows clipboard while the viewer is active. Clipboard "
+"contents are never logged."
+msgstr ""
+
+#: ui/files.slint:92
+msgctxt "ui"
+msgid "Paste Windows text"
+msgstr ""
+
+#: ui/files.slint:93
+msgctxt "ui"
+msgid ""
+"VNC clipboard traffic is not encrypted. Use a VPN. Files, images, and rich "
+"text are not shared."
+msgstr ""
+
+#: ui/files.slint:95
+msgctxt "ui"
+msgid "Native Apple clipboard (experimental, no SSH)"
+msgstr ""
+
+#: ui/files.slint:96 ui/native-files.slint:63
+msgctxt "ui"
+msgid "Status: "
+msgstr ""
+
+#: ui/files.slint:98 ui/files.slint:112 ui/native-files.slint:43
+msgctxt "ui"
+msgid "Mac → Windows"
+msgstr ""
+
+#: ui/files.slint:99 ui/files.slint:111 ui/native-files.slint:42
+msgctxt "ui"
+msgid "Windows → Mac"
+msgstr ""
+
+#: ui/files.slint:101
+msgctxt "ui"
+msgid ""
+"Uses the current encrypted HEVC connection. New text, HTML/RTF and image "
+"copies sync in the selected directions. Remote Login and a second "
+"authentication are not used."
+msgstr ""
+
+#: ui/files.slint:102
+msgctxt "ui"
+msgid ""
+"Text/HTML/RTF: 1 MiB each. Images: up to 3840×2160 pixels; PNG transfer "
+"under 4 MiB. Single-page 8-bit TIFF is converted. File/folder sync is a "
+"separate opt-in below."
+msgstr ""
+
+#: ui/files.slint:103
+msgctxt "ui"
+msgid "Sync files and folders (experimental, copy only)"
+msgstr ""
+
+#: ui/files.slint:104
+msgctxt "ui"
+msgid ""
+"Up to 16 roots / 256 MiB per batch. Keep this app open until pasting "
+"finishes. Files are staged in Mac /tmp and a private Windows temporary "
+"folder. Mac /tmp copies remain until system cleanup; links are not "
+"supported. Turn off this option to cancel."
+msgstr ""
+
+#: ui/files.slint:107
+msgctxt "ui"
+msgid "Encrypted SSH clipboard (optional fallback)"
+msgstr ""
+
+#: ui/files.slint:108
+msgctxt "ui"
+msgid "Auto Sync Clipboard"
+msgstr ""
+
+#: ui/files.slint:109
+msgctxt "ui"
+msgid ""
+"Shares new plain-text copies, including potentially sensitive text, in the "
+"background. Default: off. SSH must match the Mac desktop account."
+msgstr ""
+
+#: ui/files.slint:115
+msgctxt "ui"
+msgid "Text limit (UTF-8 bytes)"
+msgstr ""
+
+#: ui/files.slint:117 ui/app.slint:909
+msgctxt "ui"
+msgid "Apply"
+msgstr ""
+
+#: ui/files.slint:121
+msgctxt "ui"
+msgid "Copy Mac text"
+msgstr ""
+
+#: ui/files.slint:122
+msgctxt "ui"
+msgid "Send Windows text"
+msgstr ""
+
+#: ui/files.slint:124 ui/files.slint:172
+msgctxt "ui"
+msgid "Disconnect SSH"
+msgstr ""
+
+#: ui/files.slint:125
+msgctxt "ui"
+msgid ""
+"Unicode clipboard uses this SSH account's logged-in Mac desktop. No images, "
+"rich text, or clipboard contents are logged."
+msgstr ""
+
+#: ui/files.slint:131
+msgctxt "ui"
+msgid "Verify this Mac's SSH host key"
+msgstr ""
+
+#: ui/files.slint:133
+msgctxt "ui"
+msgid "SSH SHA-256 fingerprint"
+msgstr ""
+
+#: ui/files.slint:134
+msgctxt "ui"
+msgid ""
+"Compare this fingerprint on the Mac before trusting it. A changed key is "
+"always blocked. No saved password is read or sent before the key is accepted."
+msgstr ""
+
+#: ui/files.slint:135
+msgctxt "ui"
+msgid "On the Mac, run:"
+msgstr ""
+
+#: ui/files.slint:139
+msgctxt "ui"
+msgid "Reject"
+msgstr ""
+
+#: ui/files.slint:140
+msgctxt "ui"
+msgid "Trust key & continue"
+msgstr ""
+
+#: ui/files.slint:146
+msgctxt "ui"
+msgid ""
+"On your Mac: System Settings > General > Sharing > Remote Login. Allow your "
+"Mac account."
+msgstr ""
+
+#: ui/files.slint:148 ui/files.slint:149
+msgctxt "ui"
+msgid "SSH port"
+msgstr ""
+
+#: ui/files.slint:152
+msgctxt "ui"
+msgid "Use saved Mac login (Windows Hello required)"
+msgstr ""
+
+#: ui/files.slint:153
+msgctxt "ui"
+msgid ""
+"Your saved login stays locked in Windows Credential Manager. Approve Windows "
+"Hello after SSH host verification."
+msgstr ""
+
+#: ui/files.slint:156
+msgctxt "ui"
+msgid "Mac account short username"
+msgstr ""
+
+#: ui/files.slint:156
+msgctxt "ui"
+msgid "SSH Mac username"
+msgstr ""
+
+#: ui/files.slint:157
+msgctxt "ui"
+msgid "Mac account password"
+msgstr ""
+
+#: ui/files.slint:157
+msgctxt "ui"
+msgid "SSH Mac password"
+msgstr ""
+
+#: ui/files.slint:158
+msgctxt "ui"
+msgid "This password is used only for this SSH connection and is not saved."
+msgstr ""
+
+#: ui/files.slint:161
+msgctxt "ui"
+msgid "Verifying SSH..."
+msgstr ""
+
+#: ui/files.slint:161
+msgctxt "ui"
+msgid "Connect securely"
+msgstr ""
+
+#: ui/files.slint:162 ui/app.slint:324 ui/app.slint:612
+msgctxt "ui"
+msgid "Cancel"
+msgstr ""
+
+#: ui/files.slint:169
+msgctxt "ui"
+msgid "Up"
+msgstr ""
+
+#: ui/files.slint:170
+msgctxt "ui"
+msgid "Mac folder"
+msgstr ""
+
+#: ui/files.slint:171
+msgctxt "ui"
+msgid "Go"
+msgstr ""
+
+#: ui/files.slint:178
+msgctxt "ui"
+msgid "This folder is empty."
+msgstr ""
+
+#: ui/files.slint:178
+msgctxt "ui"
+msgid "Enter a Mac folder path to browse."
+msgstr ""
+
+#: ui/files.slint:181
+msgctxt "ui"
+msgid "Mac folder "
+msgstr ""
+
+#: ui/files.slint:181
+msgctxt "ui"
+msgid "Mac item "
+msgstr ""
+
+#: ui/files.slint:191
+msgctxt "ui"
+msgid "Open"
+msgstr ""
+
+#: ui/files.slint:191
+msgctxt "ui"
+msgid "Receive"
+msgstr ""
+
+#: ui/files.slint:191
+msgctxt "ui"
+msgid "Not a file"
+msgstr ""
+
+#: ui/files.slint:191
+msgctxt "ui"
+msgid "Open "
+msgstr ""
+
+#: ui/files.slint:191
+msgctxt "ui"
+msgid "Receive "
+msgstr ""
+
+#: ui/files.slint:198
+msgctxt "ui"
+msgid "Optional new file name on the Mac"
+msgstr ""
+
+#: ui/files.slint:198
+msgctxt "ui"
+msgid "Upload file name"
+msgstr ""
+
+#: ui/files.slint:199
+msgctxt "ui"
+msgid "Send a file..."
+msgstr ""
+
+#: ui/files.slint:201
+msgctxt "ui"
+msgid ""
+"Single files only. Existing files are never replaced. Uploads are verified "
+"by reading them back before the final file is created."
+msgstr ""
+
+#: ui/files.slint:208
+msgctxt "ui"
+msgid "Cancel operation"
+msgstr ""
+
+#: ui/audio.slint:29
+msgctxt "ui"
+msgid "Mac audio"
+msgstr ""
+
+#: ui/audio.slint:32
+msgctxt "ui"
+msgid ""
+"Standard VNC does not carry audio. Choose HEVC / H.265 in Quality to hear "
+"your Mac."
+msgstr ""
+
+#: ui/audio.slint:35
+msgctxt "ui"
+msgid ""
+"Audio uses an optional, separately licensed AAC converter. Enabling audio "
+"downloads and verifies it from the official release. No system codec "
+"extension is installed."
+msgstr ""
+
+#: ui/audio.slint:36
+msgctxt "ui"
+msgid "Downloading audio..."
+msgstr ""
+
+#: ui/audio.slint:36
+msgctxt "ui"
+msgid "Enable audio"
+msgstr ""
+
+#: ui/audio.slint:38
+msgctxt "ui"
+msgid "Mute playback"
+msgstr ""
+
+#: ui/audio.slint:38
+msgctxt "ui"
+msgid "Mute Mac audio"
+msgstr ""
+
+#: ui/audio.slint:40
+msgctxt "ui"
+msgid "Playback volume"
+msgstr ""
+
+#: ui/audio.slint:41
+msgctxt "ui"
+msgid "Audio volume"
+msgstr ""
+
+#: ui/audio.slint:44
+msgctxt "ui"
+msgid ""
+"Playback follows your Windows output device. These controls do not change "
+"the Mac's volume. No microphone audio is captured or sent."
+msgstr ""
+
+#: ui/audio.slint:45
+msgctxt "ui"
+msgid "Retry audio"
+msgstr ""
+
+#: ui/audio.slint:46
+msgctxt "ui"
+msgid ""
+"Enabling or retrying audio reconnects an active HEVC stream automatically. "
+"Saved logins require Windows Hello again."
+msgstr ""
+
+#: ui/app.slint:108
+msgctxt "ui"
+msgid "Paused — automatic sharing is off"
+msgstr ""
+
+#: ui/app.slint:122
+msgctxt "ui"
+msgid "Experimental Apple clipboard — disabled"
+msgstr ""
+
+#: ui/app.slint:124
+msgctxt "ui"
+msgid "Standard VNC: Latin-1 compatibility mode."
+msgstr ""
+
+#: ui/app.slint:139
+msgctxt "ui"
+msgid "Audio is available with HEVC."
+msgstr ""
+
+#: ui/app.slint:161
+msgctxt "ui"
+msgid "Checking for updates on launch..."
+msgstr ""
+
+#: ui/app.slint:164
+msgctxt "ui"
+msgid "Ready to connect"
+msgstr ""
+
+#: ui/app.slint:172 ui/app.slint:173
+msgctxt "ui"
+msgid "0.0 kbps"
+msgstr ""
+
+#: ui/app.slint:174
+msgctxt "ui"
+msgid "0 FPS"
+msgstr ""
+
+#: ui/app.slint:176
+msgctxt "ui"
+msgid "Waiting for pixels"
+msgstr ""
+
+#: ui/app.slint:186
+msgctxt "ui"
+msgid "Default: HEVC / H.265, adaptive bitrate, up to 60 FPS."
+msgstr ""
+
+#: ui/app.slint:304
+msgctxt "ui"
+msgid "Toggle connections sidebar"
+msgstr ""
+
+#: ui/app.slint:315
+msgctxt "ui"
+msgid "Quality"
+msgstr ""
+
+#: ui/app.slint:315
+msgctxt "ui"
+msgid "Stream quality"
+msgstr ""
+
+#: ui/app.slint:316 ui/app.slint:554 ui/app.slint:798
+msgctxt "ui"
+msgid "Display"
+msgstr ""
+
+#: ui/app.slint:316 ui/app.slint:554
+msgctxt "ui"
+msgid "Display scaling"
+msgstr ""
+
+#: ui/app.slint:317
+msgctxt "ui"
+msgid "Audio playback"
+msgstr ""
+
+#: ui/app.slint:318
+msgctxt "ui"
+msgid "Clipboard sharing"
+msgstr ""
+
+#: ui/app.slint:319
+msgctxt "ui"
+msgid "File transfer"
+msgstr ""
+
+#: ui/app.slint:320
+msgctxt "ui"
+msgid "Refresh"
+msgstr ""
+
+#: ui/app.slint:321
+msgctxt "ui"
+msgid "Full screen"
+msgstr ""
+
+#: ui/app.slint:322 ui/app.slint:723
+msgctxt "ui"
+msgid "Settings"
+msgstr ""
+
+#: ui/app.slint:323 ui/app.slint:758
+msgctxt "ui"
+msgid "About"
+msgstr ""
+
+#: ui/app.slint:324
+msgctxt "ui"
+msgid "Disconnect"
+msgstr ""
+
+#: ui/app.slint:357
+msgctxt "ui"
+msgid "Your Mac"
+msgstr ""
+
+#: ui/app.slint:357
+msgctxt "ui"
+msgid "My Macs"
+msgstr ""
+
+#: ui/app.slint:358
+msgctxt "ui"
+msgid " saved Macs"
+msgstr ""
+
+#: ui/app.slint:362
+msgctxt "ui"
+msgid "+ Add Mac"
+msgstr ""
+
+#: ui/app.slint:362 ui/app.slint:386 ui/app.slint:472 ui/app.slint:509
+msgctxt "ui"
+msgid "New connection"
+msgstr ""
+
+#: ui/app.slint:372 ui/app.slint:434 ui/app.slint:663
+msgctxt "ui"
+msgid "Update Password"
+msgstr ""
+
+#: ui/app.slint:373
+msgctxt "ui"
+msgid "Dismiss"
+msgstr ""
+
+#: ui/app.slint:378
+msgctxt "ui"
+msgid "Search saved Macs"
+msgstr ""
+
+#: ui/app.slint:378
+msgctxt "ui"
+msgid "Search by name or address"
+msgstr ""
+
+#: ui/app.slint:379
+msgctxt "ui"
+msgid "Clear"
+msgstr ""
+
+#: ui/app.slint:379
+msgctxt "ui"
+msgid "Clear search"
+msgstr ""
+
+#: ui/app.slint:384
+msgctxt "ui"
+msgid "Your Macs, one click away."
+msgstr ""
+
+#: ui/app.slint:385
+msgctxt "ui"
+msgid "Add your first Mac to get started."
+msgstr ""
+
+#: ui/app.slint:386
+msgctxt "ui"
+msgid "Add Your First Mac"
+msgstr ""
+
+#: ui/app.slint:390
+msgctxt "ui"
+msgid "No Macs match this search."
+msgstr ""
+
+#: ui/app.slint:391
+msgctxt "ui"
+msgid "Try another name or address. Your saved Macs are still here."
+msgstr ""
+
+#: ui/app.slint:408
+msgctxt "ui"
+msgid "Mac: "
+msgstr ""
+
+#: ui/app.slint:424
+msgctxt "ui"
+msgid "More actions for "
+msgstr ""
+
+#: ui/app.slint:433
+msgctxt "ui"
+msgid "Edit Mac"
+msgstr ""
+
+#: ui/app.slint:435 ui/app.slint:689
+msgctxt "ui"
+msgid "Remove Mac…"
+msgstr ""
+
+#: ui/app.slint:452 ui/app.slint:459
+msgctxt "ui"
+msgid "Connected"
+msgstr ""
+
+#: ui/app.slint:452 ui/app.slint:454 ui/app.slint:459
+msgctxt "ui"
+msgid "Connection failed"
+msgstr ""
+
+#: ui/app.slint:452
+msgctxt "ui"
+msgid "Password saved"
+msgstr ""
+
+#: ui/app.slint:452
+msgctxt "ui"
+msgid "Password required"
+msgstr ""
+
+#: ui/app.slint:453
+msgctxt "ui"
+msgid "Credential and connection status: "
+msgstr ""
+
+#: ui/app.slint:459 ui/app.slint:705
+msgctxt "ui"
+msgid "Connecting…"
+msgstr ""
+
+#: ui/app.slint:459 ui/app.slint:1007
+msgctxt "ui"
+msgid "Retry"
+msgstr ""
+
+#: ui/app.slint:459
+msgctxt "ui"
+msgid "Connect"
+msgstr ""
+
+#: ui/app.slint:460
+msgctxt "ui"
+msgid " to "
+msgstr ""
+
+#: ui/app.slint:472
+msgctxt "ui"
+msgid "+ Add another Mac"
+msgstr ""
+
+#: ui/app.slint:493
+msgctxt "ui"
+msgid "Remote desktop"
+msgstr ""
+
+#: ui/app.slint:505
+msgctxt "ui"
+msgid "A moment closer."
+msgstr ""
+
+#: ui/app.slint:505
+msgctxt "ui"
+msgid "Your Mac, beautifully in view."
+msgstr ""
+
+#: ui/app.slint:506
+msgctxt "ui"
+msgid "Verify with Windows Hello if prompted."
+msgstr ""
+
+#: ui/app.slint:506
+msgctxt "ui"
+msgid "Choose a saved Mac or add a new connection."
+msgstr ""
+
+#: ui/app.slint:511
+msgctxt "ui"
+msgid "Sharp scaling. A familiar cursor. Your whole desktop."
+msgstr ""
+
+#: ui/app.slint:547
+msgctxt "ui"
+msgid " in"
+msgstr ""
+
+#: ui/app.slint:559
+msgctxt "ui"
+msgid "Pan on · Stop panning"
+msgstr ""
+
+#: ui/app.slint:559
+msgctxt "ui"
+msgid "Stop local panning"
+msgstr ""
+
+#: ui/app.slint:564
+msgctxt "ui"
+msgid "Exit full screen"
+msgstr ""
+
+#: ui/app.slint:581
+msgctxt "ui"
+msgid "Connection status indicator"
+msgstr ""
+
+#: ui/app.slint:590
+msgctxt "ui"
+msgid "IN "
+msgstr ""
+
+#: ui/app.slint:590
+msgctxt "ui"
+msgid "   OUT "
+msgstr ""
+
+#: ui/app.slint:591
+msgctxt "ui"
+msgid "Live FPS: "
+msgstr ""
+
+#: ui/app.slint:592
+msgctxt "ui"
+msgid "v"
+msgstr ""
+
+#: ui/app.slint:610
+msgctxt "ui"
+msgid "Edit Mac connection"
+msgstr ""
+
+#: ui/app.slint:610
+msgctxt "ui"
+msgid "Add a Mac"
+msgstr ""
+
+#: ui/app.slint:612
+msgctxt "ui"
+msgid "Close connection editor"
+msgstr ""
+
+#: ui/app.slint:619
+msgctxt "ui"
+msgid "Disconnect before changing this Mac's details."
+msgstr ""
+
+#: ui/app.slint:620
+msgctxt "ui"
+msgid "BASIC INFORMATION"
+msgstr ""
+
+#: ui/app.slint:621
+msgctxt "ui"
+msgid "Device name"
+msgstr ""
+
+#: ui/app.slint:622
+msgctxt "ui"
+msgid "Machine name"
+msgstr ""
+
+#: ui/app.slint:622
+msgctxt "ui"
+msgid "Mac mini"
+msgstr ""
+
+#: ui/app.slint:627
+msgctxt "ui"
+msgid "Host or IP address"
+msgstr ""
+
+#: ui/app.slint:628
+msgctxt "ui"
+msgid "Mac address"
+msgstr ""
+
+#: ui/app.slint:632
+msgctxt "ui"
+msgid "Port"
+msgstr ""
+
+#: ui/app.slint:633
+msgctxt "ui"
+msgid "VNC port"
+msgstr ""
+
+#: ui/app.slint:636 ui/app.slint:638
+msgctxt "ui"
+msgid "Login method"
+msgstr ""
+
+#: ui/app.slint:638
+msgctxt "ui"
+msgid "Mac account"
+msgstr ""
+
+#: ui/app.slint:638
+msgctxt "ui"
+msgid "VNC password"
+msgstr ""
+
+#: ui/app.slint:642
+msgctxt "ui"
+msgid ""
+"VNC password uses standard VNC video. Apple HEVC requires Mac account "
+"authentication."
+msgstr ""
+
+#: ui/app.slint:643
+msgctxt "ui"
+msgid "CREDENTIAL PROTECTION"
+msgstr ""
+
+#: ui/app.slint:645
+msgctxt "ui"
+msgid "Credential protection"
+msgstr ""
+
+#: ui/app.slint:646
+msgctxt "ui"
+msgid "Quick Connect"
+msgstr ""
+
+#: ui/app.slint:646
+msgctxt "ui"
+msgid "Windows Hello"
+msgstr ""
+
+#: ui/app.slint:646
+msgctxt "ui"
+msgid "Manual"
+msgstr ""
+
+#: ui/app.slint:652
+msgctxt "ui"
+msgid ""
+"For a trusted PC. Programs running as your Windows user may access these "
+"credentials. Quick mode adds no separate hardware protection."
+msgstr ""
+
+#: ui/app.slint:652
+msgctxt "ui"
+msgid ""
+"Windows Hello authorizes every saved-password read. You can enter the "
+"password manually if Hello is unavailable."
+msgstr ""
+
+#: ui/app.slint:652
+msgctxt "ui"
+msgid "Device details are saved; the password is not persisted."
+msgstr ""
+
+#: ui/app.slint:655
+msgctxt "ui"
+msgid "Automatically reconnect after an interrupted session"
+msgstr ""
+
+#: ui/app.slint:660
+msgctxt "ui"
+msgid "Saved for quick connection"
+msgstr ""
+
+#: ui/app.slint:660
+msgctxt "ui"
+msgid "Windows Hello protected"
+msgstr ""
+
+#: ui/app.slint:661
+msgctxt "ui"
+msgid ""
+"Saved passwords remain hidden. Hello mode requires approval; if unavailable, "
+"enter the password manually."
+msgstr ""
+
+#: ui/app.slint:663
+msgctxt "ui"
+msgid "Enter different credentials"
+msgstr ""
+
+#: ui/app.slint:673 ui/app.slint:674
+msgctxt "ui"
+msgid "Mac username"
+msgstr ""
+
+#: ui/app.slint:674
+msgctxt "ui"
+msgid "Your macOS account"
+msgstr ""
+
+#: ui/app.slint:676
+msgctxt "ui"
+msgid "Password"
+msgstr ""
+
+#: ui/app.slint:677
+msgctxt "ui"
+msgid "Mac password"
+msgstr ""
+
+#: ui/app.slint:677
+msgctxt "ui"
+msgid "Enter a password"
+msgstr ""
+
+#: ui/app.slint:679
+msgctxt "ui"
+msgid "I authorize saving this password with the selected protection"
+msgstr ""
+
+#: ui/app.slint:684
+msgctxt "ui"
+msgid "Use existing saved login"
+msgstr ""
+
+#: ui/app.slint:691
+msgctxt "ui"
+msgid "Also delete saved credentials"
+msgstr ""
+
+#: ui/app.slint:692
+msgctxt "ui"
+msgid "Remove this saved Mac?"
+msgstr ""
+
+#: ui/app.slint:694
+msgctxt "ui"
+msgid "Keep Mac"
+msgstr ""
+
+#: ui/app.slint:695
+msgctxt "ui"
+msgid "Remove Mac"
+msgstr ""
+
+#: ui/app.slint:700
+msgctxt "ui"
+msgid "Save & Connect verifies the new password before saving it securely."
+msgstr ""
+
+#: ui/app.slint:700
+msgctxt "ui"
+msgid "Save keeps device details. Use Save & Connect to verify a new login."
+msgstr ""
+
+#: ui/app.slint:703
+msgctxt "ui"
+msgid "Save"
+msgstr ""
+
+#: ui/app.slint:703
+msgctxt "ui"
+msgid "Save machine"
+msgstr ""
+
+#: ui/app.slint:705
+msgctxt "ui"
+msgid "Save & Connect"
+msgstr ""
+
+#: ui/app.slint:705
+msgctxt "ui"
+msgid "Connect to Mac"
+msgstr ""
+
+#: ui/app.slint:724 ui/app.slint:838
+msgctxt "ui"
+msgid "Close"
+msgstr ""
+
+#: ui/app.slint:730
+msgctxt "ui"
+msgid "GENERAL"
+msgstr ""
+
+#: ui/app.slint:731 ui/app.slint:733
+msgctxt "ui"
+msgid "Language"
+msgstr ""
+
+#: ui/app.slint:734
+msgctxt "ui"
+msgid "System Default"
+msgstr ""
+
+#: ui/app.slint:734
+msgctxt "ui"
+msgid "English"
+msgstr ""
+
+#: ui/app.slint:739
+msgctxt "ui"
+msgid "Theme and motion follow Windows automatically."
+msgstr ""
+
+#: ui/app.slint:740
+msgctxt "ui"
+msgid "CONNECTION"
+msgstr ""
+
+#: ui/app.slint:741
+msgctxt "ui"
+msgid ""
+"Authentication, password protection and automatic reconnection are "
+"configured per Mac. Choose Edit on a device card."
+msgstr ""
+
+#: ui/app.slint:742
+msgctxt "ui"
+msgid "DISPLAY & QUALITY"
+msgstr ""
+
+#: ui/app.slint:743 ui/app.slint:837
+msgctxt "ui"
+msgid "Picture & connection"
+msgstr ""
+
+#: ui/app.slint:743
+msgctxt "ui"
+msgid "Show FPS"
+msgstr ""
+
+#: ui/app.slint:744
+msgctxt "ui"
+msgid "KEYBOARD & SHORTCUTS"
+msgstr ""
+
+#: ui/app.slint:745
+msgctxt "ui"
+msgid "Ctrl shortcuts act as Command"
+msgstr ""
+
+#: ui/app.slint:746
+msgctxt "ui"
+msgid "CLIPBOARD"
+msgstr ""
+
+#: ui/app.slint:747
+msgctxt "ui"
+msgid "Connect to a Mac to manage clipboard sharing from the toolbar."
+msgstr ""
+
+#: ui/app.slint:748
+msgctxt "ui"
+msgid "SECURITY & CREDENTIALS"
+msgstr ""
+
+#: ui/app.slint:749
+msgctxt "ui"
+msgid ""
+"Quick Connect saves your password with your approval. Windows Hello verifies "
+"each saved-password read. Manual never saves a password. Passwords stay in "
+"Windows Credential Manager."
+msgstr ""
+
+#: ui/app.slint:750
+msgctxt "ui"
+msgid ""
+"Apple HEVC uses encrypted control and SRTP video. Standard VNC traffic is "
+"not encrypted; use a trusted network or VPN for remote access."
+msgstr ""
+
+#: ui/app.slint:751
+msgctxt "ui"
+msgid "ABOUT & UPDATES"
+msgstr ""
+
+#: ui/app.slint:752
+msgctxt "ui"
+msgid " · Fork development build"
+msgstr ""
+
+#: ui/app.slint:753
+msgctxt "ui"
+msgid "Commit: "
+msgstr ""
+
+#: ui/app.slint:754
+msgctxt "ui"
+msgid ""
+"Update source: bluemoonandy/maccanvas on GitHub. Upstream packages cannot be "
+"installed by this updater."
+msgstr ""
+
+#: ui/app.slint:759
+msgctxt "ui"
+msgid "Checking…"
+msgstr ""
+
+#: ui/app.slint:759
+msgctxt "ui"
+msgid "Check updates"
+msgstr ""
+
+#: ui/app.slint:779
+msgctxt "ui"
+msgid "Close licenses"
+msgstr ""
+
+#: ui/app.slint:799
+msgctxt "ui"
+msgid "Close display settings"
+msgstr ""
+
+#: ui/app.slint:801
+msgctxt "ui"
+msgid "LOCAL DISPLAY SCALE"
+msgstr ""
+
+#: ui/app.slint:803
+msgctxt "ui"
+msgid "Display scale"
+msgstr ""
+
+#: ui/app.slint:805 ui/app.slint:811
+msgctxt "ui"
+msgid "Fit to Window"
+msgstr ""
+
+#: ui/app.slint:805
+msgctxt "ui"
+msgid "Actual Size (1:1 physical pixels)"
+msgstr ""
+
+#: ui/app.slint:805
+msgctxt "ui"
+msgid "100% of Fit"
+msgstr ""
+
+#: ui/app.slint:805
+msgctxt "ui"
+msgid "125% of Fit"
+msgstr ""
+
+#: ui/app.slint:805
+msgctxt "ui"
+msgid "150% of Fit"
+msgstr ""
+
+#: ui/app.slint:805
+msgctxt "ui"
+msgid "175% of Fit"
+msgstr ""
+
+#: ui/app.slint:805
+msgctxt "ui"
+msgid "200% of Fit"
+msgstr ""
+
+#: ui/app.slint:809
+msgctxt "ui"
+msgid ""
+"Zoom enlarges the fitted view and may crop the edges. It does not change the "
+"Mac resolution. Actual Size maps one decoded pixel to one Windows physical "
+"pixel."
+msgstr ""
+
+#: ui/app.slint:811
+msgctxt "ui"
+msgid "Reset display to Fit"
+msgstr ""
+
+#: ui/app.slint:812
+msgctxt "ui"
+msgid "Pan on"
+msgstr ""
+
+#: ui/app.slint:812
+msgctxt "ui"
+msgid "Drag to pan"
+msgstr ""
+
+#: ui/app.slint:812
+msgctxt "ui"
+msgid "Toggle local pan"
+msgstr ""
+
+#: ui/app.slint:816
+msgctxt "ui"
+msgid "Pan view left"
+msgstr ""
+
+#: ui/app.slint:817
+msgctxt "ui"
+msgid "Pan view up"
+msgstr ""
+
+#: ui/app.slint:818
+msgctxt "ui"
+msgid "Center"
+msgstr ""
+
+#: ui/app.slint:818
+msgctxt "ui"
+msgid "Center display view"
+msgstr ""
+
+#: ui/app.slint:819
+msgctxt "ui"
+msgid "Pan view down"
+msgstr ""
+
+#: ui/app.slint:820
+msgctxt "ui"
+msgid "Pan view right"
+msgstr ""
+
+#: ui/app.slint:822
+msgctxt "ui"
+msgid ""
+"Pan mode: dragging moves only the local view. Turn Pan off to click or drag "
+"on the Mac."
+msgstr ""
+
+#: ui/app.slint:822
+msgctxt "ui"
+msgid ""
+"Use the Pan button to drag the enlarged view, or use the arrow buttons "
+"above. Saved separately for each Mac."
+msgstr ""
+
+#: ui/app.slint:837
+msgctxt "ui"
+msgid "Compression, explained"
+msgstr ""
+
+#: ui/app.slint:847
+msgctxt "ui"
+msgid "Default: HEVC / H.265 at up to 60 FPS, with adaptive bitrate."
+msgstr ""
+
+#: ui/app.slint:848 ui/app.slint:850
+msgctxt "ui"
+msgid "Streaming mode"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "HEVC / H.265 - 60 FPS (default)"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "HEVC / H.265 - 30 FPS"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "Auto (lossless VNC)"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "ZRLE (lossless)"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "Tight (lossless)"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "Tight + JPEG (lossy)"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "Hextile (lossless)"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "Zlib (lossless)"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "Raw (uncompressed)"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "RRE (legacy)"
+msgstr ""
+
+#: ui/app.slint:853
+msgctxt "ui"
+msgid "CoRRE (legacy)"
+msgstr ""
+
+#: ui/app.slint:857
+msgctxt "ui"
+msgid "Compare methods & bandwidth estimates"
+msgstr ""
+
+#: ui/app.slint:859
+msgctxt "ui"
+msgid "Compression effort: "
+msgstr ""
+
+#: ui/app.slint:860
+msgctxt "ui"
+msgid "Compression effort"
+msgstr ""
+
+#: ui/app.slint:862
+msgctxt "ui"
+msgid ""
+"0 = less CPU, potentially more traffic. 9 = more CPU, potentially fewer "
+"bytes. This is a server hint, not a bitrate."
+msgstr ""
+
+#: ui/app.slint:864
+msgctxt "ui"
+msgid "JPEG quality: "
+msgstr ""
+
+#: ui/app.slint:865
+msgctxt "ui"
+msgid "JPEG quality"
+msgstr ""
+
+#: ui/app.slint:867
+msgctxt "ui"
+msgid "Use a manual bandwidth target"
+msgstr ""
+
+#: ui/app.slint:868
+msgctxt "ui"
+msgid "Use a manual HEVC bitrate ceiling"
+msgstr ""
+
+#: ui/app.slint:870
+msgctxt "ui"
+msgid "HEVC bitrate (Mbps)"
+msgstr ""
+
+#: ui/app.slint:871
+msgctxt "ui"
+msgid "HEVC bitrate Mbps"
+msgstr ""
+
+#: ui/app.slint:874
+msgctxt "ui"
+msgid "Target (Mbps)"
+msgstr ""
+
+#: ui/app.slint:875
+msgctxt "ui"
+msgid "Bandwidth target Mbps"
+msgstr ""
+
+#: ui/app.slint:877
+msgctxt "ui"
+msgid ""
+"Adaptive bitrate is the default. A manual ceiling requests your chosen Mbps "
+"from the Mac; static screens and encoder limits can lower the actual rate, "
+"and bursts may exceed it. Compression, JPEG quality and the VNC bandwidth "
+"target do not apply. Apply reconnects when changing transports, HEVC presets "
+"or the bitrate ceiling; saved logins require Windows Hello again."
+msgstr ""
+
+#: ui/app.slint:877
+msgctxt "ui"
+msgid ""
+"Automatic means no bandwidth target. A manual target spaces screen requests "
+"based on received bytes; bursts can exceed it. Apply reconnects "
+"automatically when switching to or from HEVC. Other VNC changes apply live."
+msgstr ""
+
+#: ui/app.slint:879
+msgctxt "ui"
+msgid "Frame rate limit"
+msgstr ""
+
+#: ui/app.slint:880
+msgctxt "ui"
+msgid "Maximum FPS"
+msgstr ""
+
+#: ui/app.slint:882
+msgctxt "ui"
+msgid "Show live FPS counter"
+msgstr ""
+
+#: ui/app.slint:883
+msgctxt "ui"
+msgid ""
+"FPS counts unique desktop images submitted for display, not monitor "
+"refreshes. An idle desktop correctly reads 0 FPS. Traffic measures VNC, HEVC/"
+"audio SRTP and SSH payloads in bits/s, excluding TCP/UDP/VPN overhead."
+msgstr ""
+
+#: ui/app.slint:901
+msgctxt "ui"
+msgid ""
+"Standard VNC offers CopyRect and a Raw fallback; the Mac may ignore "
+"compression/JPEG hints. HEVC uses Apple's separate High Performance "
+"transport with encrypted control, SRTP video and optional audio. Video "
+"decoding is bundled; audio uses a separate converter. Mac account login and "
+"UDP on the VNC port and the next port are required. H.264 playback is not "
+"supported."
+msgstr ""
+
+#: ui/app.slint:907
+msgctxt "ui"
+msgid "Back to quality"
+msgstr ""
+
+#: ui/app.slint:907
+msgctxt "ui"
+msgid "Restore defaults"
+msgstr ""
+
+#: ui/app.slint:992
+msgctxt "ui"
+msgid "Application update notification"
+msgstr ""
+
+#: ui/app.slint:996
+msgctxt "ui"
+msgid "Restart required"
+msgstr ""
+
+#: ui/app.slint:996
+msgctxt "ui"
+msgid " is ready"
+msgstr ""
+
+#: ui/app.slint:996
+msgctxt "ui"
+msgid "Update check"
+msgstr ""
+
+#: ui/app.slint:997
+msgctxt "ui"
+msgid "Source: bluemoonandy/maccanvas · GitHub"
+msgstr ""
+
+#: ui/app.slint:998
+msgctxt "ui"
+msgid ""
+"Installing replaces this test build. A verified backup is kept for rollback."
+msgstr ""
+
+#: ui/app.slint:1000
+msgctxt "ui"
+msgid ""
+"Disconnect when you're ready to install and restart. Your saved Macs and "
+"logins will stay."
+msgstr ""
+
+#: ui/app.slint:1004
+msgctxt "ui"
+msgid "Later"
+msgstr ""
+
+#: ui/app.slint:1007
+msgctxt "ui"
+msgid "Restart needed"
+msgstr ""
+
+#: ui/app.slint:1007
+msgctxt "ui"
+msgid "Update & restart"
+msgstr ""
+
+#: ui/app.slint:1022
+msgctxt "ui"
+msgid "Updating application"
+msgstr ""
+
+#: ui/app.slint:1028
+msgctxt "ui"
+msgid "Keep this window open. The application will restart when ready."
+msgstr ""
+
+#: ui/native-files.slint:33
+msgctxt "ui"
+msgid "Connected Mac: "
+msgstr ""
+
+#: ui/native-files.slint:33
+msgctxt "ui"
+msgid ". Uses the encrypted session; no SSH login is required."
+msgstr ""
+
+#: ui/native-files.slint:39
+msgctxt "ui"
+msgid "Enable native Apple sharing (clipboard and files)"
+msgstr ""
+
+#: ui/native-files.slint:40
+msgctxt "ui"
+msgid "Allow file transfers in this session"
+msgstr ""
+
+#: ui/native-files.slint:45
+msgctxt "ui"
+msgid "Send to Mac"
+msgstr ""
+
+#: ui/native-files.slint:46
+msgctxt "ui"
+msgid "Mac destination directory"
+msgstr ""
+
+#: ui/native-files.slint:47
+msgctxt "ui"
+msgid ""
+"Enter an existing absolute Mac folder. Each upload creates a new transfer "
+"folder inside it."
+msgstr ""
+
+#: ui/native-files.slint:50
+msgctxt "ui"
+msgid "Choose file…"
+msgstr ""
+
+#: ui/native-files.slint:51
+msgctxt "ui"
+msgid "Choose folder…"
+msgstr ""
+
+#: ui/native-files.slint:53
+msgctxt "ui"
+msgid "Receive from Mac"
+msgstr ""
+
+#: ui/native-files.slint:54
+msgctxt "ui"
+msgid "Mac source file or folder"
+msgstr ""
+
+#: ui/native-files.slint:57
+msgctxt "ui"
+msgid "Choose Windows destination…"
+msgstr ""
+
+#: ui/native-files.slint:59
+msgctxt "ui"
+msgid ""
+"Downloads are saved in a new folder. Existing files are not replaced. Links "
+"are unsupported; each transfer is limited to 256 MiB."
+msgstr ""
+
+#: ui/native-files.slint:60
+msgctxt "ui"
+msgid "Completed file transfer location"
+msgstr ""
+
+#: ui/native-files.slint:66
+msgctxt "ui"
+msgid "Cancel transfer"
+msgstr ""

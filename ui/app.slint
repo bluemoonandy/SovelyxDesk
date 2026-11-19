@@ -766,7 +766,7 @@ export component App inherits Window {
     }
     if root.licenses-open : Rectangle {
         background: root.dark-theme ? #00000099 : #00000033;
-        TouchArea { clicked => { root.licenses-open = false; } }
+        TouchArea { clicked => { root.licenses-open = false; if root.connected { root.focus-canvas(); } } }
         GlassPanel {
             x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
             width: min(780px, parent.width - 48px); height: min(670px, parent.height - 48px);
@@ -776,7 +776,7 @@ export component App inherits Window {
                 padding: 24px; spacing: 12px;
                 HorizontalLayout {
                     Text { text: @tr("ui" => "Open Source Licenses"); color: root.ink; font-size: 22px; font-weight: 600; }
-                    Button { text: @tr("ui" => "Done"); accessible-label: @tr("ui" => "Close licenses"); clicked => { root.licenses-open = false; } }
+                    Button { text: @tr("ui" => "Done"); accessible-label: @tr("ui" => "Close licenses"); clicked => { root.licenses-open = false; if root.connected { root.focus-canvas(); } } }
                 }
                 ScrollView { horizontal-scrollbar-policy: always-off; content-width: self.visible-width;
                     Text { text: root.license-text; color: root.ink; wrap: word-wrap; font-size: 12px; }

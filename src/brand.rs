@@ -39,7 +39,7 @@ mod tests {
             metadata["legacy_credential_prefixes"][0],
             "MacCanvas/profile/"
         );
-        assert!(!UPDATES_READY);
+        assert_eq!(metadata["updates_ready"], UPDATES_READY);
         assert_eq!(metadata["repository"], REPOSITORY);
     }
 }

@@ -15,7 +15,7 @@ fn main() {
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
         let mut resource = winresource::WindowsResource::new();
         resource
-            .set_icon("assets/brand/sovelyx-desk.ico")
+            .set_icon(brand["ico"].as_str().unwrap())
             .set("ProductName", brand["app_name"].as_str().unwrap())
             .set("FileDescription", brand["description"].as_str().unwrap())
             .set("CompanyName", brand["publisher"].as_str().unwrap())

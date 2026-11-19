@@ -2153,6 +2153,10 @@ msgid "Verify to connect with MacCanvas credentials"
 msgstr "请验证以使用保存的凭据连接"
 
 msgctxt "ui"
+msgid "Verify to connect with {app} credentials"
+msgstr "验证以使用 {app} 保存的凭据连接"
+
+msgctxt "ui"
 msgid "Verify with Windows Hello if prompted."
 msgstr "如有提示，请通过 Windows Hello 验证。"
 

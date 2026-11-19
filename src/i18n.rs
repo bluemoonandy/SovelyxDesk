@@ -1,11 +1,13 @@
 //! Presentation-only localization. Protocol values, credentials and editable input stay untouched.
 use serde::{Deserialize, Serialize};
 use std::{
-    cell::Cell,
     collections::BTreeMap,
     io::Write,
     path::{Path, PathBuf},
-    sync::OnceLock,
+    sync::{
+        OnceLock,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -85,12 +87,20 @@ pub fn system_locale() -> String {
         .or_else(|_| std::env::var("LANG"))
         .unwrap_or_else(|_| "en".into())
 }
-thread_local! { static ACTIVE: Cell<Language> = const { Cell::new(Language::English) }; }
+// The consent worker uses the same application language as the Slint UI thread.
+static CHINESE: AtomicBool = AtomicBool::new(false);
 pub fn activate(language: Language) {
-    ACTIVE.set(language);
+    CHINESE.store(language == Language::Chinese, Ordering::Release);
 }
 pub fn text(source: &str) -> String {
-    ACTIVE.with(|active| translate(active.get(), source))
+    translate(
+        if CHINESE.load(Ordering::Acquire) {
+            Language::Chinese
+        } else {
+            Language::English
+        },
+        source,
+    )
 }
 fn catalog() -> &'static BTreeMap<String, String> {
     static CATALOG: OnceLock<BTreeMap<String, String>> = OnceLock::new();
@@ -277,6 +287,15 @@ mod tests {
             translate(Language::Chinese, "File upload: invalid path"),
             "文件上传：invalid path"
         );
+    }
+    #[test]
+    fn consent_workers_share_the_selected_language() {
+        activate(Language::Chinese);
+        let prompt = std::thread::spawn(|| text("Verify to connect with Sovelyx Desk credentials"))
+            .join()
+            .unwrap();
+        activate(Language::English);
+        assert_eq!(prompt, "验证以使用 Sovelyx Desk 保存的凭据连接");
     }
     #[test]
     fn language_preferences_are_separate_and_corruption_is_preserved() {

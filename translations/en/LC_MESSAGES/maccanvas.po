@@ -2153,6 +2153,10 @@ msgid "Verify to connect with MacCanvas credentials"
 msgstr "Verify to connect with MacCanvas credentials"
 
 msgctxt "ui"
+msgid "Verify to connect with {app} credentials"
+msgstr "Verify to connect with {app} credentials"
+
+msgctxt "ui"
 msgid "Verify with Windows Hello if prompted."
 msgstr "Verify with Windows Hello if prompted."
 

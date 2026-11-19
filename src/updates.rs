@@ -681,6 +681,11 @@ impl Default for Updater {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn unpublished_brand_updates_do_not_query_old_release_assets() {
+        assert!(super::check().unwrap().is_none());
+    }
+
     use super::*;
 
     fn fixture() -> (Vec<u8>, Release) {
@@ -845,7 +850,9 @@ mod tests {
     #[test]
     fn managed_executable_names_follow_windows_case_insensitivity() {
         let directory = tempfile::tempdir().unwrap();
-        let executable = directory.path().join("maccanvas.exe");
+        let executable = directory
+            .path()
+            .join(crate::brand::EXECUTABLE.to_ascii_lowercase());
         let staged = directory.path().join("staged.exe");
         let receipt = directory.path().join(crate::brand::INSTALL_RECEIPT);
         fs::write(&executable, b"old fixture").unwrap();

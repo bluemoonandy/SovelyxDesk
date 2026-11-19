@@ -21,4 +21,7 @@ sizes = [(entries[6 + i * 16] or 256, entries[7 + i * 16] or 256) for i in range
 assert sizes == [(s, s) for s in [16, 24, 32, 48, 64, 128, 256]]
 for size in [16, 24, 32, 48, 64, 128, 256]:
     assert (ROOT / f'assets/brand/sovelyx-desk-{size}.png').is_file()
+for view in ['ui/app.slint', 'ui/about.slint']:
+    assert brand['icon'] in (ROOT / view).read_text(encoding='utf-8'), 'UI icon and brand configuration differ'
+assert brand['release_name'] + '-${{ github.sha }}' in (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
 print('PASS: confirmed product identity, installer metadata, legacy namespaces, 7 ICO sizes')

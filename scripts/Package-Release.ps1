@@ -121,3 +121,9 @@ if ($LASTEXITCODE -ne 0 -or $revision -notmatch '^[a-f0-9]{40}$') { throw 'Canno
 & git -C $root archive --format=zip "--output=$dist\Sovelyx-Desk-source-$revision.zip" HEAD
 if ($LASTEXITCODE -ne 0) { throw 'Corresponding source export failed.' }
 [IO.File]::WriteAllText((Join-Path $dist 'SOURCE.txt'), "$($brand.repository)/tree/$revision`nBuild: see README.md and .github/workflows/ci.yml in the source archive.`n", [Text.UTF8Encoding]::new($false))
+
+# Hash every distributed file, including installer, licenses and corresponding source.
+$lines = @(Get-ChildItem -LiteralPath $dist -File | Where-Object { $_.Name -ne 'SHA256SUMS.txt' } | Sort-Object Name | ForEach-Object {
+    "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+})
+[IO.File]::WriteAllText((Join-Path $dist 'SHA256SUMS.txt'), (($lines -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))

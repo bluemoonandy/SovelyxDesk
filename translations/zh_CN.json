@@ -586,5 +586,6 @@
   "ZRLE: lossless compressed tiles. Sharp text and a good desktop default; more CPU than Raw. Noise and video can still use substantial bandwidth.": "ZRLE：无损图块压缩，文字清晰，适合作为桌面默认编码，CPU 占用高于 Raw。噪点和视频仍可能占用较多带宽。",
   "Zlib: lossless deflate over pixel data. Simple and broadly compatible; more CPU and usually less efficient than ZRLE or Tight.": "Zlib：对像素数据进行无损 deflate 压缩，简单且兼容性广；CPU 占用较高，通常不如 ZRLE 或 Tight 高效。",
   "Planning illustration, not benchmarks: {width} x {height}, 30 updates/s, 10% of pixels changing each time. Raw is {0}. The ranges use the explicit example ratios below; real usage depends on content, the Mac, and motion. Video/noise can exceed them. Idle screens use almost no pixel traffic.": "规划示例，并非性能测试：{width} × {height}，每秒更新 30 次，每次 10% 的像素变化。Raw 流量为 {0}。范围使用下方明确列出的示例压缩比；实际用量取决于内容、Mac 和动态变化。视频或噪点可能超出范围，空闲画面几乎没有像素流量。",
-  "Connection interrupted. Reconnecting in {0}s (attempt {attempt}); Cancel to stop.": "连接中断，将在 {0} 秒后重连（第 {attempt} 次）；可取消以停止。"
+  "Connection interrupted. Reconnecting in {0}s (attempt {attempt}); Cancel to stop.": "连接中断，将在 {0} 秒后重连（第 {attempt} 次）；可取消以停止。",
+  "Verify to connect with {app} credentials": "验证以使用 {app} 保存的凭据连接"
 }

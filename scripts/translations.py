@@ -31,7 +31,9 @@ def main():
             if path.read_text(encoding="utf-8")!=expected:raise SystemExit('Stale translation resource: '+str(path))
         else:path.parent.mkdir(parents=True,exist_ok=True);path.write_text(expected, encoding="utf-8")
     if args.extract:
+        brand=json.loads((ROOT/'brand/brand.json').read_text(encoding='utf-8'))
+        version=re.search(r'(?m)^version\s*=\s*"([^"]+)"',(ROOT/'Cargo.toml').read_text(encoding='utf-8')).group(1)
         # The pinned official extractor is optional for authoring, never needed by the EXE.
-        subprocess.run(['slint-tr-extractor','--output',str(ROOT/'translations/maccanvas.pot'),*[str(p) for p in (ROOT/'ui').glob('*.slint')]],check=True)
+        subprocess.run(['slint-tr-extractor','-o',str(ROOT/'translations/maccanvas.pot'),'--package-name',brand['app_name'],'--package-version',version,*[str(p.relative_to(ROOT)) for p in (ROOT/'ui').glob('*.slint')]],check=True,cwd=ROOT)
     print(f'PASS: {len(sources())} Slint sources, {len(catalog)} bilingual entries; PO and placeholders verified')
 if __name__=='__main__':main()

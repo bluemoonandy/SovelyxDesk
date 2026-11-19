@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 [CmdletBinding()]
 param(
     [string]$Executable = '',
@@ -240,7 +240,7 @@ try {
     Capture-OwnedWindow (Join-Path $images "new-vnc-password$suffix.png")
     Invoke-Control 'Close connection editor'
     if ($DeviceCount -ge 4) { Set-Control 'Search saved Macs' 'language-input-preserved' }
-    $searchBefore = 'language-input-preserved' 
+    $searchBefore = 'language-input-preserved'
     Invoke-Control 'Settings'
     $opposite = if ($script:UiLanguage -eq 'en') { '简体中文' } else { 'English' }
     Set-Control 'Language' $opposite
@@ -344,7 +344,11 @@ try {
         foreach ($panel in @(@('Stream quality','quality','Close'), @('Clipboard sharing','clipboard','Done'), @('File transfer','files','Done'), @('Audio playback','audio','Done'), @('About','about','Done'))) {
             Invoke-Control $panel[0]
             Capture-OwnedWindow (Join-Path $images "$($panel[1])$suffix.png")
-            Invoke-Control $panel[2]
+            if ($panel[1] -eq 'about') {
+                Invoke-Control 'Open Source Licenses'
+                Capture-OwnedWindow (Join-Path $images "licenses$suffix.png")
+                Invoke-Control 'Close licenses'
+            } else { Invoke-Control $panel[2] }
         }
         Invoke-Control 'Settings'
         Set-Control 'Language' $(if ($Language -eq 'en') { '简体中文' } else { 'English' })

@@ -477,10 +477,10 @@ impl ConsentVerifier for WindowsHello {
         let operation: IAsyncOperation<UserConsentVerificationResult> = unsafe {
             verifier.RequestVerificationForWindowAsync(
                 window,
-                &HSTRING::from(format!(
+                &HSTRING::from(crate::i18n::text(&format!(
                     "Verify to connect with {} credentials",
                     crate::brand::APP_NAME
-                )),
+                ))),
             )
         }
         .map_err(|error| Error::Consent(error.to_string()))?;
