@@ -320,8 +320,7 @@ impl Scope {
             Ok(()) => (),
             Err(TrySendError::Full(_)) => {
                 self.audit.0.lost.fetch_add(1, Ordering::Relaxed);
-                let error =
-                    "Audit queue exhausted; restart MacCanvas before making another connection";
+                let error = "Audit queue exhausted; restart the application before making another connection";
                 set_failure(&self.audit.0.health, error);
                 return Err(Error::Audit(error.into()));
             }

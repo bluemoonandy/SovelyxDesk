@@ -289,6 +289,21 @@ mod tests {
         );
     }
     #[test]
+    fn backend_errors_translate_without_rewriting_file_paths_or_device_names() {
+        let path = r"C:\Users\Connect\原稿.txt";
+        let message =
+            format!("Cannot save the new file without overwriting an existing file: {path}");
+        let translated = translate(Language::Chinese, &message);
+        assert!(translated.starts_with("无法在不覆盖已有文件"));
+        assert!(translated.ends_with(path));
+        assert_eq!(translate(Language::English, &message), message);
+        assert_eq!(
+            translate(Language::Chinese, "Connected to host (MacCanvas)"),
+            "已连接到 host（MacCanvas）"
+        );
+        assert!(translate(Language::Chinese, "Security audit: Audit queue exhausted; restart the application before making another connection").contains("审计队列已满"));
+    }
+    #[test]
     fn consent_workers_share_the_selected_language() {
         activate(Language::Chinese);
         let prompt = std::thread::spawn(|| text("Verify to connect with Sovelyx Desk credentials"))

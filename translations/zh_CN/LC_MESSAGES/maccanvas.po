@@ -109,8 +109,16 @@ msgid "A new version is available. The download will be verified before installa
 msgstr "有新版本可用，安装前会校验下载文件；已保存的 Mac 和登录信息会保留。"
 
 msgctxt "ui"
+msgid "A partial download could not be removed: {0}. {error}"
+msgstr "无法删除未完成的下载文件：{0}。{error}"
+
+msgctxt "ui"
 msgid "A previous file worker is still stopping"
 msgstr "上一个文件任务仍在停止"
+
+msgctxt "ui"
+msgid "A single record exceeds the audit file-size limit"
+msgstr "单条记录超过审计文件大小上限"
 
 msgctxt "ui"
 msgid "ABOUT & UPDATES"
@@ -193,6 +201,10 @@ msgid "Audio playback"
 msgstr "音频播放"
 
 msgctxt "ui"
+msgid "Audio requires an HEVC session"
+msgstr "音频需要 HEVC 会话"
+
+msgctxt "ui"
 msgid "Audio uses an optional, separately licensed AAC converter. Enabling audio downloads and verifies it from the official release. No system codec extension is installed."
 msgstr "音频使用单独许可的可选 AAC 转换器。启用音频时会从正式发布源下载并校验组件，不安装系统编解码扩展。"
 
@@ -209,6 +221,58 @@ msgid "Audio: {error}"
 msgstr "音频：{error}"
 
 msgctxt "ui"
+msgid "Audit attributes must be an object"
+msgstr "审计属性必须为对象"
+
+msgctxt "ui"
+msgid "Audit health state is unavailable"
+msgstr "无法获取审计健康状态"
+
+msgctxt "ui"
+msgid "Audit initialization did not complete: {error}"
+msgstr "审计初始化未完成：{error}"
+
+msgctxt "ui"
+msgid "Audit persistence did not complete: {error}"
+msgstr "审计持久化未完成：{error}"
+
+msgctxt "ui"
+msgid "Audit queue exhausted; restart the application before making another connection"
+msgstr "审计队列已满；请重启应用后再连接"
+
+msgctxt "ui"
+msgid "Audit record exceeds the 256 KiB safety limit"
+msgstr "审计记录超过 256 KiB 安全上限"
+
+msgctxt "ui"
+msgid "Audit resource is missing its process instance identifier"
+msgstr "审计资源缺少进程实例标识"
+
+msgctxt "ui"
+msgid "Audit shutdown did not complete: {error}"
+msgstr "审计关闭未完成：{error}"
+
+msgctxt "ui"
+msgid "Audit shutdown queue did not drain"
+msgstr "审计关闭队列未排空"
+
+msgctxt "ui"
+msgid "Audit writer is unavailable"
+msgstr "审计写入器不可用"
+
+msgctxt "ui"
+msgid "Audit writer is unavailable during shutdown"
+msgstr "关闭过程中审计写入器不可用"
+
+msgctxt "ui"
+msgid "Audit writer stopped unexpectedly"
+msgstr "审计写入器意外停止"
+
+msgctxt "ui"
+msgid "Authenticating and establishing remote desktop…"
+msgstr "正在认证并建立远程桌面…"
+
+msgctxt "ui"
 msgid "Authentication, password protection and automatic reconnection are configured per Mac. Choose Edit on a device card."
 msgstr "每台 Mac 的认证、密码保护和自动重连分别配置。请在设备卡片中选择“编辑”。"
 
@@ -223,6 +287,22 @@ msgstr "自动（无损）"
 msgctxt "ui"
 msgid "Auto Sync Clipboard"
 msgstr "自动同步剪贴板"
+
+msgctxt "ui"
+msgid "Auto clipboard operation timed out"
+msgstr "自动剪贴板操作超时"
+
+msgctxt "ui"
+msgid "Auto clipboard response exceeds the configured limit"
+msgstr "自动剪贴板响应超过配置上限"
+
+msgctxt "ui"
+msgid "Auto clipboard snapshot unavailable; retrying with backoff"
+msgstr "无法获取自动剪贴板快照，稍后重试"
+
+msgctxt "ui"
+msgid "Auto sync paused: SSH must use the account currently logged into the Mac desktop"
+msgstr "自动同步已暂停：SSH 必须使用当前登录 Mac 桌面的账户"
 
 msgctxt "ui"
 msgid "Auto sync text limit must be 1–1048576 UTF-8 bytes"
@@ -309,8 +389,24 @@ msgid "Cannot encode automatic clipboard preferences"
 msgstr "无法编码自动剪贴板配置"
 
 msgctxt "ui"
+msgid "Cannot encode automatic clipboard request"
+msgstr "无法编码自动剪贴板请求"
+
+msgctxt "ui"
+msgid "Cannot initialize the clipboard writer"
+msgstr "无法初始化剪贴板写入器"
+
+msgctxt "ui"
 msgid "Cannot open the Mac folder \"{path}\". {error}"
 msgstr "无法打开 Mac 文件夹“{path}”。{error}"
+
+msgctxt "ui"
+msgid "Cannot query Windows token metadata: {probe}"
+msgstr "无法查询 Windows 令牌元数据：{probe}"
+
+msgctxt "ui"
+msgid "Cannot save the new file without overwriting an existing file: {0}"
+msgstr "无法在不覆盖已有文件的情况下保存新文件：{0}"
 
 msgctxt "ui"
 msgid "Center"
@@ -319,6 +415,10 @@ msgstr "居中"
 msgctxt "ui"
 msgid "Center display view"
 msgstr "居中显示画面"
+
+msgctxt "ui"
+msgid "Changing transports, HEVC presets or the HEVC bitrate ceiling requires restarting the stream"
+msgstr "更改传输方式、HEVC 预设或码率上限需要重启视频流"
 
 msgctxt "ui"
 msgid "Check updates"
@@ -361,6 +461,18 @@ msgid "Choose a Windows folder for file transfer"
 msgstr "选择文件传输使用的 Windows 文件夹"
 
 msgctxt "ui"
+msgid "Choose a local destination folder"
+msgstr "请选择本地目标文件夹"
+
+msgctxt "ui"
+msgid "Choose a regular Windows file, not a symbolic link"
+msgstr "请选择普通 Windows 文件，不要选择符号链接"
+
+msgctxt "ui"
+msgid "Choose a regular file no larger than 1 TiB"
+msgstr "请选择不超过 1 TiB 的普通文件"
+
+msgctxt "ui"
 msgid "Choose a saved Mac or add a new connection."
 msgstr "选择已保存的 Mac，或添加新连接。"
 
@@ -381,6 +493,10 @@ msgid "Choose folder…"
 msgstr "选择文件夹…"
 
 msgctxt "ui"
+msgid "Classic VNC passwords cannot be used for SSH. Enter the Mac account login."
+msgstr "经典 VNC 密码不能用于 SSH，请输入 Mac 账户凭据。"
+
+msgctxt "ui"
 msgid "Clear"
 msgstr "清除"
 
@@ -397,8 +513,16 @@ msgid "Clipboard image worker failed"
 msgstr "剪贴板图像任务失败"
 
 msgctxt "ui"
+msgid "Clipboard queue is unavailable"
+msgstr "剪贴板队列不可用"
+
+msgctxt "ui"
 msgid "Clipboard sharing"
 msgstr "剪贴板共享"
+
+msgctxt "ui"
+msgid "Clipboard writer closed"
+msgstr "剪贴板写入器已关闭"
 
 msgctxt "ui"
 msgid "Clipboard: {error}"
@@ -529,8 +653,20 @@ msgid "Connected — automatic text sync active"
 msgstr "已连接——自动文本同步已启用"
 
 msgctxt "ui"
+msgid "Connected, but the password was not saved: {error}"
+msgstr "已连接，但密码未保存：{error}"
+
+msgctxt "ui"
+msgid "Connecting to Mac…"
+msgstr "正在连接 Mac…"
+
+msgctxt "ui"
 msgid "Connecting…"
 msgstr "正在连接…"
+
+msgctxt "ui"
+msgid "Connection control is unavailable"
+msgstr "连接控制不可用"
 
 msgctxt "ui"
 msgid "Connection error: {error}"
@@ -551,6 +687,14 @@ msgstr "连接中断：{error}"
 msgctxt "ui"
 msgid "Connection status indicator"
 msgstr "连接状态指示器"
+
+msgctxt "ui"
+msgid "Connection window closed"
+msgstr "连接窗口已关闭"
+
+msgctxt "ui"
+msgid "Connection worker stopped unexpectedly"
+msgstr "连接工作线程意外停止"
 
 msgctxt "ui"
 msgid "Consolas"
@@ -737,6 +881,10 @@ msgid "Enable native sharing, file transfers and the selected direction first"
 msgstr "请先启用原生共享、文件传输和所选方向"
 
 msgctxt "ui"
+msgid "Enable plain-text clipboard sharing first"
+msgstr "请先启用纯文本剪贴板共享"
+
+msgctxt "ui"
 msgid "Enabling or retrying audio reconnects an active HEVC stream automatically. Saved logins require Windows Hello again."
 msgstr "启用或重试音频会自动重新连接当前 HEVC 会话。已保存登录可能需要再次进行 Windows Hello 验证。"
 
@@ -821,6 +969,10 @@ msgid "Error — {error}"
 msgstr "错误——{error}"
 
 msgctxt "ui"
+msgid "Executable is larger than the 256 MiB evidence limit"
+msgstr "可执行文件超过 256 MiB 证据上限"
+
+msgctxt "ui"
 msgid "Exit full screen"
 msgstr "退出全屏"
 
@@ -841,12 +993,28 @@ msgid "File (size unavailable)"
 msgstr "文件（大小不可用）"
 
 msgctxt "ui"
+msgid "File clipboard publication queue is busy or closed; copy again to retry"
+msgstr "文件剪贴板发布队列繁忙或已关闭；请重新复制后重试"
+
+msgctxt "ui"
+msgid "File clipboard sharing is disabled"
+msgstr "文件剪贴板共享已停用"
+
+msgctxt "ui"
 msgid "File data uploaded; file URLs queued on encrypted control — verify by pasting on the Mac"
 msgstr "文件数据已上传，文件地址已通过加密通道发送；请在 Mac 上粘贴确认。"
 
 msgctxt "ui"
 msgid "File download: {error}"
 msgstr "文件下载：{error}"
+
+msgctxt "ui"
+msgid "File received. A SHA-256 receipt is in the local audit log."
+msgstr "文件已接收，SHA-256 回执已写入本地审计日志。"
+
+msgctxt "ui"
+msgid "File sent and verified by reading it back from the Mac."
+msgstr "文件已发送，并已从 Mac 回读验证。"
 
 msgctxt "ui"
 msgid "File staging cache exceeds 1 GiB"
@@ -877,6 +1045,10 @@ msgid "File upload: {error}"
 msgstr "文件上传：{error}"
 
 msgctxt "ui"
+msgid "File window is closed or its event queue is full"
+msgstr "文件窗口已关闭或事件队列已满"
+
+msgctxt "ui"
 msgid "File worker failed"
 msgstr "文件任务失败"
 
@@ -905,6 +1077,10 @@ msgid "For a trusted PC. Programs running as your Windows user may access these 
 msgstr "适用于可信电脑。以当前 Windows 用户运行的程序可能访问凭据；快速模式没有额外硬件保护。"
 
 msgctxt "ui"
+msgid "Frame notification is unavailable"
+msgstr "帧通知不可用"
+
+msgctxt "ui"
 msgid "Frame queue is unavailable"
 msgstr "画面队列不可用"
 
@@ -923,6 +1099,10 @@ msgstr "通用"
 msgctxt "ui"
 msgid "GPU fit"
 msgstr "GPU 适应窗口"
+
+msgctxt "ui"
+msgid "GPU frame queue is unavailable"
+msgstr "GPU 帧队列不可用"
 
 msgctxt "ui"
 msgid "GitHub profile"
@@ -1005,6 +1185,18 @@ msgid "Independent Rust + Slint viewer. Thanks to the TigerVNC, RealVNC, TightVN
 msgstr "独立的 Rust + Slint 查看器。感谢 TigerVNC、RealVNC、TightVNC 和原始 VNC 作者对远程桌面协议的贡献。"
 
 msgctxt "ui"
+msgid "Input queue filled; the connection was closed to avoid stuck keys"
+msgstr "输入队列已满，连接已关闭以避免按键卡住"
+
+msgctxt "ui"
+msgid "Input worker closed"
+msgstr "输入工作线程已关闭"
+
+msgctxt "ui"
+msgid "Input worker stopped unexpectedly"
+msgstr "输入工作线程意外停止"
+
+msgctxt "ui"
 msgid "Installing replaces this test build. A verified backup is kept for rollback."
 msgstr "安装会替换此测试版本，并保留已验证的备份用于回滚。"
 
@@ -1025,6 +1217,10 @@ msgid "Invalid DH public key"
 msgstr "DH 公钥无效"
 
 msgctxt "ui"
+msgid "Invalid Mac clipboard revision"
+msgstr "Mac 剪贴板版本无效"
+
+msgctxt "ui"
 msgid "Invalid SSH host-key fingerprint"
 msgstr "SSH 主机密钥指纹无效"
 
@@ -1033,8 +1229,16 @@ msgid "Invalid VNC authentication key"
 msgstr "VNC 认证密钥无效"
 
 msgctxt "ui"
+msgid "Invalid auto clipboard response"
+msgstr "自动剪贴板响应无效"
+
+msgctxt "ui"
 msgid "Invalid automatic clipboard preferences"
 msgstr "自动剪贴板配置无效"
+
+msgctxt "ui"
+msgid "Invalid automatic clipboard request"
+msgstr "自动剪贴板请求无效"
 
 msgctxt "ui"
 msgid "Invalid device identity"
@@ -1049,12 +1253,20 @@ msgid "Invalid display zoom or pan"
 msgstr "显示缩放或平移值无效"
 
 msgctxt "ui"
+msgid "Invalid or altered audit record at {0}:{number}"
+msgstr "审计记录无效或已被修改：{0}:{number}"
+
+msgctxt "ui"
 msgid "JPEG quality"
 msgstr "JPEG 质量"
 
 msgctxt "ui"
 msgid "JPEG quality: "
 msgstr "JPEG 质量："
+
+msgctxt "ui"
+msgid "JavaScript type error"
+msgstr "JavaScript 类型错误"
 
 msgctxt "ui"
 msgid "KEYBOARD & SHORTCUTS"
@@ -1159,6 +1371,26 @@ msgstr "Mac 地址"
 msgctxt "ui"
 msgid "Mac audio"
 msgstr "Mac 音频"
+
+msgctxt "ui"
+msgid "Mac auto clipboard helper did not complete"
+msgstr "Mac 自动剪贴板辅助程序未完成"
+
+msgctxt "ui"
+msgid "Mac auto clipboard helper failed; remote output withheld"
+msgstr "Mac 自动剪贴板辅助程序失败，远程输出未显示"
+
+msgctxt "ui"
+msgid "Mac clipboard exceeds configured limit"
+msgstr "Mac 剪贴板超过配置上限"
+
+msgctxt "ui"
+msgid "Mac clipboard helper failed (exit {exit}). {detail}"
+msgstr "Mac 剪贴板辅助程序失败（退出码 {exit}）。{detail}"
+
+msgctxt "ui"
+msgid "Mac clipboard output exceeds 1 MiB"
+msgstr "Mac 剪贴板输出超过 1 MiB"
 
 msgctxt "ui"
 msgid "Mac destination directory"
@@ -1285,6 +1517,10 @@ msgid "Missing display preferences directory"
 msgstr "缺少显示偏好目录"
 
 msgctxt "ui"
+msgid "Missing language preferences directory"
+msgstr "缺少语言偏好目录"
+
+msgctxt "ui"
 msgid "Missing settings directory"
 msgstr "缺少设置目录"
 
@@ -1311,6 +1547,22 @@ msgstr "NVIDIA NVDEC"
 msgctxt "ui"
 msgid "Native Apple clipboard (experimental, no SSH)"
 msgstr "原生 Apple 剪贴板（实验性，无需 SSH）"
+
+msgctxt "ui"
+msgid "Native Apple clipboard requires the encrypted HEVC connection"
+msgstr "Apple 原生剪贴板需要加密的 HEVC 连接"
+
+msgctxt "ui"
+msgid "Native clipboard cannot use an unencrypted VNC writer"
+msgstr "原生剪贴板不能使用未加密的 VNC 写入器"
+
+msgctxt "ui"
+msgid "Native clipboard queue is unavailable"
+msgstr "原生剪贴板队列不可用"
+
+msgctxt "ui"
+msgid "Native clipboard queue unavailable"
+msgstr "原生剪贴板队列不可用"
 
 msgctxt "ui"
 msgid "Native clipboard: unsupported, oversized or invalid image/text; contents unchanged"
@@ -1357,8 +1609,16 @@ msgid "No host-key approval is pending"
 msgstr "没有待处理的主机密钥授权"
 
 msgctxt "ui"
+msgid "No logged-in console desktop was detected."
+msgstr "未检测到已登录的本地桌面会话。"
+
+msgctxt "ui"
 msgid "No newer published version found ({0})."
 msgstr "没有更新的正式版本（{0}）。"
+
+msgctxt "ui"
+msgid "No structured diagnostic was returned. Raw output is withheld to protect clipboard contents; this does not establish a macOS permission restriction."
+msgstr "未返回结构化诊断。为保护剪贴板内容，不显示原始输出；这不能据此判定为 macOS 权限限制。"
 
 msgctxt "ui"
 msgid "Not a file"
@@ -1371,6 +1631,10 @@ msgstr "在 Mac 上运行："
 msgctxt "ui"
 msgid "On your Mac: System Settings > General > Sharing > Remote Login. Allow your Mac account."
 msgstr "在 Mac 上打开：系统设置 > 通用 > 共享 > 远程登录，并允许你的 Mac 账户。"
+
+msgctxt "ui"
+msgid "Only regular files can be transferred; folders, links, and special files are not followed"
+msgstr "仅支持普通文件；不会跟随文件夹、链接或特殊文件"
 
 msgctxt "ui"
 msgid "Open"
@@ -1407,6 +1671,10 @@ msgstr "可选：Mac 上的新文件名"
 msgctxt "ui"
 msgid "Original display preferences were preserved: {error}"
 msgstr "原始显示偏好已保留：{error}"
+
+msgctxt "ui"
+msgid "Original language preferences were preserved because the file is invalid"
+msgstr "语言偏好文件无效，已保留原件"
 
 msgctxt "ui"
 msgid "Pan mode: dragging moves only the local view. Turn Pan off to click or drag on the Mac."
@@ -1521,6 +1789,10 @@ msgid "Product homepage"
 msgstr "产品主页"
 
 msgctxt "ui"
+msgid "Progress state is unavailable"
+msgstr "无法获取进度状态"
+
+msgctxt "ui"
 msgid "Publisher: "
 msgstr "发布者："
 
@@ -1575,6 +1847,10 @@ msgstr "从 Mac 接收"
 msgctxt "ui"
 msgid "Refresh"
 msgstr "刷新"
+
+msgctxt "ui"
+msgid "Refusing an audit reparse point: {0}"
+msgstr "拒绝使用审计重解析点：{0}"
 
 msgctxt "ui"
 msgid "Reject"
@@ -1633,6 +1909,10 @@ msgid "SECURITY & CREDENTIALS"
 msgstr "安全与凭据"
 
 msgctxt "ui"
+msgid "SFTP request rejected: {0}"
+msgstr "SFTP 请求被拒绝：{0}"
+
+msgctxt "ui"
 msgid "SSH Mac password"
 msgstr "SSH Mac 密码"
 
@@ -1645,6 +1925,34 @@ msgid "SSH SHA-256 fingerprint"
 msgstr "SSH SHA-256 指纹"
 
 msgctxt "ui"
+msgid "SSH authentication failed; no server-supplied credential details are displayed"
+msgstr "SSH 认证失败，不显示服务器提供的凭据细节"
+
+msgctxt "ui"
+msgid "SSH authentication timed out"
+msgstr "SSH 认证超时"
+
+msgctxt "ui"
+msgid "SSH certificates are not supported; use the Mac's regular host key"
+msgstr "不支持 SSH 证书，请使用 Mac 的普通主机密钥"
+
+msgctxt "ui"
+msgid "SSH clipboard channel timed out"
+msgstr "SSH 剪贴板通道超时"
+
+msgctxt "ui"
+msgid "SSH clipboard channel unavailable; reconnect SSH securely if it remains unavailable"
+msgstr "SSH 剪贴板通道不可用；若持续出现，请安全地重新连接 SSH"
+
+msgctxt "ui"
+msgid "SSH clipboard queue is unavailable"
+msgstr "SSH 剪贴板队列不可用"
+
+msgctxt "ui"
+msgid "SSH close timed out"
+msgstr "SSH 关闭超时"
+
+msgctxt "ui"
 msgid "SSH connected. Enter a folder this account can access."
 msgstr "SSH 已连接，请输入此账户可访问的文件夹。"
 
@@ -1653,8 +1961,24 @@ msgid "SSH connected. Showing {0}."
 msgstr "SSH 已连接，当前目录：{0}。"
 
 msgctxt "ui"
+msgid "SSH connection timed out; enable macOS Remote Login"
+msgstr "SSH 连接超时，请启用 macOS 远程登录"
+
+msgctxt "ui"
 msgid "SSH disconnected."
 msgstr "SSH 已断开。"
+
+msgctxt "ui"
+msgid "SSH does not match"
+msgstr "SSH 账户不匹配"
+
+msgctxt "ui"
+msgid "SSH does not match the logged-in Mac desktop account."
+msgstr "SSH 账户与当前登录 Mac 桌面的账户不匹配。"
+
+msgctxt "ui"
+msgid "SSH fingerprint approval timed out"
+msgstr "SSH 指纹确认超时"
 
 msgctxt "ui"
 msgid "SSH host"
@@ -1669,8 +1993,20 @@ msgid "SSH is already connected or connecting"
 msgstr "SSH 已连接或正在连接"
 
 msgctxt "ui"
+msgid "SSH is disconnected"
+msgstr "SSH 已断开"
+
+msgctxt "ui"
 msgid "SSH is shared by file transfer and clipboard."
 msgstr "文件传输与剪贴板共用 SSH。"
+
+msgctxt "ui"
+msgid "SSH matches the logged-in Mac desktop account."
+msgstr "SSH 账户与当前登录 Mac 桌面的账户匹配。"
+
+msgctxt "ui"
+msgid "SSH negotiation timed out"
+msgstr "SSH 协商超时"
 
 msgctxt "ui"
 msgid "SSH operation context is unavailable"
@@ -1905,12 +2241,104 @@ msgid "Text/HTML/RTF: 1 MiB each. Images: up to 3840×2160 pixels; PNG transfer 
 msgstr "文本、HTML、RTF 各上限 1 MiB；图像最大 3840×2160，PNG 小于 4 MiB。支持转换单页 8 位 TIFF。文件与文件夹同步需另行启用。"
 
 msgctxt "ui"
+msgid "The Mac clipboard did not return valid UTF-8"
+msgstr "Mac 剪贴板未返回有效的 UTF-8 文本"
+
+msgctxt "ui"
+msgid "The Mac clipboard has no plain text. Copy some text on the Mac and retry."
+msgstr "Mac 剪贴板中没有纯文本，请在 Mac 上复制文本后重试。"
+
+msgctxt "ui"
+msgid "The Mac clipboard helper could not resolve a JavaScript or AppKit symbol."
+msgstr "Mac 剪贴板辅助程序无法解析 JavaScript 或 AppKit 符号。"
+
+msgctxt "ui"
+msgid "The Mac clipboard helper encountered a JavaScript syntax error."
+msgstr "Mac 剪贴板辅助程序遇到 JavaScript 语法错误。"
+
+msgctxt "ui"
+msgid "The Mac clipboard helper encountered a JavaScript type error."
+msgstr "Mac 剪贴板辅助程序遇到 JavaScript 类型错误。"
+
+msgctxt "ui"
+msgid "The Mac clipboard helper raised an exception."
+msgstr "Mac 剪贴板辅助程序引发异常。"
+
+msgctxt "ui"
+msgid "The Mac clipboard helper rejected its UTF-8 input."
+msgstr "Mac 剪贴板辅助程序拒绝了 UTF-8 输入。"
+
+msgctxt "ui"
+msgid "The Mac clipboard helper returned excessive diagnostic output"
+msgstr "Mac 剪贴板辅助程序返回的诊断输出过多"
+
+msgctxt "ui"
+msgid "The Mac clipboard helper timed out"
+msgstr "Mac 剪贴板辅助程序超时"
+
+msgctxt "ui"
+msgid "The Mac denied access. Choose a folder this SSH account can access. For protected Desktop, Documents or Downloads folders, check 'Allow full disk access for remote users' in the Mac's Remote Login settings, then reconnect SSH. Also check the account's folder permissions."
+msgstr "Mac 拒绝访问，请选择此 SSH 账户可以访问的文件夹。若访问受保护的桌面、文稿或下载文件夹，请检查 Mac 远程登录设置中的“允许远程用户完全访问磁盘”，然后重新连接 SSH，同时检查账户的文件夹权限。"
+
+msgctxt "ui"
+msgid "The Mac denied or stopped its clipboard helper"
+msgstr "Mac 拒绝或停止了剪贴板辅助程序"
+
+msgctxt "ui"
+msgid "The Mac file changed before download began"
+msgstr "Mac 文件在下载开始前发生变化"
+
+msgctxt "ui"
+msgid "The Mac file changed or was truncated during download"
+msgstr "Mac 文件在下载过程中发生变化或被截断"
+
+msgctxt "ui"
+msgid "The Mac file grew during download"
+msgstr "Mac 文件在下载过程中变大"
+
+msgctxt "ui"
+msgid "The Mac pasteboard rejected the text write."
+msgstr "Mac 剪贴板拒绝写入文本。"
+
+msgctxt "ui"
+msgid "The Mac rejected this account login or requires an unsupported authentication method"
+msgstr "Mac 拒绝此账户登录，或要求不支持的认证方式"
+
+msgctxt "ui"
 msgid "The Mac supplied an invalid or weak DH modulus"
 msgstr "Mac 提供的 DH 模数无效或强度不足"
 
 msgctxt "ui"
 msgid "The SSH approval request is no longer active"
 msgstr "SSH 授权请求已失效"
+
+msgctxt "ui"
+msgid "The SSH connection is closed or busy"
+msgstr "SSH 连接已关闭或繁忙"
+
+msgctxt "ui"
+msgid "The SSH event channel closed unexpectedly"
+msgstr "SSH 事件通道意外关闭"
+
+msgctxt "ui"
+msgid "The SSH host key has changed. Connection blocked before credentials were read or sent. Verify the Mac's key outside this application."
+msgstr "SSH 主机密钥已更改。在读取或发送凭据之前已阻止连接，请在此应用之外核实 Mac 的密钥。"
+
+msgctxt "ui"
+msgid "The SSH worker stopped unexpectedly"
+msgstr "SSH 工作线程意外停止"
+
+msgctxt "ui"
+msgid "The Windows destination already exists. Choose a new file name."
+msgstr "Windows 目标文件已存在，请选择新的文件名。"
+
+msgctxt "ui"
+msgid "The Windows file changed during upload"
+msgstr "Windows 文件在上传过程中发生变化"
+
+msgctxt "ui"
+msgid "The Windows file grew during upload"
+msgstr "Windows 文件在上传过程中变大"
 
 msgctxt "ui"
 msgid "The Windows file name cannot be represented as UTF-8"
@@ -1929,12 +2357,36 @@ msgid "The active connection profile is unavailable"
 msgstr "当前连接配置不可用"
 
 msgctxt "ui"
+msgid "The connection has closed"
+msgstr "连接已关闭"
+
+msgctxt "ui"
 msgid "The connection window is no longer available"
 msgstr "连接窗口不再可用"
 
 msgctxt "ui"
+msgid "The desktop account match could not be determined."
+msgstr "无法确定桌面账户是否匹配。"
+
+msgctxt "ui"
+msgid "The destination already exists. Choose a new name; this application never overwrites files."
+msgstr "目标已存在，请选择新的名称；此应用不会覆盖已有文件。"
+
+msgctxt "ui"
 msgid "The existing host key cannot be replaced from an approval prompt"
 msgstr "不能在授权提示中替换已有主机密钥"
+
+msgctxt "ui"
+msgid "The file has no reported size or exceeds the 1 TiB safety limit"
+msgstr "文件未提供大小信息或超过 1 TiB 安全上限"
+
+msgctxt "ui"
+msgid "The file was saved, but its final audit receipt failed: {error}. Check the destination before retrying."
+msgstr "文件已保存，但最终审计回执失败：{error}。请检查目标后再重试。"
+
+msgctxt "ui"
+msgid "The file was sent, but its final audit receipt failed: {error}. Check the Mac before retrying."
+msgstr "文件已发送，但最终审计回执失败：{error}。请检查 Mac 后再重试。"
 
 msgctxt "ui"
 msgid "The interrupted connection cannot be restarted"
@@ -1953,6 +2405,18 @@ msgid "The new version is installed, but could not restart: {error}. Close and r
 msgstr "新版本已安装，但无法重新启动：{error}。请关闭并重新打开 Sovelyx Desk。"
 
 msgctxt "ui"
+msgid "The pinned SSH key belongs to a different endpoint"
+msgstr "固定的 SSH 密钥属于不同的端点"
+
+msgctxt "ui"
+msgid "The process snapshot did not include this application"
+msgstr "进程快照未包含此应用"
+
+msgctxt "ui"
+msgid "The remote path is empty, too long, or contains control characters"
+msgstr "远程路径为空、过长或包含控制字符"
+
+msgctxt "ui"
 msgid "The selected Mac no longer exists"
 msgstr "所选 Mac 已不存在"
 
@@ -1965,12 +2429,36 @@ msgid "The selected machine no longer exists"
 msgstr "所选设备已不存在"
 
 msgctxt "ui"
+msgid "The server did not negotiate SFTP version 3"
+msgstr "服务器未协商使用 SFTP 版本 3"
+
+msgctxt "ui"
+msgid "The server returned a non-absolute canonical path"
+msgstr "服务器返回的规范路径不是绝对路径"
+
+msgctxt "ui"
+msgid "The server returned an ambiguous canonical path"
+msgstr "服务器返回的规范路径存在歧义"
+
+msgctxt "ui"
+msgid "The server returned an empty non-final directory page"
+msgstr "服务器返回了空的非末尾目录页"
+
+msgctxt "ui"
+msgid "The server returned an invalid file-data chunk"
+msgstr "服务器返回了无效的文件数据块"
+
+msgctxt "ui"
 msgid "Theme and motion follow Windows automatically."
 msgstr "主题和动效自动跟随 Windows。"
 
 msgctxt "ui"
 msgid "This credential store does not support connection policies"
 msgstr "此凭据存储不支持连接策略"
+
+msgctxt "ui"
+msgid "This folder exceeds the 2,048-entry browser limit. Enter a smaller subfolder directly."
+msgstr "此文件夹超过 2,048 项浏览上限，请直接输入更小的子文件夹路径。"
 
 msgctxt "ui"
 msgid "This folder is empty."
@@ -2011,6 +2499,14 @@ msgstr "切换设备侧栏"
 msgctxt "ui"
 msgid "Toggle local pan"
 msgstr "切换本地平移"
+
+msgctxt "ui"
+msgid "Too many pending clipboard messages"
+msgstr "待处理的剪贴板消息过多"
+
+msgctxt "ui"
+msgid "Transfer failed and the temporary Mac file could not be removed: {temporary}. SFTP: {error}"
+msgstr "传输失败，且无法删除 Mac 临时文件：{temporary}。SFTP：{error}"
 
 msgctxt "ui"
 msgid "Trust key & continue"
@@ -2077,8 +2573,20 @@ msgid "Updating application"
 msgstr "正在更新应用"
 
 msgctxt "ui"
+msgid "Upload SHA-256 read-back verification failed; the final file was not created"
+msgstr "上传文件的 SHA-256 回读验证失败，未创建最终文件"
+
+msgctxt "ui"
 msgid "Upload file name"
 msgstr "上传文件名"
+
+msgctxt "ui"
+msgid "Uploaded verification data exceeds its expected size"
+msgstr "上传验证数据超过预期大小"
+
+msgctxt "ui"
+msgid "Uploaded verification data is truncated"
+msgstr "上传验证数据被截断"
 
 msgctxt "ui"
 msgid "Uploading to the selected Mac folder…"
@@ -2099,6 +2607,10 @@ msgstr "手动设置 HEVC 码率上限"
 msgctxt "ui"
 msgid "Use a manual bandwidth target"
 msgstr "手动设置带宽目标"
+
+msgctxt "ui"
+msgid "Use a single file name without slashes or control characters (at most 255 UTF-8 bytes)"
+msgstr "请使用不含斜杠或控制字符的单个文件名（最多 255 个 UTF-8 字节）"
 
 msgctxt "ui"
 msgid "Use compression/quality 0-9, 1-120 FPS, and a bandwidth target of 0.1-1000 Mbps (or Automatic)."
@@ -2257,8 +2769,16 @@ msgid "Windows content written to the encrypted Mac connection. Paste on the Mac
 msgstr "已向加密 Mac 连接发送 Windows 内容，请在 Mac 上粘贴以确认接收。"
 
 msgctxt "ui"
+msgid "Windows did not return a home directory"
+msgstr "Windows 未返回用户主目录"
+
+msgctxt "ui"
 msgid "Windows did not return a local app-data folder"
 msgstr "Windows 未返回本地应用数据目录"
+
+msgctxt "ui"
+msgid "Windows evidence is an object"
+msgstr "Windows 证据为对象"
 
 msgctxt "ui"
 msgid "Windows file dialog: {error}"
@@ -2269,8 +2789,16 @@ msgid "Windows has no plain text on the clipboard"
 msgstr "Windows 剪贴板中没有纯文本"
 
 msgctxt "ui"
+msgid "Windows integrity SID has no level"
+msgstr "Windows 完整性 SID 没有级别信息"
+
+msgctxt "ui"
 msgid "Windows plain text is now on the Mac clipboard. Paste it in your Mac app."
 msgstr "Windows 纯文本已发送到 Mac 剪贴板，请在 Mac 应用中粘贴。"
+
+msgctxt "ui"
+msgid "Windows returned an invalid audit ACL"
+msgstr "Windows 返回的审计 ACL 无效"
 
 msgctxt "ui"
 msgid "Windows returned an invalid credential"

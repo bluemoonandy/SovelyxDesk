@@ -322,10 +322,9 @@ fn ancestry() -> Result<Value> {
         }
     }
     let own = std::process::id();
-    let parent = processes
-        .get(&own)
-        .copied()
-        .ok_or_else(|| Error::Audit("The process snapshot did not include MacCanvas".into()))?;
+    let parent = processes.get(&own).copied().ok_or_else(|| {
+        Error::Audit("The process snapshot did not include this application".into())
+    })?;
     let (mut child_created, own_created) = creation(unsafe { GetCurrentProcess() })?;
     let mut pid = parent;
     let mut seen = HashSet::from([own]);

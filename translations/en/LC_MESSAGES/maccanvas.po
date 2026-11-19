@@ -109,8 +109,16 @@ msgid "A new version is available. The download will be verified before installa
 msgstr "A new version is available. The download will be verified before installation. Saved Macs and logins stay."
 
 msgctxt "ui"
+msgid "A partial download could not be removed: {0}. {error}"
+msgstr "A partial download could not be removed: {0}. {error}"
+
+msgctxt "ui"
 msgid "A previous file worker is still stopping"
 msgstr "A previous file worker is still stopping"
+
+msgctxt "ui"
+msgid "A single record exceeds the audit file-size limit"
+msgstr "A single record exceeds the audit file-size limit"
 
 msgctxt "ui"
 msgid "ABOUT & UPDATES"
@@ -193,6 +201,10 @@ msgid "Audio playback"
 msgstr "Audio playback"
 
 msgctxt "ui"
+msgid "Audio requires an HEVC session"
+msgstr "Audio requires an HEVC session"
+
+msgctxt "ui"
 msgid "Audio uses an optional, separately licensed AAC converter. Enabling audio downloads and verifies it from the official release. No system codec extension is installed."
 msgstr "Audio uses an optional, separately licensed AAC converter. Enabling audio downloads and verifies it from the official release. No system codec extension is installed."
 
@@ -209,6 +221,58 @@ msgid "Audio: {error}"
 msgstr "Audio: {error}"
 
 msgctxt "ui"
+msgid "Audit attributes must be an object"
+msgstr "Audit attributes must be an object"
+
+msgctxt "ui"
+msgid "Audit health state is unavailable"
+msgstr "Audit health state is unavailable"
+
+msgctxt "ui"
+msgid "Audit initialization did not complete: {error}"
+msgstr "Audit initialization did not complete: {error}"
+
+msgctxt "ui"
+msgid "Audit persistence did not complete: {error}"
+msgstr "Audit persistence did not complete: {error}"
+
+msgctxt "ui"
+msgid "Audit queue exhausted; restart the application before making another connection"
+msgstr "Audit queue exhausted; restart the application before making another connection"
+
+msgctxt "ui"
+msgid "Audit record exceeds the 256 KiB safety limit"
+msgstr "Audit record exceeds the 256 KiB safety limit"
+
+msgctxt "ui"
+msgid "Audit resource is missing its process instance identifier"
+msgstr "Audit resource is missing its process instance identifier"
+
+msgctxt "ui"
+msgid "Audit shutdown did not complete: {error}"
+msgstr "Audit shutdown did not complete: {error}"
+
+msgctxt "ui"
+msgid "Audit shutdown queue did not drain"
+msgstr "Audit shutdown queue did not drain"
+
+msgctxt "ui"
+msgid "Audit writer is unavailable"
+msgstr "Audit writer is unavailable"
+
+msgctxt "ui"
+msgid "Audit writer is unavailable during shutdown"
+msgstr "Audit writer is unavailable during shutdown"
+
+msgctxt "ui"
+msgid "Audit writer stopped unexpectedly"
+msgstr "Audit writer stopped unexpectedly"
+
+msgctxt "ui"
+msgid "Authenticating and establishing remote desktop…"
+msgstr "Authenticating and establishing remote desktop…"
+
+msgctxt "ui"
 msgid "Authentication, password protection and automatic reconnection are configured per Mac. Choose Edit on a device card."
 msgstr "Authentication, password protection and automatic reconnection are configured per Mac. Choose Edit on a device card."
 
@@ -223,6 +287,22 @@ msgstr "Auto (lossless)"
 msgctxt "ui"
 msgid "Auto Sync Clipboard"
 msgstr "Auto Sync Clipboard"
+
+msgctxt "ui"
+msgid "Auto clipboard operation timed out"
+msgstr "Auto clipboard operation timed out"
+
+msgctxt "ui"
+msgid "Auto clipboard response exceeds the configured limit"
+msgstr "Auto clipboard response exceeds the configured limit"
+
+msgctxt "ui"
+msgid "Auto clipboard snapshot unavailable; retrying with backoff"
+msgstr "Auto clipboard snapshot unavailable; retrying with backoff"
+
+msgctxt "ui"
+msgid "Auto sync paused: SSH must use the account currently logged into the Mac desktop"
+msgstr "Auto sync paused: SSH must use the account currently logged into the Mac desktop"
 
 msgctxt "ui"
 msgid "Auto sync text limit must be 1–1048576 UTF-8 bytes"
@@ -309,8 +389,24 @@ msgid "Cannot encode automatic clipboard preferences"
 msgstr "Cannot encode automatic clipboard preferences"
 
 msgctxt "ui"
+msgid "Cannot encode automatic clipboard request"
+msgstr "Cannot encode automatic clipboard request"
+
+msgctxt "ui"
+msgid "Cannot initialize the clipboard writer"
+msgstr "Cannot initialize the clipboard writer"
+
+msgctxt "ui"
 msgid "Cannot open the Mac folder \"{path}\". {error}"
 msgstr "Cannot open the Mac folder \"{path}\". {error}"
+
+msgctxt "ui"
+msgid "Cannot query Windows token metadata: {probe}"
+msgstr "Cannot query Windows token metadata: {probe}"
+
+msgctxt "ui"
+msgid "Cannot save the new file without overwriting an existing file: {0}"
+msgstr "Cannot save the new file without overwriting an existing file: {0}"
 
 msgctxt "ui"
 msgid "Center"
@@ -319,6 +415,10 @@ msgstr "Center"
 msgctxt "ui"
 msgid "Center display view"
 msgstr "Center display view"
+
+msgctxt "ui"
+msgid "Changing transports, HEVC presets or the HEVC bitrate ceiling requires restarting the stream"
+msgstr "Changing transports, HEVC presets or the HEVC bitrate ceiling requires restarting the stream"
 
 msgctxt "ui"
 msgid "Check updates"
@@ -361,6 +461,18 @@ msgid "Choose a Windows folder for file transfer"
 msgstr "Choose a Windows folder for file transfer"
 
 msgctxt "ui"
+msgid "Choose a local destination folder"
+msgstr "Choose a local destination folder"
+
+msgctxt "ui"
+msgid "Choose a regular Windows file, not a symbolic link"
+msgstr "Choose a regular Windows file, not a symbolic link"
+
+msgctxt "ui"
+msgid "Choose a regular file no larger than 1 TiB"
+msgstr "Choose a regular file no larger than 1 TiB"
+
+msgctxt "ui"
 msgid "Choose a saved Mac or add a new connection."
 msgstr "Choose a saved Mac or add a new connection."
 
@@ -381,6 +493,10 @@ msgid "Choose folder…"
 msgstr "Choose folder…"
 
 msgctxt "ui"
+msgid "Classic VNC passwords cannot be used for SSH. Enter the Mac account login."
+msgstr "Classic VNC passwords cannot be used for SSH. Enter the Mac account login."
+
+msgctxt "ui"
 msgid "Clear"
 msgstr "Clear"
 
@@ -397,8 +513,16 @@ msgid "Clipboard image worker failed"
 msgstr "Clipboard image worker failed"
 
 msgctxt "ui"
+msgid "Clipboard queue is unavailable"
+msgstr "Clipboard queue is unavailable"
+
+msgctxt "ui"
 msgid "Clipboard sharing"
 msgstr "Clipboard sharing"
+
+msgctxt "ui"
+msgid "Clipboard writer closed"
+msgstr "Clipboard writer closed"
 
 msgctxt "ui"
 msgid "Clipboard: {error}"
@@ -529,8 +653,20 @@ msgid "Connected — automatic text sync active"
 msgstr "Connected — automatic text sync active"
 
 msgctxt "ui"
+msgid "Connected, but the password was not saved: {error}"
+msgstr "Connected, but the password was not saved: {error}"
+
+msgctxt "ui"
+msgid "Connecting to Mac…"
+msgstr "Connecting to Mac…"
+
+msgctxt "ui"
 msgid "Connecting…"
 msgstr "Connecting…"
+
+msgctxt "ui"
+msgid "Connection control is unavailable"
+msgstr "Connection control is unavailable"
 
 msgctxt "ui"
 msgid "Connection error: {error}"
@@ -551,6 +687,14 @@ msgstr "Connection interrupted: {error}"
 msgctxt "ui"
 msgid "Connection status indicator"
 msgstr "Connection status indicator"
+
+msgctxt "ui"
+msgid "Connection window closed"
+msgstr "Connection window closed"
+
+msgctxt "ui"
+msgid "Connection worker stopped unexpectedly"
+msgstr "Connection worker stopped unexpectedly"
 
 msgctxt "ui"
 msgid "Consolas"
@@ -737,6 +881,10 @@ msgid "Enable native sharing, file transfers and the selected direction first"
 msgstr "Enable native sharing, file transfers and the selected direction first"
 
 msgctxt "ui"
+msgid "Enable plain-text clipboard sharing first"
+msgstr "Enable plain-text clipboard sharing first"
+
+msgctxt "ui"
 msgid "Enabling or retrying audio reconnects an active HEVC stream automatically. Saved logins require Windows Hello again."
 msgstr "Enabling or retrying audio reconnects an active HEVC stream automatically. Saved logins require Windows Hello again."
 
@@ -821,6 +969,10 @@ msgid "Error — {error}"
 msgstr "Error — {error}"
 
 msgctxt "ui"
+msgid "Executable is larger than the 256 MiB evidence limit"
+msgstr "Executable is larger than the 256 MiB evidence limit"
+
+msgctxt "ui"
 msgid "Exit full screen"
 msgstr "Exit full screen"
 
@@ -841,12 +993,28 @@ msgid "File (size unavailable)"
 msgstr "File (size unavailable)"
 
 msgctxt "ui"
+msgid "File clipboard publication queue is busy or closed; copy again to retry"
+msgstr "File clipboard publication queue is busy or closed; copy again to retry"
+
+msgctxt "ui"
+msgid "File clipboard sharing is disabled"
+msgstr "File clipboard sharing is disabled"
+
+msgctxt "ui"
 msgid "File data uploaded; file URLs queued on encrypted control — verify by pasting on the Mac"
 msgstr "File data uploaded; file URLs queued on encrypted control — verify by pasting on the Mac"
 
 msgctxt "ui"
 msgid "File download: {error}"
 msgstr "File download: {error}"
+
+msgctxt "ui"
+msgid "File received. A SHA-256 receipt is in the local audit log."
+msgstr "File received. A SHA-256 receipt is in the local audit log."
+
+msgctxt "ui"
+msgid "File sent and verified by reading it back from the Mac."
+msgstr "File sent and verified by reading it back from the Mac."
 
 msgctxt "ui"
 msgid "File staging cache exceeds 1 GiB"
@@ -877,6 +1045,10 @@ msgid "File upload: {error}"
 msgstr "File upload: {error}"
 
 msgctxt "ui"
+msgid "File window is closed or its event queue is full"
+msgstr "File window is closed or its event queue is full"
+
+msgctxt "ui"
 msgid "File worker failed"
 msgstr "File worker failed"
 
@@ -905,6 +1077,10 @@ msgid "For a trusted PC. Programs running as your Windows user may access these 
 msgstr "For a trusted PC. Programs running as your Windows user may access these credentials. Quick mode adds no separate hardware protection."
 
 msgctxt "ui"
+msgid "Frame notification is unavailable"
+msgstr "Frame notification is unavailable"
+
+msgctxt "ui"
 msgid "Frame queue is unavailable"
 msgstr "Frame queue is unavailable"
 
@@ -923,6 +1099,10 @@ msgstr "GENERAL"
 msgctxt "ui"
 msgid "GPU fit"
 msgstr "GPU fit"
+
+msgctxt "ui"
+msgid "GPU frame queue is unavailable"
+msgstr "GPU frame queue is unavailable"
 
 msgctxt "ui"
 msgid "GitHub profile"
@@ -1005,6 +1185,18 @@ msgid "Independent Rust + Slint viewer. Thanks to the TigerVNC, RealVNC, TightVN
 msgstr "Independent Rust + Slint viewer. Thanks to the TigerVNC, RealVNC, TightVNC, and original VNC authors for their work on remote desktop protocols."
 
 msgctxt "ui"
+msgid "Input queue filled; the connection was closed to avoid stuck keys"
+msgstr "Input queue filled; the connection was closed to avoid stuck keys"
+
+msgctxt "ui"
+msgid "Input worker closed"
+msgstr "Input worker closed"
+
+msgctxt "ui"
+msgid "Input worker stopped unexpectedly"
+msgstr "Input worker stopped unexpectedly"
+
+msgctxt "ui"
 msgid "Installing replaces this test build. A verified backup is kept for rollback."
 msgstr "Installing replaces this test build. A verified backup is kept for rollback."
 
@@ -1025,6 +1217,10 @@ msgid "Invalid DH public key"
 msgstr "Invalid DH public key"
 
 msgctxt "ui"
+msgid "Invalid Mac clipboard revision"
+msgstr "Invalid Mac clipboard revision"
+
+msgctxt "ui"
 msgid "Invalid SSH host-key fingerprint"
 msgstr "Invalid SSH host-key fingerprint"
 
@@ -1033,8 +1229,16 @@ msgid "Invalid VNC authentication key"
 msgstr "Invalid VNC authentication key"
 
 msgctxt "ui"
+msgid "Invalid auto clipboard response"
+msgstr "Invalid auto clipboard response"
+
+msgctxt "ui"
 msgid "Invalid automatic clipboard preferences"
 msgstr "Invalid automatic clipboard preferences"
+
+msgctxt "ui"
+msgid "Invalid automatic clipboard request"
+msgstr "Invalid automatic clipboard request"
 
 msgctxt "ui"
 msgid "Invalid device identity"
@@ -1049,12 +1253,20 @@ msgid "Invalid display zoom or pan"
 msgstr "Invalid display zoom or pan"
 
 msgctxt "ui"
+msgid "Invalid or altered audit record at {0}:{number}"
+msgstr "Invalid or altered audit record at {0}:{number}"
+
+msgctxt "ui"
 msgid "JPEG quality"
 msgstr "JPEG quality"
 
 msgctxt "ui"
 msgid "JPEG quality: "
 msgstr "JPEG quality: "
+
+msgctxt "ui"
+msgid "JavaScript type error"
+msgstr "JavaScript type error"
 
 msgctxt "ui"
 msgid "KEYBOARD & SHORTCUTS"
@@ -1159,6 +1371,26 @@ msgstr "Mac address"
 msgctxt "ui"
 msgid "Mac audio"
 msgstr "Mac audio"
+
+msgctxt "ui"
+msgid "Mac auto clipboard helper did not complete"
+msgstr "Mac auto clipboard helper did not complete"
+
+msgctxt "ui"
+msgid "Mac auto clipboard helper failed; remote output withheld"
+msgstr "Mac auto clipboard helper failed; remote output withheld"
+
+msgctxt "ui"
+msgid "Mac clipboard exceeds configured limit"
+msgstr "Mac clipboard exceeds configured limit"
+
+msgctxt "ui"
+msgid "Mac clipboard helper failed (exit {exit}). {detail}"
+msgstr "Mac clipboard helper failed (exit {exit}). {detail}"
+
+msgctxt "ui"
+msgid "Mac clipboard output exceeds 1 MiB"
+msgstr "Mac clipboard output exceeds 1 MiB"
 
 msgctxt "ui"
 msgid "Mac destination directory"
@@ -1285,6 +1517,10 @@ msgid "Missing display preferences directory"
 msgstr "Missing display preferences directory"
 
 msgctxt "ui"
+msgid "Missing language preferences directory"
+msgstr "Missing language preferences directory"
+
+msgctxt "ui"
 msgid "Missing settings directory"
 msgstr "Missing settings directory"
 
@@ -1311,6 +1547,22 @@ msgstr "NVIDIA NVDEC"
 msgctxt "ui"
 msgid "Native Apple clipboard (experimental, no SSH)"
 msgstr "Native Apple clipboard (experimental, no SSH)"
+
+msgctxt "ui"
+msgid "Native Apple clipboard requires the encrypted HEVC connection"
+msgstr "Native Apple clipboard requires the encrypted HEVC connection"
+
+msgctxt "ui"
+msgid "Native clipboard cannot use an unencrypted VNC writer"
+msgstr "Native clipboard cannot use an unencrypted VNC writer"
+
+msgctxt "ui"
+msgid "Native clipboard queue is unavailable"
+msgstr "Native clipboard queue is unavailable"
+
+msgctxt "ui"
+msgid "Native clipboard queue unavailable"
+msgstr "Native clipboard queue unavailable"
 
 msgctxt "ui"
 msgid "Native clipboard: unsupported, oversized or invalid image/text; contents unchanged"
@@ -1357,8 +1609,16 @@ msgid "No host-key approval is pending"
 msgstr "No host-key approval is pending"
 
 msgctxt "ui"
+msgid "No logged-in console desktop was detected."
+msgstr "No logged-in console desktop was detected."
+
+msgctxt "ui"
 msgid "No newer published version found ({0})."
 msgstr "No newer published version found ({0})."
+
+msgctxt "ui"
+msgid "No structured diagnostic was returned. Raw output is withheld to protect clipboard contents; this does not establish a macOS permission restriction."
+msgstr "No structured diagnostic was returned. Raw output is withheld to protect clipboard contents; this does not establish a macOS permission restriction."
 
 msgctxt "ui"
 msgid "Not a file"
@@ -1371,6 +1631,10 @@ msgstr "On the Mac, run:"
 msgctxt "ui"
 msgid "On your Mac: System Settings > General > Sharing > Remote Login. Allow your Mac account."
 msgstr "On your Mac: System Settings > General > Sharing > Remote Login. Allow your Mac account."
+
+msgctxt "ui"
+msgid "Only regular files can be transferred; folders, links, and special files are not followed"
+msgstr "Only regular files can be transferred; folders, links, and special files are not followed"
 
 msgctxt "ui"
 msgid "Open"
@@ -1407,6 +1671,10 @@ msgstr "Optional new file name on the Mac"
 msgctxt "ui"
 msgid "Original display preferences were preserved: {error}"
 msgstr "Original display preferences were preserved: {error}"
+
+msgctxt "ui"
+msgid "Original language preferences were preserved because the file is invalid"
+msgstr "Original language preferences were preserved because the file is invalid"
 
 msgctxt "ui"
 msgid "Pan mode: dragging moves only the local view. Turn Pan off to click or drag on the Mac."
@@ -1521,6 +1789,10 @@ msgid "Product homepage"
 msgstr "Product homepage"
 
 msgctxt "ui"
+msgid "Progress state is unavailable"
+msgstr "Progress state is unavailable"
+
+msgctxt "ui"
 msgid "Publisher: "
 msgstr "Publisher: "
 
@@ -1575,6 +1847,10 @@ msgstr "Receive from Mac"
 msgctxt "ui"
 msgid "Refresh"
 msgstr "Refresh"
+
+msgctxt "ui"
+msgid "Refusing an audit reparse point: {0}"
+msgstr "Refusing an audit reparse point: {0}"
 
 msgctxt "ui"
 msgid "Reject"
@@ -1633,6 +1909,10 @@ msgid "SECURITY & CREDENTIALS"
 msgstr "SECURITY & CREDENTIALS"
 
 msgctxt "ui"
+msgid "SFTP request rejected: {0}"
+msgstr "SFTP request rejected: {0}"
+
+msgctxt "ui"
 msgid "SSH Mac password"
 msgstr "SSH Mac password"
 
@@ -1645,6 +1925,34 @@ msgid "SSH SHA-256 fingerprint"
 msgstr "SSH SHA-256 fingerprint"
 
 msgctxt "ui"
+msgid "SSH authentication failed; no server-supplied credential details are displayed"
+msgstr "SSH authentication failed; no server-supplied credential details are displayed"
+
+msgctxt "ui"
+msgid "SSH authentication timed out"
+msgstr "SSH authentication timed out"
+
+msgctxt "ui"
+msgid "SSH certificates are not supported; use the Mac's regular host key"
+msgstr "SSH certificates are not supported; use the Mac's regular host key"
+
+msgctxt "ui"
+msgid "SSH clipboard channel timed out"
+msgstr "SSH clipboard channel timed out"
+
+msgctxt "ui"
+msgid "SSH clipboard channel unavailable; reconnect SSH securely if it remains unavailable"
+msgstr "SSH clipboard channel unavailable; reconnect SSH securely if it remains unavailable"
+
+msgctxt "ui"
+msgid "SSH clipboard queue is unavailable"
+msgstr "SSH clipboard queue is unavailable"
+
+msgctxt "ui"
+msgid "SSH close timed out"
+msgstr "SSH close timed out"
+
+msgctxt "ui"
 msgid "SSH connected. Enter a folder this account can access."
 msgstr "SSH connected. Enter a folder this account can access."
 
@@ -1653,8 +1961,24 @@ msgid "SSH connected. Showing {0}."
 msgstr "SSH connected. Showing {0}."
 
 msgctxt "ui"
+msgid "SSH connection timed out; enable macOS Remote Login"
+msgstr "SSH connection timed out; enable macOS Remote Login"
+
+msgctxt "ui"
 msgid "SSH disconnected."
 msgstr "SSH disconnected."
+
+msgctxt "ui"
+msgid "SSH does not match"
+msgstr "SSH does not match"
+
+msgctxt "ui"
+msgid "SSH does not match the logged-in Mac desktop account."
+msgstr "SSH does not match the logged-in Mac desktop account."
+
+msgctxt "ui"
+msgid "SSH fingerprint approval timed out"
+msgstr "SSH fingerprint approval timed out"
 
 msgctxt "ui"
 msgid "SSH host"
@@ -1669,8 +1993,20 @@ msgid "SSH is already connected or connecting"
 msgstr "SSH is already connected or connecting"
 
 msgctxt "ui"
+msgid "SSH is disconnected"
+msgstr "SSH is disconnected"
+
+msgctxt "ui"
 msgid "SSH is shared by file transfer and clipboard."
 msgstr "SSH is shared by file transfer and clipboard."
+
+msgctxt "ui"
+msgid "SSH matches the logged-in Mac desktop account."
+msgstr "SSH matches the logged-in Mac desktop account."
+
+msgctxt "ui"
+msgid "SSH negotiation timed out"
+msgstr "SSH negotiation timed out"
 
 msgctxt "ui"
 msgid "SSH operation context is unavailable"
@@ -1905,12 +2241,104 @@ msgid "Text/HTML/RTF: 1 MiB each. Images: up to 3840×2160 pixels; PNG transfer 
 msgstr "Text/HTML/RTF: 1 MiB each. Images: up to 3840×2160 pixels; PNG transfer under 4 MiB. Single-page 8-bit TIFF is converted. File/folder sync is a separate opt-in below."
 
 msgctxt "ui"
+msgid "The Mac clipboard did not return valid UTF-8"
+msgstr "The Mac clipboard did not return valid UTF-8"
+
+msgctxt "ui"
+msgid "The Mac clipboard has no plain text. Copy some text on the Mac and retry."
+msgstr "The Mac clipboard has no plain text. Copy some text on the Mac and retry."
+
+msgctxt "ui"
+msgid "The Mac clipboard helper could not resolve a JavaScript or AppKit symbol."
+msgstr "The Mac clipboard helper could not resolve a JavaScript or AppKit symbol."
+
+msgctxt "ui"
+msgid "The Mac clipboard helper encountered a JavaScript syntax error."
+msgstr "The Mac clipboard helper encountered a JavaScript syntax error."
+
+msgctxt "ui"
+msgid "The Mac clipboard helper encountered a JavaScript type error."
+msgstr "The Mac clipboard helper encountered a JavaScript type error."
+
+msgctxt "ui"
+msgid "The Mac clipboard helper raised an exception."
+msgstr "The Mac clipboard helper raised an exception."
+
+msgctxt "ui"
+msgid "The Mac clipboard helper rejected its UTF-8 input."
+msgstr "The Mac clipboard helper rejected its UTF-8 input."
+
+msgctxt "ui"
+msgid "The Mac clipboard helper returned excessive diagnostic output"
+msgstr "The Mac clipboard helper returned excessive diagnostic output"
+
+msgctxt "ui"
+msgid "The Mac clipboard helper timed out"
+msgstr "The Mac clipboard helper timed out"
+
+msgctxt "ui"
+msgid "The Mac denied access. Choose a folder this SSH account can access. For protected Desktop, Documents or Downloads folders, check 'Allow full disk access for remote users' in the Mac's Remote Login settings, then reconnect SSH. Also check the account's folder permissions."
+msgstr "The Mac denied access. Choose a folder this SSH account can access. For protected Desktop, Documents or Downloads folders, check 'Allow full disk access for remote users' in the Mac's Remote Login settings, then reconnect SSH. Also check the account's folder permissions."
+
+msgctxt "ui"
+msgid "The Mac denied or stopped its clipboard helper"
+msgstr "The Mac denied or stopped its clipboard helper"
+
+msgctxt "ui"
+msgid "The Mac file changed before download began"
+msgstr "The Mac file changed before download began"
+
+msgctxt "ui"
+msgid "The Mac file changed or was truncated during download"
+msgstr "The Mac file changed or was truncated during download"
+
+msgctxt "ui"
+msgid "The Mac file grew during download"
+msgstr "The Mac file grew during download"
+
+msgctxt "ui"
+msgid "The Mac pasteboard rejected the text write."
+msgstr "The Mac pasteboard rejected the text write."
+
+msgctxt "ui"
+msgid "The Mac rejected this account login or requires an unsupported authentication method"
+msgstr "The Mac rejected this account login or requires an unsupported authentication method"
+
+msgctxt "ui"
 msgid "The Mac supplied an invalid or weak DH modulus"
 msgstr "The Mac supplied an invalid or weak DH modulus"
 
 msgctxt "ui"
 msgid "The SSH approval request is no longer active"
 msgstr "The SSH approval request is no longer active"
+
+msgctxt "ui"
+msgid "The SSH connection is closed or busy"
+msgstr "The SSH connection is closed or busy"
+
+msgctxt "ui"
+msgid "The SSH event channel closed unexpectedly"
+msgstr "The SSH event channel closed unexpectedly"
+
+msgctxt "ui"
+msgid "The SSH host key has changed. Connection blocked before credentials were read or sent. Verify the Mac's key outside this application."
+msgstr "The SSH host key has changed. Connection blocked before credentials were read or sent. Verify the Mac's key outside this application."
+
+msgctxt "ui"
+msgid "The SSH worker stopped unexpectedly"
+msgstr "The SSH worker stopped unexpectedly"
+
+msgctxt "ui"
+msgid "The Windows destination already exists. Choose a new file name."
+msgstr "The Windows destination already exists. Choose a new file name."
+
+msgctxt "ui"
+msgid "The Windows file changed during upload"
+msgstr "The Windows file changed during upload"
+
+msgctxt "ui"
+msgid "The Windows file grew during upload"
+msgstr "The Windows file grew during upload"
 
 msgctxt "ui"
 msgid "The Windows file name cannot be represented as UTF-8"
@@ -1929,12 +2357,36 @@ msgid "The active connection profile is unavailable"
 msgstr "The active connection profile is unavailable"
 
 msgctxt "ui"
+msgid "The connection has closed"
+msgstr "The connection has closed"
+
+msgctxt "ui"
 msgid "The connection window is no longer available"
 msgstr "The connection window is no longer available"
 
 msgctxt "ui"
+msgid "The desktop account match could not be determined."
+msgstr "The desktop account match could not be determined."
+
+msgctxt "ui"
+msgid "The destination already exists. Choose a new name; this application never overwrites files."
+msgstr "The destination already exists. Choose a new name; this application never overwrites files."
+
+msgctxt "ui"
 msgid "The existing host key cannot be replaced from an approval prompt"
 msgstr "The existing host key cannot be replaced from an approval prompt"
+
+msgctxt "ui"
+msgid "The file has no reported size or exceeds the 1 TiB safety limit"
+msgstr "The file has no reported size or exceeds the 1 TiB safety limit"
+
+msgctxt "ui"
+msgid "The file was saved, but its final audit receipt failed: {error}. Check the destination before retrying."
+msgstr "The file was saved, but its final audit receipt failed: {error}. Check the destination before retrying."
+
+msgctxt "ui"
+msgid "The file was sent, but its final audit receipt failed: {error}. Check the Mac before retrying."
+msgstr "The file was sent, but its final audit receipt failed: {error}. Check the Mac before retrying."
 
 msgctxt "ui"
 msgid "The interrupted connection cannot be restarted"
@@ -1953,6 +2405,18 @@ msgid "The new version is installed, but could not restart: {error}. Close and r
 msgstr "The new version is installed, but could not restart: {error}. Close and reopen Sovelyx Desk."
 
 msgctxt "ui"
+msgid "The pinned SSH key belongs to a different endpoint"
+msgstr "The pinned SSH key belongs to a different endpoint"
+
+msgctxt "ui"
+msgid "The process snapshot did not include this application"
+msgstr "The process snapshot did not include this application"
+
+msgctxt "ui"
+msgid "The remote path is empty, too long, or contains control characters"
+msgstr "The remote path is empty, too long, or contains control characters"
+
+msgctxt "ui"
 msgid "The selected Mac no longer exists"
 msgstr "The selected Mac no longer exists"
 
@@ -1965,12 +2429,36 @@ msgid "The selected machine no longer exists"
 msgstr "The selected machine no longer exists"
 
 msgctxt "ui"
+msgid "The server did not negotiate SFTP version 3"
+msgstr "The server did not negotiate SFTP version 3"
+
+msgctxt "ui"
+msgid "The server returned a non-absolute canonical path"
+msgstr "The server returned a non-absolute canonical path"
+
+msgctxt "ui"
+msgid "The server returned an ambiguous canonical path"
+msgstr "The server returned an ambiguous canonical path"
+
+msgctxt "ui"
+msgid "The server returned an empty non-final directory page"
+msgstr "The server returned an empty non-final directory page"
+
+msgctxt "ui"
+msgid "The server returned an invalid file-data chunk"
+msgstr "The server returned an invalid file-data chunk"
+
+msgctxt "ui"
 msgid "Theme and motion follow Windows automatically."
 msgstr "Theme and motion follow Windows automatically."
 
 msgctxt "ui"
 msgid "This credential store does not support connection policies"
 msgstr "This credential store does not support connection policies"
+
+msgctxt "ui"
+msgid "This folder exceeds the 2,048-entry browser limit. Enter a smaller subfolder directly."
+msgstr "This folder exceeds the 2,048-entry browser limit. Enter a smaller subfolder directly."
 
 msgctxt "ui"
 msgid "This folder is empty."
@@ -2011,6 +2499,14 @@ msgstr "Toggle connections sidebar"
 msgctxt "ui"
 msgid "Toggle local pan"
 msgstr "Toggle local pan"
+
+msgctxt "ui"
+msgid "Too many pending clipboard messages"
+msgstr "Too many pending clipboard messages"
+
+msgctxt "ui"
+msgid "Transfer failed and the temporary Mac file could not be removed: {temporary}. SFTP: {error}"
+msgstr "Transfer failed and the temporary Mac file could not be removed: {temporary}. SFTP: {error}"
 
 msgctxt "ui"
 msgid "Trust key & continue"
@@ -2077,8 +2573,20 @@ msgid "Updating application"
 msgstr "Updating application"
 
 msgctxt "ui"
+msgid "Upload SHA-256 read-back verification failed; the final file was not created"
+msgstr "Upload SHA-256 read-back verification failed; the final file was not created"
+
+msgctxt "ui"
 msgid "Upload file name"
 msgstr "Upload file name"
+
+msgctxt "ui"
+msgid "Uploaded verification data exceeds its expected size"
+msgstr "Uploaded verification data exceeds its expected size"
+
+msgctxt "ui"
+msgid "Uploaded verification data is truncated"
+msgstr "Uploaded verification data is truncated"
 
 msgctxt "ui"
 msgid "Uploading to the selected Mac folder…"
@@ -2099,6 +2607,10 @@ msgstr "Use a manual HEVC bitrate ceiling"
 msgctxt "ui"
 msgid "Use a manual bandwidth target"
 msgstr "Use a manual bandwidth target"
+
+msgctxt "ui"
+msgid "Use a single file name without slashes or control characters (at most 255 UTF-8 bytes)"
+msgstr "Use a single file name without slashes or control characters (at most 255 UTF-8 bytes)"
 
 msgctxt "ui"
 msgid "Use compression/quality 0-9, 1-120 FPS, and a bandwidth target of 0.1-1000 Mbps (or Automatic)."
@@ -2257,8 +2769,16 @@ msgid "Windows content written to the encrypted Mac connection. Paste on the Mac
 msgstr "Windows content written to the encrypted Mac connection. Paste on the Mac to verify acceptance."
 
 msgctxt "ui"
+msgid "Windows did not return a home directory"
+msgstr "Windows did not return a home directory"
+
+msgctxt "ui"
 msgid "Windows did not return a local app-data folder"
 msgstr "Windows did not return a local app-data folder"
+
+msgctxt "ui"
+msgid "Windows evidence is an object"
+msgstr "Windows evidence is an object"
 
 msgctxt "ui"
 msgid "Windows file dialog: {error}"
@@ -2269,8 +2789,16 @@ msgid "Windows has no plain text on the clipboard"
 msgstr "Windows has no plain text on the clipboard"
 
 msgctxt "ui"
+msgid "Windows integrity SID has no level"
+msgstr "Windows integrity SID has no level"
+
+msgctxt "ui"
 msgid "Windows plain text is now on the Mac clipboard. Paste it in your Mac app."
 msgstr "Windows plain text is now on the Mac clipboard. Paste it in your Mac app."
+
+msgctxt "ui"
+msgid "Windows returned an invalid audit ACL"
+msgstr "Windows returned an invalid audit ACL"
 
 msgctxt "ui"
 msgid "Windows returned an invalid credential"

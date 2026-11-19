@@ -553,7 +553,7 @@ impl client::Handler for HostVerifier {
                 || trusted.sha256 != key.sha256
             {
                 self.scope.critical("ssh.host_key.changed", Level::Error, json!({"ssh.host_key.expected.sha256":trusted.sha256,"ssh.host_key.observed.sha256":key.sha256,"event.outcome":"blocked"}))?;
-                return Err(Error::Transfer("The SSH host key has changed. Connection blocked before credentials were read or sent. Verify the Mac's key outside MacCanvas.".into()));
+                return Err(Error::Transfer("The SSH host key has changed. Connection blocked before credentials were read or sent. Verify the Mac's key outside this application.".into()));
             }
             return Ok(true);
         }
@@ -978,7 +978,7 @@ async fn missing(sftp: &RawSftpSession, path: &str) -> Result<()> {
     match sftp.lstat(path).await {
         Err(SftpError::Status(status)) if status.status_code == StatusCode::NoSuchFile => Ok(()),
         Ok(_) => Err(Error::Transfer(
-            "The destination already exists. Choose a new name; MacCanvas never overwrites files."
+            "The destination already exists. Choose a new name; this application never overwrites files."
                 .into(),
         )),
         Err(error) => Err(error.into()),
