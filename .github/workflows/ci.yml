@@ -10,12 +10,17 @@ on:
         description: Build the standalone Windows test package after validation
         type: boolean
         default: false
+      capture_run:
+        description: Capture complete panels from a successful CI debug artifact (no software changes)
+        type: string
+        default: ''
 
 permissions:
   contents: read
 
 jobs:
   check:
+    if: ${{ !inputs.capture_run }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -130,5 +135,42 @@ jobs:
         with:
           name: Sovelyx-Desk-windows-x64-${{ github.sha }}
           path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  capture:
+    if: ${{ inputs.capture_run != '' }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Capture owned English and Chinese windows within the virtual desktop
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CAPTURE_RUN: ${{ inputs.capture_run }}
+        run: |
+          if ($env:CAPTURE_RUN -notmatch '^[0-9]+$') { throw 'Expected a numeric CI run id.' }
+          $sourceRun = gh run view $env:CAPTURE_RUN --repo $env:GITHUB_REPOSITORY --json headSha,conclusion | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $sourceRun.conclusion -ne 'success') { throw 'Only a successful verified CI build may be captured.' }
+          $captureExeDir = Join-Path $env:RUNNER_TEMP 'capture-exe'
+          gh run download $env:CAPTURE_RUN --repo $env:GITHUB_REPOSITORY --name "Sovelyx-Desk-UI-debug-$($sourceRun.headSha)" --dir $captureExeDir
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $captureExe = Join-Path $captureExeDir 'maccanvas.exe'
+          $captureOutput = Join-Path $env:RUNNER_TEMP 'complete-ui'
+          foreach ($language in @('en','zh-CN')) {
+            python scripts/test_device_session_ui.py --executable $captureExe --output $captureOutput --language $language --window-width 1000 --window-height 700
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          $metadata = @{ build_commit=$sourceRun.headSha; source_run=$env:CAPTURE_RUN; executable_sha256=(Get-FileHash -LiteralPath $captureExe -Algorithm SHA256).Hash.ToLowerInvariant(); build_type='debug UI; same source commit as verified Release'; requested_window='1000x700' }
+          $metadata | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $captureOutput 'capture-source.json') -Encoding utf8
+      - name: Export complete bilingual screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: Sovelyx-Desk-complete-UI-${{ github.sha }}
+          path: ${{ runner.temp }}/complete-ui/*
           if-no-files-found: error
           retention-days: 14

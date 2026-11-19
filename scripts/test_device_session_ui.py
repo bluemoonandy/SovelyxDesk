@@ -86,6 +86,8 @@ if __name__ == "__main__":
     parser.add_argument("--executable", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--language", default="en", choices=["en", "zh-CN"])
+    parser.add_argument("--window-width", type=int, default=0)
+    parser.add_argument("--window-height", type=int, default=0)
     args = parser.parse_args()
     fixture = SessionFixture()
     worker = threading.Thread(target=fixture.run, daemon=True)
@@ -95,6 +97,7 @@ if __name__ == "__main__":
             "pwsh", "-NoProfile", "-File", str(Path(__file__).with_name("Capture-Readme.ps1")),
             "-Language", args.language, "-Executable", args.executable, "-OutputDirectory", args.output,
             "-PreviewTheme", "light", "-DeviceCount", "6", "-SessionPort", str(fixture.port),
+            "-WindowWidth", str(args.window_width), "-WindowHeight", str(args.window_height),
         ], check=True, timeout=180)
         if fixture.error:
             raise fixture.error
