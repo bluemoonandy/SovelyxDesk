@@ -13,6 +13,7 @@ pub const INSTALL_RECEIPT: &str = env!("SOVELYX_INSTALL_RECEIPT");
 pub const HOMEPAGE: &str = env!("SOVELYX_HOMEPAGE");
 pub const REPOSITORY: &str = env!("SOVELYX_REPOSITORY");
 pub const REPOSITORY_SLUG: &str = env!("SOVELYX_REPOSITORY_SLUG");
+pub const LEGACY_REPOSITORY_SLUG: &str = env!("SOVELYX_LEGACY_REPOSITORY_SLUG");
 pub const UPDATE_SOURCE: &str = env!("SOVELYX_UPDATE_SOURCE");
 pub const PRODUCT_VERSION: &str = crate::VERSION;
 pub const BUILD_COMMIT: &str = crate::REVISION;

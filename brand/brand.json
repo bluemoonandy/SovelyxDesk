@@ -14,8 +14,8 @@
   "install_receipt": ".sovelyx-desk-install.json",
   "homepage": "https://sovelyx.com/desk",
   "homepage_status": "planned",
-  "repository": "https://github.com/bluemoonandy/maccanvas",
-  "repository_slug": "bluemoonandy/maccanvas",
+  "repository": "https://github.com/bluemoonandy/SovelyxDesk",
+  "repository_slug": "bluemoonandy/SovelyxDesk",
   "updates_ready": false,
   "icon": "assets/brand/sovelyx-desk.png",
   "ico": "assets/brand/sovelyx-desk.ico",
@@ -26,7 +26,8 @@
   ],
   "upstream_author": "@false00",
   "upstream_repository": "https://github.com/false00/maccanvas",
-  "update_source": "https://api.github.com/repos/bluemoonandy/maccanvas/releases",
+  "update_source": "https://api.github.com/repos/bluemoonandy/SovelyxDesk/releases",
   "product_version_source": "Cargo.toml package.version",
-  "build_commit_source": "git HEAD"
+  "build_commit_source": "git HEAD",
+  "legacy_repository_slug": "bluemoonandy/maccanvas"
 }

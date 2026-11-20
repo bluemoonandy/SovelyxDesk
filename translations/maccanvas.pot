@@ -1194,7 +1194,7 @@ msgstr ""
 #: ui/app.slint:754
 msgctxt "ui"
 msgid ""
-"Update source: bluemoonandy/maccanvas on GitHub. Upstream packages cannot be "
+"Update source: bluemoonandy/SovelyxDesk on GitHub. Upstream packages cannot be "
 "installed by this updater."
 msgstr ""
 
@@ -1551,7 +1551,7 @@ msgstr ""
 
 #: ui/app.slint:997
 msgctxt "ui"
-msgid "Source: bluemoonandy/maccanvas · GitHub"
+msgid "Source: bluemoonandy/SovelyxDesk · GitHub"
 msgstr ""
 
 #: ui/app.slint:998

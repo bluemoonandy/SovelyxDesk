@@ -184,6 +184,7 @@ fn main() {
             "homepage",
             "repository",
             "repository_slug",
+            "legacy_repository_slug",
             "update_source",
         ] {
             let value = brand[field]

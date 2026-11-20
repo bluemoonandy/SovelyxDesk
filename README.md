@@ -2,18 +2,16 @@
 
 Your Mac, within reach. / 远程连接，触手可及。
 
-Independent Sovelyx fork of MacCanvas by @false00, licensed under AGPL-3.0-or-later.
+Independent Sovelyx project based on [MacCanvas by @false00](https://github.com/false00/maccanvas), licensed under AGPL-3.0-or-later.
+Canonical repository: https://github.com/bluemoonandy/SovelyxDesk.
+Repository history and rollback: [migration notes](docs/repository-migration.md).
 Brand metadata: `brand/brand.json`. Portable Windows application: `SovelyxDesk.exe`.
 Language: Settings → General → Language (System Default / 简体中文 / English).
 Existing MacCanvas data and Windows Credential Manager identities are preserved.
 The product page `https://sovelyx.com/desk` is planned; automatic downloads and installation are disabled until branded releases are ready.
 See `reports/p3-brand-i18n.md` for compatibility, validation and rollback details.
 
-The following upstream project/build documentation is retained for attribution and technical reference.
-
-<img src="assets/logo.svg" align="right" width="72" alt="MacCanvas screen-and-canvas logo">
-
-# MacCanvas
+<img src="assets/brand/sovelyx-desk.png" align="right" width="72" alt="Sovelyx Desk logo">
 
 A lightweight Windows viewer for macOS Screen Sharing.
 One portable viewer. No extra DLLs or subscription.
@@ -37,29 +35,22 @@ One portable viewer. No extra DLLs or subscription.
 - **Quality controls:** lossless VNC and JPEG options, maximum update rate, and a VNC bandwidth target, with an in-app comparison guide.
 - **Familiar controls:** mouse, keyboard, Windows-sensitive scrolling, full screen, and optional Ctrl-to-Command shortcuts.
 - **Glass-inspired appearance:** black/charcoal in dark mode, Apple-style whites and grays in light mode, and system-blue controls. Follows Windows appearance preferences.
-- **Easy updates:** checks the official release on launch and prompts before a verified, one-click update and restart.
-- **Clipboard and files:** opt-in VNC text sharing, encrypted Unicode clipboard, and verified SFTP file transfers.
+- **Verified builds:** Windows CI produces portable packages with SHA-256 checksums and corresponding source. Automatic downloads and installation remain disabled.
+- **Clipboard and files:** opt-in VNC text sharing, native Apple clipboard and file transfers over the encrypted HEVC session without SSH, plus optional SFTP transfers.
 - **Local security audit:** structured JSONL evidence, process ancestry, connection history, and file-transfer receipts.
 
 ## Install
 
-**Windows 10/11 x64**, PowerShell 5.1+. Run as your normal user:
+**Windows 10/11 x64**. Download the verified portable package from this repository's
+[Windows Actions builds](https://github.com/bluemoonandy/SovelyxDesk/actions/workflows/ci.yml).
+Branded public versions will appear under [Releases](https://github.com/bluemoonandy/SovelyxDesk/releases).
+Extract the complete package and run `SovelyxDesk.exe`. The separate optional audio
+helper, checksums, license notices and matching source archive are included.
 
-```powershell
-irm https://raw.githubusercontent.com/false00/maccanvas/main/install.ps1 | iex
-```
-
-Run the same command to update. The installer verifies SHA-256 digests and creates
-Desktop and Start-menu shortcuts. Installed copies repair missing or outdated shortcuts
-on launch, including after an in-app update. Use `-NoShortcut` to skip both.
-Prefer portable? Download `MacCanvas-windows-x64.exe`
-from [Releases](https://github.com/false00/maccanvas/releases/latest) and run it.
-
-When a newer version is available, choose **Update & restart** or **Later**.
-Disconnect first if a Mac session is active. The app verifies the download and
-updates its own executable without changing saved Macs or credentials.
-Its folder must be writable. **Check updates** in the sidebar retries the check;
-the installer command remains available for manual updates.
+Automatic update downloads and scripted installation remain disabled while
+`brand/brand.json` has `updates_ready=false`. Do not use upstream installation
+commands for Sovelyx Desk. New builds use only the independent repository as their
+update source; changing the source does not enable automatic installation.
 
 **Unsigned application:** only run downloads and remote scripts you trust.
 [Read the installer](install.ps1) first. Checksums do not establish publisher trust
@@ -220,15 +211,15 @@ Logs contain sensitive metadata and are **not encrypted or tamper-proof**.
 
 ## Remove
 
-Close MacCanvas, then:
+Close Sovelyx Desk. For a managed installation, use its bundled script:
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/false00/maccanvas/main/install.ps1))) -Uninstall
+.\install.ps1 -Uninstall
 ```
 
+For a portable copy, remove its extracted application files.
 The managed application and its Desktop and Start-menu shortcuts are removed. Profiles, credentials, downloaded audio components, and audit logs are
 preserved; delete saved Macs in the app first to remove their logins.
-For a portable copy, delete the executable.
 
 ## Build and credits
 

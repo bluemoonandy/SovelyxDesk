@@ -9,6 +9,9 @@ brand = json.loads((ROOT / 'brand/brand.json').read_text(encoding="utf-8"))
 assert brand['confirmed'] is True
 assert brand['update_source'] == 'https://api.github.com/repos/' + brand['repository_slug'] + '/releases'
 assert brand['updates_ready'] is False
+assert brand['repository_slug'] == 'bluemoonandy/SovelyxDesk'
+assert brand['repository'] == 'https://github.com/' + brand['repository_slug']
+assert brand['legacy_repository_slug'] == 'bluemoonandy/maccanvas'
 assert brand['executable'] == 'SovelyxDesk.exe'
 assert brand['legacy_data_directory'] == 'MacCanvas'
 assert brand['legacy_credential_prefixes'] == ['MacCanvas/profile/', 'MacCanvas/login/v2/']

@@ -15,7 +15,7 @@ param(
 
     function Get-DeskBrand {
         return @'
-{"schema_version": 1, "confirmed": true, "app_name": "Sovelyx Desk", "display_name_zh_cn": "Sovelyx 远程桌面", "publisher": "Sovelyx", "tagline": "Your Mac, within reach.", "tagline_zh_cn": "远程连接，触手可及。", "description": "Remote access to your Mac from Windows", "executable": "SovelyxDesk.exe", "release_name": "Sovelyx-Desk-windows-x64", "audio_asset": "SovelyxDesk-audio-windows-x64.exe", "shortcut": "Sovelyx Desk.lnk", "install_receipt": ".sovelyx-desk-install.json", "homepage": "https://sovelyx.com/desk", "homepage_status": "planned", "repository": "https://github.com/bluemoonandy/maccanvas", "repository_slug": "bluemoonandy/maccanvas", "updates_ready": false, "icon": "assets/brand/sovelyx-desk.png", "ico": "assets/brand/sovelyx-desk.ico", "legacy_data_directory": "MacCanvas", "legacy_credential_prefixes": ["MacCanvas/profile/", "MacCanvas/login/v2/"], "upstream_author": "@false00", "upstream_repository": "https://github.com/false00/maccanvas", "update_source": "https://api.github.com/repos/bluemoonandy/maccanvas/releases", "product_version_source": "Cargo.toml package.version", "build_commit_source": "git HEAD"}
+{"schema_version": 1, "confirmed": true, "app_name": "Sovelyx Desk", "display_name_zh_cn": "Sovelyx 远程桌面", "publisher": "Sovelyx", "tagline": "Your Mac, within reach.", "tagline_zh_cn": "远程连接，触手可及。", "description": "Remote access to your Mac from Windows", "executable": "SovelyxDesk.exe", "release_name": "Sovelyx-Desk-windows-x64", "audio_asset": "SovelyxDesk-audio-windows-x64.exe", "shortcut": "Sovelyx Desk.lnk", "install_receipt": ".sovelyx-desk-install.json", "homepage": "https://sovelyx.com/desk", "homepage_status": "planned", "repository": "https://github.com/bluemoonandy/SovelyxDesk", "repository_slug": "bluemoonandy/SovelyxDesk", "updates_ready": false, "icon": "assets/brand/sovelyx-desk.png", "ico": "assets/brand/sovelyx-desk.ico", "legacy_data_directory": "MacCanvas", "legacy_credential_prefixes": ["MacCanvas/profile/", "MacCanvas/login/v2/"], "upstream_author": "@false00", "upstream_repository": "https://github.com/false00/maccanvas", "update_source": "https://api.github.com/repos/bluemoonandy/SovelyxDesk/releases", "product_version_source": "Cargo.toml package.version", "build_commit_source": "git HEAD", "legacy_repository_slug": "bluemoonandy/maccanvas"}
 '@ | ConvertFrom-Json
     }
 
@@ -100,7 +100,7 @@ param(
         $assets = @($Release.assets | Where-Object { $_.name -ceq $Name })
         if ($assets.Count -ne 1) { throw "Release must contain exactly one $Name asset." }
         $asset = $assets[0]
-        $expected = "https://github.com/bluemoonandy/maccanvas/releases/download/$($Release.tag_name)/$Name"
+        $expected = "https://github.com/bluemoonandy/SovelyxDesk/releases/download/$($Release.tag_name)/$Name"
         if ($asset.browser_download_url -cne $expected -or [long]$asset.size -le 0 -or
             [long]$asset.size -gt $Maximum -or $asset.digest -notmatch '^sha256:[a-fA-F0-9]{64}$') {
             throw "Release asset $Name has an invalid source, size, or SHA-256 digest."
@@ -142,7 +142,7 @@ param(
         $path = Join-Path $Directory (Get-DeskBrand).install_receipt
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'This directory is not managed by the Sovelyx Desk installer.' }
         $receipt = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
-        if ($receipt.repository -cne 'bluemoonandy/maccanvas' -or $receipt.sha256 -notmatch '^[a-fA-F0-9]{64}$') {
+        if ($receipt.repository -cnotin @((Get-DeskBrand).repository_slug, (Get-DeskBrand).legacy_repository_slug) -or $receipt.sha256 -notmatch '^[a-fA-F0-9]{64}$') {
             throw 'The Sovelyx Desk installation receipt is invalid.'
         }
         $executable = Join-Path $Directory (Get-DeskBrand).executable
@@ -257,7 +257,7 @@ param(
         $preserveBackup = $false
         try {
             [IO.File]::WriteAllBytes($stage, $bytes)
-            $receipt = @{ repository = 'bluemoonandy/maccanvas'; version = $release.tag_name; sha256 = $expected }
+            $receipt = @{ repository = 'bluemoonandy/SovelyxDesk'; version = $release.tag_name; sha256 = $expected }
             # Older viewers reject receipt fields they do not recognize.
             if ([version]$release.tag_name.Substring(1) -ge [version]'0.3.1') { $receipt.shortcuts = -not $NoShortcut }
             [IO.File]::WriteAllText($stageReceipt, ($receipt | ConvertTo-Json), [Text.UTF8Encoding]::new($false))

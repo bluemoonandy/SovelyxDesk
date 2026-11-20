@@ -2165,8 +2165,8 @@ msgid "Source: "
 msgstr "Source: "
 
 msgctxt "ui"
-msgid "Source: bluemoonandy/maccanvas · GitHub"
-msgstr "Source: bluemoonandy/maccanvas · GitHub"
+msgid "Source: bluemoonandy/SovelyxDesk · GitHub"
+msgstr "Source: bluemoonandy/SovelyxDesk · GitHub"
 
 msgctxt "ui"
 msgid "Sovelyx Desk updates are not published yet. Automatic downloads and installation are disabled."
@@ -2557,8 +2557,8 @@ msgid "Update recovery: {error}"
 msgstr "Update recovery: {error}"
 
 msgctxt "ui"
-msgid "Update source: bluemoonandy/maccanvas on GitHub. Upstream packages cannot be installed by this updater."
-msgstr "Update source: bluemoonandy/maccanvas on GitHub. Upstream packages cannot be installed by this updater."
+msgid "Update source: bluemoonandy/SovelyxDesk on GitHub. Upstream packages cannot be installed by this updater."
+msgstr "Update source: bluemoonandy/SovelyxDesk on GitHub. Upstream packages cannot be installed by this updater."
 
 msgctxt "ui"
 msgid "Update: {error}"

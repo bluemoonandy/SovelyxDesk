@@ -30,7 +30,7 @@ function Set-Fixture([string]$Version, [byte]$Marker) {
     $script:binary[300] = $Marker
     $script:hash = Get-MacCanvasHash $script:binary
     $script:checksums = [Text.Encoding]::UTF8.GetBytes("$script:hash  SovelyxDesk.exe`n$('a' * 64)  SovelyxDesk-audio-windows-x64.exe`n")
-    $base = "https://github.com/bluemoonandy/maccanvas/releases/download/$Version"
+    $base = "https://github.com/bluemoonandy/SovelyxDesk/releases/download/$Version"
     $script:release = [pscustomobject]@{
         tag_name = $Version; draft = $false; prerelease = $false
         assets = @(
@@ -43,7 +43,7 @@ function Set-Fixture([string]$Version, [byte]$Marker) {
 function Receive-MacCanvasBytes($Client, [uri]$Uri, [long]$Maximum) {
     Assert-MacCanvasUrl $Uri
     if ($Uri.DnsSafeHost -eq 'api.github.com') {
-        if (-not $Uri.AbsolutePath.StartsWith('/repos/bluemoonandy/maccanvas/releases/')) { throw 'Installer metadata left the fork repository.' }
+        if (-not $Uri.AbsolutePath.StartsWith('/repos/bluemoonandy/SovelyxDesk/releases/')) { throw 'Installer metadata left the fork repository.' }
         return ,[Text.Encoding]::UTF8.GetBytes(($script:release | ConvertTo-Json -Depth 8))
     }
     if ($Uri.AbsolutePath.EndsWith('/SHA256SUMS.txt')) { return ,$script:checksums }
@@ -74,9 +74,11 @@ try {
     Assert-Test $true 'accept HTTPS GitHub asset host'
     Assert-Throws { Get-MacCanvasChecksum (('a' * 64) + '  SovelyxDesk.exe' + "`n" + ('b' * 64) + '  SovelyxDesk.exe') 'SovelyxDesk.exe' } 'reject duplicate checksums'
     Set-Fixture 'v0.1.0' 1
-    $foreign = ($script:release | ConvertTo-Json -Depth 8 | ConvertFrom-Json)
-    $foreign.assets[0].browser_download_url = 'https://github.com/false00/maccanvas/releases/download/v0.1.0/SovelyxDesk.exe'
-    Assert-Throws { Get-MacCanvasAsset $foreign 'SovelyxDesk.exe' 104857600 } 'installer rejects upstream viewer assets'
+    foreach ($repository in @('false00/maccanvas', (Get-DeskBrand).legacy_repository_slug)) {
+        $foreign = ($script:release | ConvertTo-Json -Depth 8 | ConvertFrom-Json)
+        $foreign.assets[0].browser_download_url = "https://github.com/$repository/releases/download/v0.1.0/SovelyxDesk.exe"
+        Assert-Throws { Get-MacCanvasAsset $foreign 'SovelyxDesk.exe' 104857600 } "installer rejects foreign viewer assets: $repository"
+    }
     Assert-MacCanvasExecutable $script:binary
     Assert-Test $true 'accept x64 PE32+ fixture without executing it'
     $script:binary[132] = 0
@@ -89,8 +91,19 @@ try {
     Assert-Test (-not (Test-MacCanvasSamePath '\\maccanvas-invalid.example\share\MacCanvas.exe' $first.Executable)) 'reject unrelated network targets without accessing them'
     Assert-Test (@((Read-MacCanvasReceipt $managed).PSObject.Properties.Name) -notcontains 'shortcuts') 'pinned older releases retain their compatible receipt schema'
     Assert-Test (@($shortcutPaths | Where-Object { Test-Path -LiteralPath $_ }).Count -eq 0) 'NoShortcut creates neither Start menu nor Desktop links'
+    $receiptPath = Join-Path $managed (Get-DeskBrand).install_receipt
+    $legacy = Read-MacCanvasReceipt $managed
+    $legacy.repository = (Get-DeskBrand).legacy_repository_slug
+    [IO.File]::WriteAllText($receiptPath, ($legacy | ConvertTo-Json))
+    Assert-Test ((Read-MacCanvasReceipt $managed).repository -ceq (Get-DeskBrand).legacy_repository_slug) 'recognize the previous Sovelyx repository receipt without changing its binary'
+    $foreignReceipt = $legacy | ConvertTo-Json | ConvertFrom-Json
+    $foreignReceipt.repository = 'false00/maccanvas'
+    [IO.File]::WriteAllText($receiptPath, ($foreignReceipt | ConvertTo-Json))
+    Assert-Throws { Read-MacCanvasReceipt $managed } 'legacy compatibility never accepts an upstream installation receipt'
+    [IO.File]::WriteAllText($receiptPath, ($legacy | ConvertTo-Json))
     $again = Install-MacCanvas -Version v0.1.0 -InstallDirectory $managed -NoLaunch -NoShortcut
     Assert-Test ($again.Version -ceq 'v0.1.0') 'repeat install succeeds'
+    Assert-Test ((Read-MacCanvasReceipt $managed).repository -ceq (Get-DeskBrand).repository_slug) 'successful reinstall writes the independent repository identity'
     $oldHash = $script:hash
     Set-Fixture 'v0.1.1' 2
     $receiptLock = [IO.File]::Open((Join-Path $managed '.sovelyx-desk-install.json'), [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)

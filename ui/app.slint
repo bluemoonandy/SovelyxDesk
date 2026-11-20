@@ -751,7 +751,7 @@ export component App inherits Window {
                             Caption { text: @tr("ui" => "ABOUT & UPDATES"); color: root.muted; }
                             Text { text: UiText.message(Branding.display-name + " " + root.app-version + @tr("ui" => " · Fork development build")); color: root.ink; font-size: 13px; }
                             Text { text: UiText.message(@tr("ui" => "Commit: ") + root.build-revision); color: root.muted; font-size: 12px; wrap: word-wrap; }
-                            Text { text: @tr("ui" => "Update source: bluemoonandy/maccanvas on GitHub. Upstream packages cannot be installed by this updater."); color: root.muted; font-size: 12px; wrap: word-wrap; }
+                            Text { text: @tr("ui" => "Update source: bluemoonandy/SovelyxDesk on GitHub. Upstream packages cannot be installed by this updater."); color: root.muted; font-size: 12px; wrap: word-wrap; }
                             Text { text: UiText.message(root.update-status); color: root.muted; font-size: 12px; wrap: word-wrap; }
                             HorizontalLayout {
                                 alignment: start; spacing: 8px;
@@ -994,7 +994,7 @@ export component App inherits Window {
         VerticalLayout {
             padding: 18px; spacing: 10px;
             Text { text: UiText.message(root.update-restart-required ? @tr("ui" => "Restart required") : (root.update-available ? Branding.display-name + " " + root.update-version + @tr("ui" => " is ready") : @tr("ui" => "Update check"))); color: root.ink; font-size: 16px; font-weight: 600; }
-            Text { text: @tr("ui" => "Source: bluemoonandy/maccanvas · GitHub"); color: root.muted; font-size: 12px; wrap: word-wrap; }
+            Text { text: @tr("ui" => "Source: bluemoonandy/SovelyxDesk · GitHub"); color: root.muted; font-size: 12px; wrap: word-wrap; }
             Text { text: @tr("ui" => "Installing replaces this test build. A verified backup is kept for rollback."); color: root.muted; font-size: 12px; wrap: word-wrap; }
             Text {
                 text: UiText.message(root.update-available && (root.connected || root.connecting) ? @tr("ui" => "Disconnect when you're ready to install and restart. Your saved Macs and logins will stay.") : root.update-status);

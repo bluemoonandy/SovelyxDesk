@@ -1,11 +1,11 @@
 [package]
 name = "maccanvas"
-version = "0.5.10"
+version = "0.5.11"
 edition = "2024"
 rust-version = "1.92"
 license = "AGPL-3.0-or-later"
 description = "A lightweight Windows VNC viewer built for macOS Screen Sharing"
-repository = "https://github.com/bluemoonandy/maccanvas"
+repository = "https://github.com/bluemoonandy/SovelyxDesk"
 build = "build.rs"
 
 [dependencies]

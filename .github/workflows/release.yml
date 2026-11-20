@@ -1,4 +1,4 @@
-name: Portable Windows release
+name: Sovelyx Desk draft Windows release
 
 on:
   push:
@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   release:
-    if: github.repository == 'false00/maccanvas' || github.event_name == 'workflow_dispatch'
+    if: github.repository == 'bluemoonandy/SovelyxDesk'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -40,20 +40,17 @@ jobs:
           cache-bin: false
           cache-workspace-crates: false
           save-if: ${{ github.event_name != 'pull_request' }}
-      - name: Preserve the unchanged verified audio component
+      - name: Validate release identity and audio build policy
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
+          python scripts/check_brand.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/translations.py --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $brand = Get-Content -LiteralPath .\brand\brand.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          if ($brand.repository_slug -cne $env:GITHUB_REPOSITORY) { throw 'Release source does not belong to this repository.' }
           .\scripts\Test-AudioComponent.ps1
-          # Forks build the converter from the same source; upstream release tags may not exist in origin.
-          if ($env:GITHUB_REPOSITORY -eq 'false00/maccanvas') {
-            $component = .\scripts\Prepare-AudioComponent.ps1
-            if ($component.Reused) {
-              "MACCANVAS_AUDIO_COMPONENT=$($component.Path)" | Out-File -LiteralPath $env:GITHUB_ENV -Encoding utf8 -Append
-              "MACCANVAS_AUDIO_COMPONENT_SHA256=$($component.Sha256)" | Out-File -LiteralPath $env:GITHUB_ENV -Encoding utf8 -Append
-            }
-          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Test and build the viewer and optional audio converter
         shell: pwsh
         run: |
@@ -69,6 +66,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\scripts\Test-Installer.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $changes = @(git status --porcelain)
+          if ($LASTEXITCODE -ne 0 -or $changes.Count -ne 0) { throw 'Release source worktree must be clean before compilation.' }
           cargo build --release --locked
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cargo build --release --example update_probe --locked
@@ -82,16 +81,13 @@ jobs:
         run: |
           .\scripts\Package-Release.ps1 -Version $env:RELEASE_TAG
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $portableFiles = @(
-            '.\dist\MacCanvas-windows-x64.exe',
-            '.\dist\MacCanvas-audio-windows-x64.exe',
-            '.\dist\MacCanvas-audio-NOTICES.txt',
-            '.\dist\SHA256SUMS.txt'
-          )
-          Compress-Archive -LiteralPath $portableFiles -DestinationPath .\dist\MacCanvas-windows-x64-portable.zip
-          $zipHash = (Get-FileHash .\dist\MacCanvas-windows-x64-portable.zip -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$zipHash  MacCanvas-windows-x64-portable.zip" | Add-Content .\dist\SHA256SUMS.txt
-      - name: Publish immutable release assets
+          $brand = Get-Content -LiteralPath .\brand\brand.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          $portable = Join-Path .\dist ($brand.release_name + '-portable.zip')
+          $files = @(Get-ChildItem -LiteralPath .\dist -File | ForEach-Object { $_.FullName })
+          Compress-Archive -LiteralPath $files -DestinationPath $portable
+          $zipHash = (Get-FileHash -LiteralPath $portable -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$zipHash  $([IO.Path]::GetFileName($portable))" | Add-Content -LiteralPath .\dist\SHA256SUMS.txt
+      - name: Prepare immutable draft release assets
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -102,18 +98,10 @@ jobs:
           if ($LASTEXITCODE -eq 0) { throw "Release already exists; assets will not be overwritten." }
           $notes = Join-Path 'docs\releases' ($env:RELEASE_TAG + '.md')
           $noteArguments = if (Test-Path -LiteralPath $notes) { @('--notes-file', $notes) } else { @('--generate-notes') }
-          gh release create $env:RELEASE_TAG --verify-tag --draft --title "MacCanvas $env:RELEASE_TAG" @noteArguments
+          $brand = Get-Content -LiteralPath .\brand\brand.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          gh release create $env:RELEASE_TAG --verify-tag --draft --title "$($brand.app_name) $env:RELEASE_TAG" @noteArguments
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $assets = @(
-            '.\dist\MacCanvas-windows-x64.exe',
-            '.\dist\MacCanvas-audio-windows-x64.exe',
-            '.\dist\MacCanvas-audio-NOTICES.txt',
-            '.\dist\SHA256SUMS.txt',
-            '.\dist\MacCanvas-windows-x64-portable.zip'
-          )
-          # The existing installer downloads upstream releases; publish it only in the upstream repository.
-          if ($env:GH_REPO -eq 'false00/maccanvas') { $assets += '.\dist\install.ps1' }
+          $assets = @(Get-ChildItem -LiteralPath .\dist -File | ForEach-Object { $_.FullName })
           gh release upload $env:RELEASE_TAG @assets
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          gh release edit $env:RELEASE_TAG --draft=false --latest
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Output 'Verified assets are attached to a draft. Review and publish it on GitHub when ready.'

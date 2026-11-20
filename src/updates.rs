@@ -262,7 +262,8 @@ fn read_receipt(executable: &Path) -> Result<Option<Receipt>> {
                 ));
             }
             let receipt: Receipt = serde_json::from_slice(&fs::read(path)?).map_err(failed)?;
-            if receipt.repository != REPOSITORY
+            if ![REPOSITORY, crate::brand::LEGACY_REPOSITORY_SLUG]
+                .contains(&receipt.repository.as_str())
                 || !valid_hash(&receipt.sha256)
                 || receipt.sha256.to_ascii_lowercase() != file_hash(executable)?
             {
@@ -701,7 +702,7 @@ mod tests {
             size: bytes.len() as u64,
             sha256: format!("{:x}", Sha256::digest(&bytes)),
             url:
-                "https://github.com/bluemoonandy/maccanvas/releases/download/v9.0.0/SovelyxDesk.exe"
+                "https://github.com/bluemoonandy/SovelyxDesk/releases/download/v9.0.0/SovelyxDesk.exe"
                     .into(),
         };
         (bytes, release)
@@ -772,18 +773,20 @@ mod tests {
     #[test]
     fn fork_updater_rejects_upstream_packages() {
         let (_, release) = fixture();
-        let mut metadata = metadata(&release);
-        metadata["html_url"] = format!(
-            "https://github.com/false00/maccanvas/releases/tag/{}",
-            release.tag
-        )
-        .into();
-        metadata["assets"][0]["browser_download_url"] = format!(
-            "https://github.com/false00/maccanvas/releases/download/{}/{ASSET}",
-            release.tag
-        )
-        .into();
-        assert!(parse_release(&serde_json::to_vec(&metadata).unwrap(), "0.2.1").is_err());
+        for repository in ["false00/maccanvas", crate::brand::LEGACY_REPOSITORY_SLUG] {
+            let mut metadata = metadata(&release);
+            metadata["html_url"] = format!(
+                "https://github.com/{repository}/releases/tag/{}",
+                release.tag
+            )
+            .into();
+            metadata["assets"][0]["browser_download_url"] = format!(
+                "https://github.com/{repository}/releases/download/{}/{ASSET}",
+                release.tag
+            )
+            .into();
+            assert!(parse_release(&serde_json::to_vec(&metadata).unwrap(), "0.2.1").is_err());
+        }
     }
 
     #[test]
@@ -815,6 +818,28 @@ mod tests {
         bytes[132] = 0;
         release.sha256 = format!("{:x}", Sha256::digest(&bytes));
         assert!(verify_executable(&bytes, &release).is_err());
+    }
+    #[test]
+    fn legacy_repository_receipts_keep_binary_integrity_and_ownership_checks() {
+        let directory = tempfile::tempdir().unwrap();
+        let executable = directory.path().join(crate::brand::EXECUTABLE);
+        let path = directory.path().join(crate::brand::INSTALL_RECEIPT);
+        fs::write(&executable, b"owned old installation").unwrap();
+        let mut receipt = Receipt {
+            repository: crate::brand::LEGACY_REPOSITORY_SLUG.into(),
+            version: "v0.5.10".into(),
+            sha256: file_hash(&executable).unwrap(),
+            shortcuts: Some(false),
+        };
+        write_receipt(&path, &receipt).unwrap();
+        assert!(read_receipt(&executable).unwrap().is_some());
+        receipt.repository = "false00/maccanvas".into();
+        write_receipt(&path, &receipt).unwrap();
+        assert!(read_receipt(&executable).is_err());
+        receipt.repository = crate::brand::LEGACY_REPOSITORY_SLUG.into();
+        write_receipt(&path, &receipt).unwrap();
+        fs::write(&executable, b"changed executable").unwrap();
+        assert!(read_receipt(&executable).is_err());
     }
     #[test]
     fn updates_managed_receipt_and_preserves_uninstall_compatibility() {

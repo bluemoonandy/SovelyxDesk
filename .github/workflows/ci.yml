@@ -1,4 +1,4 @@
-name: Windows x64 tests and Release
+name: Sovelyx Desk Windows x64 tests and Release
 
 on:
   push:
@@ -129,6 +129,12 @@ jobs:
           $version = (Get-Content Cargo.toml -Raw | Select-String '(?m)^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
           .\scripts\Package-Release.ps1 -Version "v$version"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $brand = Get-Content -LiteralPath .\brand\brand.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          $portable = Join-Path .\dist ($brand.release_name + '-portable.zip')
+          $files = @(Get-ChildItem -LiteralPath .\dist -File | ForEach-Object { $_.FullName })
+          Compress-Archive -LiteralPath $files -DestinationPath $portable
+          $zipHash = (Get-FileHash -LiteralPath $portable -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$zipHash  $([IO.Path]::GetFileName($portable))" | Add-Content -LiteralPath .\dist\SHA256SUMS.txt
       - name: Export verified Windows x64 package
         if: github.ref_name != 'codex/p2-ui-device-management' || inputs.build_release
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

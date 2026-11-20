@@ -2165,8 +2165,8 @@ msgid "Source: "
 msgstr "源码："
 
 msgctxt "ui"
-msgid "Source: bluemoonandy/maccanvas · GitHub"
-msgstr "来源：bluemoonandy/maccanvas · GitHub"
+msgid "Source: bluemoonandy/SovelyxDesk · GitHub"
+msgstr "来源：bluemoonandy/SovelyxDesk · GitHub"
 
 msgctxt "ui"
 msgid "Sovelyx Desk updates are not published yet. Automatic downloads and installation are disabled."
@@ -2557,8 +2557,8 @@ msgid "Update recovery: {error}"
 msgstr "更新恢复：{error}"
 
 msgctxt "ui"
-msgid "Update source: bluemoonandy/maccanvas on GitHub. Upstream packages cannot be installed by this updater."
-msgstr "更新源为 GitHub 上的自有 Fork，禁止安装上游发布包。"
+msgid "Update source: bluemoonandy/SovelyxDesk on GitHub. Upstream packages cannot be installed by this updater."
+msgstr "更新源为 GitHub 上的 bluemoonandy/SovelyxDesk，仅接受本项目发布包。"
 
 msgctxt "ui"
 msgid "Update: {error}"

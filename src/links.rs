@@ -7,10 +7,11 @@ use crate::error::{Error, Result};
 
 pub fn open_about_link(index: i32) -> Result<()> {
     let source = crate::brand::source_url();
+    let releases = format!("{}/releases", crate::brand::REPOSITORY);
     let link = match index {
         0 => "https://github.com/false00/maccanvas",
         1 => &source,
-        2 => "https://github.com/bluemoonandy/maccanvas/releases",
+        2 => &releases,
         3 => crate::brand::HOMEPAGE,
         4 => &source,
         _ => return Err(Error::Configuration("Unknown About link".into())),
